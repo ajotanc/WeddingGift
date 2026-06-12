@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Calendar as CalendarIcon } from 'lucide-vue-next'
-import { CalendarDate, parseDate } from '@internationalized/date'
+import { CalendarDate } from '@internationalized/date'
 import { vMaska } from 'maska/vue'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+
+dayjs.extend(customParseFormat)
 
 import { cn } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
+import Input from '@/components/ui/Input.vue'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -22,18 +26,17 @@ const popoverOpen = ref(false)
 const dateValue = computed({
   get: () => {
     if (!props.modelValue) return undefined
-    try {
-      return parseDate(props.modelValue)
-    } catch {
-      return undefined
-    }
+    const d = dayjs(props.modelValue, 'YYYY-MM-DD', true)
+    if (!d.isValid()) return undefined
+    return new CalendarDate(d.year(), d.month() + 1, d.date())
   },
   set: (val: CalendarDate | undefined) => {
     if (!val) {
       emit('update:modelValue', '')
       return
     }
-    emit('update:modelValue', val.toString())
+    const d = dayjs(`${val.year}-${val.month}-${val.day}`, 'YYYY-M-D')
+    emit('update:modelValue', d.format('YYYY-MM-DD'))
     popoverOpen.value = false
   }
 })
@@ -42,15 +45,8 @@ const displayValue = ref('')
 
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
-    try {
-      const d = parseDate(newVal)
-      const dd = String(d.day).padStart(2, '0')
-      const mm = String(d.month).padStart(2, '0')
-      const yyyy = d.year
-      displayValue.value = `${dd}/${mm}/${yyyy}`
-    } catch {
-      displayValue.value = ''
-    }
+    const d = dayjs(newVal, 'YYYY-MM-DD')
+    displayValue.value = d.isValid() ? d.format('DD/MM/YYYY') : ''
   } else {
     displayValue.value = ''
   }
@@ -58,9 +54,9 @@ watch(() => props.modelValue, (newVal) => {
 
 const onInputBlur = () => {
   if (displayValue.value.length === 10) {
-    const [dd, mm, yyyy] = displayValue.value.split('/')
-    if (dd && mm && yyyy && yyyy.length === 4) {
-      const iso = `${yyyy}-${mm}-${dd}`
+    const d = dayjs(displayValue.value, 'DD/MM/YYYY', true)
+    if (d.isValid()) {
+      const iso = d.format('YYYY-MM-DD')
       if (props.modelValue !== iso) {
         emit('update:modelValue', iso)
       }
@@ -73,12 +69,11 @@ const onInputBlur = () => {
 
 <template>
   <div class="relative flex items-center w-full">
-    <CalendarIcon class="absolute left-4 h-5 w-5 text-slate-400 z-10 pointer-events-none" />
     <Input 
       v-model="displayValue"
       v-maska="'##/##/####'"
       placeholder="DD/MM/AAAA"
-      class="pl-12 pr-12 w-full h-12 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-primary font-sans text-slate-900"
+      class="pr-12"
       @blur="onInputBlur"
       @keydown.enter="onInputBlur"
     />
