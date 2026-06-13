@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore'
-import { db } from '@/firebase'
 import { useTenant } from '@/composables/useTenant'
-import type { Rsvp, Message } from '@/types'
+import { listRsvps, type IRsvp } from '@/services/rsvp.service'
+import { listMessages, deleteMessage as deleteMessageService, type IMessage } from '@/services/message.service'
 import { GoogleGenAI } from '@google/genai'
 import Button from '@/components/ui/Button.vue'
 import Dialog from '@/components/ui/Dialog.vue'
@@ -13,39 +12,33 @@ import { useToast } from '@/components/ui/toast/use-toast'
 const { toast } = useToast()
 const { tenant } = useTenant()
 
-const rsvps = ref<Rsvp[]>([])
-const messages = ref<Message[]>([])
+const rsvps = ref<IRsvp[]>([])
+const messages = ref<IMessage[]>([])
 
 const rsvpStats = computed(() => {
   const confirmed = rsvps.value.filter((r) => r.status === 'confirmed')
   const declined = rsvps.value.filter((r) => r.status === 'declined')
 
   return {
-    adults: confirmed.reduce((acc, r) => acc + r.totalAdults, 0),
-    children: confirmed.reduce((acc, r) => acc + r.totalChildren, 0),
+    adults: confirmed.reduce((acc, r) => acc + (r.total_adults || 0), 0),
+    children: confirmed.reduce((acc, r) => acc + (r.total_children || 0), 0),
     declinedCount: declined.length,
   }
 })
 
 const loadData = async () => {
   if (!tenant.value) return
-
-  const qRsvp = query(collection(db, 'rsvp'), where('tenantId', '==', tenant.value.id))
-  const snapRsvp = await getDocs(qRsvp)
-  rsvps.value = snapRsvp.docs.map((d) => ({ id: d.id, ...d.data() }) as Rsvp)
-  
-  const qMessages = query(collection(db, 'messages'), where('tenantId', '==', tenant.value.id))
-  const snapMessages = await getDocs(qMessages)
-  messages.value = snapMessages.docs.map((d) => ({ id: d.id, ...d.data() }) as Message)
+  rsvps.value = await listRsvps(tenant.value.$id)
+  messages.value = await listMessages(tenant.value.$id)
 }
 
 watch(tenant, (newTenant) => {
   if (newTenant) loadData()
 }, { immediate: true })
 
-const deleteMessage = async (id: string) => {
+const deleteMsg = async (id: string) => {
   if (!confirm('Deseja excluir esta mensagem?')) return
-  await deleteDoc(doc(db, 'messages', id))
+  await deleteMessageService(id)
   await loadData()
   toast({ title: 'Sucesso', description: 'Mensagem excluída!' })
 }
@@ -84,7 +77,7 @@ const copyThanks = () => {
 }
 
 const copyRSVPList = () => {
-  const text = rsvps.value.map(r => `${r.guestName} (${r.status === 'confirmed' ? 'Confirmado' : 'Não irá'}) - Adultos: ${r.totalAdults}, Crianças: ${r.totalChildren}`).join('\n')
+  const text = rsvps.value.map(r => `${r.guest_name} (${r.status === 'confirmed' ? 'Confirmado' : 'Não irá'}) - Adultos: ${r.total_adults}, Crianças: ${r.total_children}`).join('\n')
   navigator.clipboard.writeText(text)
   toast({ title: 'Sucesso', description: 'Lista copiada para a área de transferência!' })
 }
@@ -134,18 +127,18 @@ const copyRSVPList = () => {
           <h3 class="font-medium text-slate-900">Lista de Respostas</h3>
         </div>
         <div class="divide-y divide-slate-100">
-          <div v-for="r in rsvps" :key="r.id" class="p-6 flex flex-col sm:flex-row justify-between gap-4">
+          <div v-for="r in rsvps" :key="r.$id" class="p-6 flex flex-col sm:flex-row justify-between gap-4">
             <div>
-              <p class="font-medium text-slate-900">{{ r.guestName }}</p>
+              <p class="font-medium text-slate-900">{{ r.guest_name }}</p>
               <p class="text-sm text-slate-500 mt-1">{{ r.phone }} • {{ r.email }}</p>
               <div class="mt-3 flex gap-2">
                 <span v-if="r.status === 'confirmed'" class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-medium">Confirmado</span>
                 <span v-else class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-medium">Ausente</span>
-                <span v-if="r.status === 'confirmed'" class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md">{{ r.totalAdults }} Adultos, {{ r.totalChildren }} Crianças</span>
+                <span v-if="r.status === 'confirmed'" class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md">{{ r.total_adults }} Adultos, {{ r.total_children }} Crianças</span>
               </div>
             </div>
             <div v-if="r.status === 'confirmed'" class="flex flex-col justify-center">
-              <button @click="generateThanks(r.guestName)" class="text-primary text-sm font-medium hover:underline flex items-center gap-1 bg-primary/5 px-3 py-2 rounded-lg transition-colors">
+              <button @click="generateThanks(r.guest_name)" class="text-primary text-sm font-medium hover:underline flex items-center gap-1 bg-primary/5 px-3 py-2 rounded-lg transition-colors">
                 <Sparkles :size="14" /> IA
               </button>
             </div>
@@ -160,13 +153,13 @@ const copyRSVPList = () => {
           <h3 class="font-medium text-slate-900">Mural de Recados</h3>
         </div>
         <div class="divide-y divide-slate-100">
-          <div v-for="m in messages" :key="m.id" class="p-6">
+          <div v-for="m in messages" :key="m.$id" class="p-6">
             <div class="flex justify-between items-start gap-4">
               <div class="flex-1">
-                <p class="text-sm font-medium text-slate-900 mb-2">{{ m.guestName }}</p>
+                <p class="text-sm font-medium text-slate-900 mb-2">{{ m.guest_name }}</p>
                 <p class="text-slate-600 italic font-serif leading-relaxed">"{{ m.content }}"</p>
               </div>
-              <button @click="deleteMessage(m.id)" class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50">
+              <button @click="deleteMsg(m.$id)" class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50">
                 <Trash2 class="w-4 h-4" />
               </button>
             </div>

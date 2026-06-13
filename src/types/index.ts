@@ -9,8 +9,8 @@ export interface TenantSettings {
   status: 'active' | 'inactive'
   theme: {
     primaryColor: string
-    backgroundImageUrl?: string // optional background image URL
-    dashboardHeaderBgColor?: string // optional header background color (hex or CSS class)
+    backgroundImage?: string // optional background image URL
+    backgroundColor?: string // optional header background color (hex or CSS class)
   }
   createdAt: number
   eventDate?: string // ISO string for the event date

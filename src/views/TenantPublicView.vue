@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import CountdownTimer from '@/components/ui/CountdownTimer.vue'
 import { useTenant } from '@/composables/useTenant'
-import { addDoc, collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore'
+import { useAuthStore } from '@/stores/auth'
+import { listProducts, type IProductHydrated } from '@/services/product.service'
+import { createRsvp } from '@/services/rsvp.service'
+import { listMessages, createMessage, deleteMessage as deleteMessageService, type IMessage } from '@/services/message.service'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import { vMaska } from 'maska/vue'
 import QrcodeVue from 'qrcode.vue'
 import { computed, ref, watch } from 'vue'
+import { generatePixPayload } from '@/lib/utils'
 import { LogOut } from 'lucide-vue-next'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
@@ -37,48 +41,28 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { CheckCircle2, Heart, ExternalLink, Calendar, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next'
 
-import { auth, db } from '@/firebase'
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
-import type { User } from 'firebase/auth'
-import type { Message, Product } from '@/types'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 import { useToast } from '@/components/ui/toast/use-toast'
+import { formatCurrency, parseCurrency } from '@brazilian-utils/brazilian-utils'
 
 dayjs.locale('pt-br')
 
 const { toast } = useToast()
 const { tenant, loading, error, headerStyle, pageStyle } = useTenant()
+const authStore = useAuthStore()
 
-const products = ref<Product[]>([])
-const messages = ref<Message[]>([])
-const currentUser = ref<User | null>(null)
+const products = ref<IProductHydrated[]>([])
+const messages = ref<IMessage[]>([])
 
-auth.onAuthStateChanged((user) => {
-  currentUser.value = user
-})
+const currentUser = computed(() => authStore.user)
 
 const requireAuth = async (): Promise<boolean> => {
   if (currentUser.value) return true
   try {
-    const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup(auth, provider)
-
-    // Save to guests if not exists (simplified logic)
-    const qGuest = query(collection(db, 'guests'), where('email', '==', result.user.email))
-    const snapGuest = await getDocs(qGuest)
-    if (snapGuest.empty) {
-      await addDoc(collection(db, 'guests'), {
-        id: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName,
-        photoURL: result.user.photoURL,
-        createdAt: Date.now(),
-      })
-    }
+    await authStore.loginWithGoogle(window.location.href, window.location.href)
     return true
   } catch (err) {
     console.error('Erro na autenticação', err)
@@ -87,20 +71,15 @@ const requireAuth = async (): Promise<boolean> => {
 }
 
 const logout = async () => {
-  await signOut(auth)
+  await authStore.logout()
 }
 
 const loadPublicData = async () => {
   if (!tenant.value) return
-  const qProducts = query(collection(db, 'products'), where('tenantId', '==', tenant.value.id))
-  const snapProducts = await getDocs(qProducts)
-  products.value = snapProducts.docs.map((d) => ({ id: d.id, ...d.data() }) as Product)
-
-  const qMessages = query(collection(db, 'messages'), where('tenantId', '==', tenant.value.id))
-  const snapMessages = await getDocs(qMessages)
-  messages.value = snapMessages.docs.map((d) => ({ id: d.id, ...d.data() }) as Message).sort((a, b) => b.createdAt - a.createdAt)
+  products.value = await listProducts(tenant.value.$id)
+  const msgs = await listMessages(tenant.value.$id)
+  messages.value = msgs.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime())
 }
-
 
 watch(tenant, (newTenant) => {
   if (newTenant) loadPublicData()
@@ -139,26 +118,26 @@ const paginatedProducts = computed(() => {
 // Modals State
 const showPixModal = ref(false)
 const showLinksModal = ref(false)
-const selectedProduct = ref<Product | null>(null)
+const selectedProduct = ref<IProductHydrated | null>(null)
 
 const quotaQuantities = ref<Record<string, number>>({})
 
 const pixPayload = computed(() => {
   if (!tenant.value || !selectedProduct.value) return ''
-  const baseValue = selectedProduct.value.type === 'quota' 
-    ? (selectedProduct.value.fixedQuotaValue || 0) * (quotaQuantities.value[selectedProduct.value.id] || 1) 
-    : (selectedProduct.value.basePrice || 0)
-    
-  return `00020101021126360014br.gov.bcb.pix0114${tenant.value.pixKey}5204000053039865405${baseValue.toFixed(2)}5802BR5910${tenant.value.coupleName.substring(0, 25).padEnd(25, ' ')}6009SAO PAULO62070503***6304`
+  const baseValue = selectedProduct.value.type === 'quota'
+    ? (Number(selectedProduct.value.fixed_quota_value) || 0) * (quotaQuantities.value[selectedProduct.value.$id] || 1)
+    : (Number(selectedProduct.value.base_price) || 0)
+
+  return generatePixPayload(tenant.value.pix_key, tenant.value.couple_name, baseValue)
 })
 
-const openPixModal = async (product: Product) => {
+const openPixModal = async (product: IProductHydrated) => {
   if (!currentUser.value) return
   selectedProduct.value = product
   showPixModal.value = true
 }
 
-const openLinksModal = async (product: Product) => {
+const openLinksModal = async (product: IProductHydrated) => {
   if (!currentUser.value) return
   if (product.links && product.links.length > 0) {
     selectedProduct.value = product
@@ -167,8 +146,8 @@ const openLinksModal = async (product: Product) => {
 }
 
 const copyPix = () => {
-  if (!tenant.value?.pixKey) return
-  navigator.clipboard.writeText(tenant.value.pixKey)
+  if (!tenant.value?.pix_key) return
+  navigator.clipboard.writeText(tenant.value.pix_key)
   toast({ title: 'Sucesso', description: 'Chave PIX copiada para a área de transferência!' })
 }
 
@@ -205,9 +184,9 @@ const { value: status } = useField<'confirmed' | 'declined'>('status')
 
 watch(currentUser, (user) => {
   if (user) {
-    if (!guestName.value) guestName.value = user.displayName || ''
+    if (!guestName.value) guestName.value = user.name || ''
     if (!email.value) email.value = user.email || ''
-    if (!phone.value && user.phoneNumber) phone.value = user.phoneNumber
+    if (!phone.value && user.phone) phone.value = user.phone
   }
 })
 
@@ -218,10 +197,13 @@ const submitRsvp = handleSubmit(async (values) => {
   if (!tenant.value) return
   rsvpLoading.value = true
   try {
-    await addDoc(collection(db, 'rsvp'), {
-      tenantId: tenant.value.id,
-      ...values,
-      confirmedAt: Date.now()
+    await createRsvp(tenant.value.$id, {
+      guest_name: values.guestName,
+      email: values.email,
+      phone: values.phone,
+      total_adults: values.totalAdults,
+      total_children: values.totalChildren,
+      status: values.status,
     })
     guestName.value = ''
     email.value = ''
@@ -241,20 +223,17 @@ const submitRsvp = handleSubmit(async (values) => {
 const messageContent = ref('')
 const submitMessage = async () => {
   if (!tenant.value || !messageContent.value.trim() || !currentUser.value) return
-  
+
   try {
-    const newMsg = {
-      tenantId: tenant.value.id,
-      guestName: currentUser.value.displayName || 'Convidado',
-      photoURL: currentUser.value?.photoURL || '',
+    const newMsg = await createMessage(tenant.value.$id, currentUser.value.$id, {
+      guest_name: currentUser.value.name || 'Convidado',
+      photo_url: (currentUser.value?.prefs as any)?.photoURL || '',
       content: messageContent.value,
-      createdAt: Date.now(),
-    }
-    const docRef = await addDoc(collection(db, 'messages'), newMsg)
-    
+    })
+
     // Add instantly to UI array without fetching
-    messages.value.unshift({ id: docRef.id, ...newMsg })
-    
+    messages.value.unshift(newMsg)
+
     messageContent.value = ''
     toast({ title: 'Sucesso', description: 'Sua mensagem foi enviada!' })
   } catch (err) {
@@ -265,8 +244,8 @@ const submitMessage = async () => {
 const deleteMessage = async (msgId: string) => {
   if (!confirm('Deseja realmente apagar esta mensagem?')) return
   try {
-    await deleteDoc(doc(db, 'messages', msgId))
-    messages.value = messages.value.filter(m => m.id !== msgId)
+    await deleteMessageService(msgId)
+    messages.value = messages.value.filter(m => m.$id !== msgId)
     toast({ title: 'Sucesso', description: 'Mensagem apagada com sucesso.' })
   } catch (err) {
     toast({ title: 'Erro', description: 'Erro ao apagar mensagem.', variant: 'destructive' })
@@ -275,83 +254,87 @@ const deleteMessage = async (msgId: string) => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-zinc-50 font-sans text-slate-600">
+  <main class="min-h-screen font-sans text-slate-600"
+    :style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
     <div class="min-h-screen">
-      <div v-if="loading" class="flex justify-center p-20 text-slate-400 font-light tracking-wide animate-pulse">Carregando experiência...</div>
+      <div v-if="loading" class="flex justify-center p-20 text-slate-400 font-light tracking-wide animate-pulse">
+        Carregando experiência...</div>
       <div v-else-if="error" class="text-center p-20 text-red-500 font-medium">{{ error }}</div>
       <div v-else-if="tenant">
-        
-        <!-- Header Hero -->
-        <!-- Header Hero -->
-        <header :style="{ backgroundColor: tenant?.theme?.dashboardHeaderBgColor || 'transparent' }" class="relative py-32 px-6 text-center overflow-hidden">
-          
-          <!-- Background Image Layer -->
-          <div v-if="tenant?.theme?.backgroundImageUrl" class="absolute inset-0 bg-cover bg-center" :style="{ backgroundImage: `url(${tenant.theme.backgroundImageUrl})` }"></div>
 
-          <!-- Blur Overlay Layer (Smooth fade to zinc-50 at bottom) -->
+        <!-- Header Hero -->
+        <!-- Header Hero -->
+        <header :style="{ backgroundColor: tenant.background_color || 'transparent' }"
+          class="relative py-32 px-6 text-center overflow-hidden">
+
+          <!-- Background Image Layer -->
+          <div v-if="tenant.background_image" class="absolute inset-0 bg-cover bg-center"
+            :style="{ backgroundImage: `url(${tenant.background_image})` }"></div>
+
+          <!-- Blur Overlay Layer (Smooth fade to background_color at bottom) -->
           <div class="absolute inset-0 bg-white/20"></div>
-          <div class="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-50/80 to-zinc-50 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent_30%,black_100%)]"></div>
+          <div
+            class="absolute inset-0 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent_30%,black_100%)]"
+            :style="tenant.background_color ? { background: `linear-gradient(to bottom, transparent, ${tenant.background_color}CC 80%, ${tenant.background_color})` } : {}"
+            :class="!tenant.background_color ? 'bg-gradient-to-b from-transparent via-zinc-50/80 to-zinc-50' : ''">
+          </div>
 
           <div class="absolute top-0 left-0 w-full p-4 flex justify-end z-20">
-            <GoogleAuthButton 
-              @click="requireAuth" 
-              @logout="logout" 
-              :user="currentUser" 
-              :fill="false" 
-              :themeColor="tenant?.theme?.primaryColor" 
-            />
+            <GoogleAuthButton @click="requireAuth" @logout="logout" :user="currentUser || undefined" :fill="false"
+              :themeColor="tenant.primary_color" />
           </div>
 
           <div class="relative max-w-4xl mx-auto z-10">
             <div class="w-16 h-px bg-primary/40 mx-auto mb-10"></div>
-            <h1 class="text-5xl md:text-7xl font-serif text-slate-900 mb-8 tracking-tight">{{ tenant.coupleName }}</h1>
-            <p class="text-sm md:text-base text-slate-500 font-light tracking-[0.2em] uppercase">Lista de Presentes & RSVP</p>
+            <h1 class="text-5xl md:text-7xl font-serif text-slate-900 mb-8 tracking-tight">{{ tenant.couple_name }}</h1>
+            <p class="text-sm md:text-base text-slate-500 font-light tracking-[0.2em] uppercase">Lista de Presentes &
+              RSVP</p>
             <!-- Event Date & Time Display -->
-            <div v-if="tenant.eventDate" class="mt-4 text-slate-600 font-medium text-lg">
-              {{ dayjs(tenant.eventDate).format('DD/MM/YYYY') }} às {{ tenant.eventTime }}
+            <div v-if="tenant.event_date" class="mt-4 text-slate-600 font-medium text-lg">
+              {{ dayjs(tenant.event_date).format('DD/MM/YYYY') }} às {{ tenant.event_time }}
             </div>
-            
+
             <!-- Countdown -->
-            <div v-if="tenant.eventDate && tenant.settings?.showCountdown !== false" class="mt-6">
-              <CountdownTimer :eventDate="tenant.eventDate" />
+            <div v-if="tenant.event_date && tenant?.show_countdown !== false" class="mt-6">
+              <CountdownTimer :eventDate="tenant.event_date" />
             </div>
             <div class="w-16 h-px bg-primary/40 mx-auto mt-10"></div>
           </div>
         </header>
 
         <div class="max-w-5xl mx-auto p-6 md:p-12 lg:py-32 space-y-24 md:space-y-32">
-          
+
           <!-- Couple History -->
-          <section v-if="tenant.coupleHistory" class="text-center max-w-3xl mx-auto">
+          <section v-if="tenant.couple_history" class="text-center max-w-3xl mx-auto">
             <h2 class="text-3xl font-serif text-slate-900 mb-8">Nossa História</h2>
-            <div class="text-slate-600 font-light text-lg leading-relaxed text-left quill-content" v-html="tenant.coupleHistory"></div>
+            <div class="text-slate-600 font-light text-lg leading-relaxed text-left quill-content"
+              v-html="tenant.couple_history"></div>
           </section>
 
           <!-- Event Location Map -->
-          <section v-if="tenant.eventLocation" class="text-center">
+          <section v-if="tenant.event_location" class="text-center">
             <h2 class="text-3xl font-serif text-slate-900 mb-6">Local do Evento</h2>
             <div class="bg-white p-2 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80">
-              <LeafletMap :address="tenant.eventLocation" />
+              <LeafletMap :address="tenant.event_location" />
             </div>
-            <p class="text-slate-500 font-medium mt-4">{{ tenant.eventLocation }}</p>
+            <p class="text-slate-500 font-medium mt-4">{{ tenant.event_location }}</p>
           </section>
 
           <!-- Products -->
           <section>
             <div class="text-center mb-16">
               <h2 class="text-3xl font-serif text-slate-900 mb-6">Nossa Lista</h2>
-              <p class="text-slate-500 font-light max-w-xl mx-auto text-lg leading-relaxed">Com muito carinho, selecionamos alguns itens e experiências. Fique à vontade para nos presentear com o que tocar o seu coração.</p>
+              <p class="text-slate-500 font-light max-w-xl mx-auto text-lg leading-relaxed">Com muito carinho,
+                selecionamos alguns itens e experiências. Fique à vontade para nos presentear com o que tocar o seu
+                coração.</p>
             </div>
 
             <!-- Category Filter (Combobox) -->
             <div v-if="categories.length > 0" class="flex justify-center mb-12">
               <div class="w-full max-w-sm">
-                <Combobox
-                  v-model="selectedCategory"
-                  :options="[{label: 'Todas as Categorias', value: 'all'}, ...categories.map(c => ({label: c, value: c}))]"
-                  placeholder="Filtrar por categoria..."
-                  emptyText="Nenhuma categoria encontrada."
-                />
+                <Combobox v-model="selectedCategory"
+                  :options="[{ label: 'Todas as Categorias', value: 'all' }, ...categories.map(c => ({ label: c, value: c }))]"
+                  placeholder="Filtrar por categoria..." emptyText="Nenhuma categoria encontrada." />
               </div>
             </div>
 
@@ -360,65 +343,87 @@ const deleteMessage = async (msgId: string) => {
             </div>
 
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              <Card v-for="product in paginatedProducts" :key="product.id" class="flex flex-col overflow-hidden border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-3xl transition-all hover:-translate-y-1 hover:shadow-md duration-300 bg-white group p-6">
-                <div v-if="product.type === 'physical' && (product.imageUrl || product.links?.[0]?.thumbnail)" class="bg-slate-100/60 p-6 rounded-xl aspect-square flex items-center justify-center">
-                  <img :src="product.imageUrl || product.links?.[0]?.thumbnail" alt="Produto" class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
+              <Card v-for="product in paginatedProducts" :key="product.$id"
+                class="flex flex-col overflow-hidden border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-3xl transition-all hover:-translate-y-1 hover:shadow-md duration-300 bg-white group p-6">
+                <div v-if="product.type === 'physical' && product.image_url"
+                  class="bg-slate-100/60 p-6 rounded-xl aspect-square flex items-center justify-center">
+                  <img :src="product.image_url" alt="Produto"
+                    class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
                 </div>
-                <div v-else class="bg-slate-100/60 p-6 rounded-xl aspect-square flex flex-col items-center justify-center">
-                  <span class="text-primary/60 font-serif text-3xl mb-2 italic">{{product.category}}</span>
+                <div v-else
+                  class="bg-slate-100/60 p-6 rounded-xl aspect-square flex flex-col items-center justify-center">
+                  <span class="text-primary/60 font-serif text-3xl mb-2 italic">{{ product.category }}</span>
                   <span class="text-slate-700 text-center font-medium px-4 text-sm">{{ product.name }}</span>
                 </div>
-                
+
                 <div class="flex flex-col flex-1 pt-3">
                   <div class="mb-2 flex items-center gap-2 flex-wrap">
-                    <span v-if="product.category" class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">{{ product.category }}</span>
+                    <span v-if="product.category"
+                      class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">{{
+                        product.category }}</span>
                     <template v-if="product.type === 'quota'">
-                      <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest" :style="{ color: tenant?.theme?.primaryColor, backgroundColor: (tenant?.theme?.primaryColor || '#000000') + '1a' }">Cota</span>
-                      <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">{{ product.claimedQuantity || 0 }}/{{ product.desiredQuantity }}</span>
+                      <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest"
+                        :style="{ color: tenant.primary_color, backgroundColor: (tenant.primary_color || '#000000') + '1a' }">Cota</span>
+                      <span
+                        class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">{{
+                          product.claimed_quantity || 0 }}/{{ product.desired_quantity }}</span>
                     </template>
                     <template v-else>
-<span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest" :style="{ color: tenant?.theme?.primaryColor, backgroundColor: (tenant?.theme?.primaryColor || '#000000') + '1a' }">{{ (product.desiredQuantity && product.desiredQuantity === 1 ? 'Único Produto' : `${product.claimedQuantity || 0}/${product.desiredQuantity}`) }}</span>
+                      <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest"
+                        :style="{ color: tenant.primary_color, backgroundColor: (tenant.primary_color || '#000000') + '1a' }">{{
+                          (product.desired_quantity && product.desired_quantity === 1 ? 'Único Produto' :
+                            `${product.claimed_quantity || 0}/${product.desired_quantity}`) }}</span>
                     </template>
                   </div>
                   <h3 class="font-serif text-slate-900 text-xl mb-2 leading-snug">{{ product.name }}</h3>
                   <div class="mt-auto pt-2">
-                    <p v-if="product.type === 'quota'" class="text-primary font-semibold text-2xl mb-4 flex items-center flex-wrap gap-2">
-                      R$ {{ product.fixedQuotaValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
-                    </p>
-                    <p v-else class="text-primary font-semibold text-2xl mb-4 flex items-center flex-wrap gap-2">
-                      R$ {{ product.basePrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
-                    </p>
-                    
+                    <p v-if="product.type === 'quota'" class="text-primary font-bold text-xl mt-1">
+                        {{ formatCurrency(parseCurrency(product.fixed_quota_value || '0'), { symbol: true }) }} <span
+                          class="text-xs font-normal text-slate-400">/ {{ formatCurrency(parseCurrency(product.total_value || '0'), { symbol: true }) }}</span>
+                      </p>
+                      <p v-else class="text-primary font-bold text-xl mt-1">
+                        {{ formatCurrency(parseCurrency(product.base_price || '0'), { symbol: true }) }}
+                      </p>
+
                     <div v-if="currentUser" class="flex flex-col gap-2">
                       <template v-if="product.type === 'quota'">
                         <div class="flex items-center gap-2">
-                          <Button variant="outline" class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100" @click="quotaQuantities[product.id] = Math.max(1, (quotaQuantities[product.id] || 1) - 1)">-</Button>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            :max="Math.max(1, (product.desiredQuantity || 99) - (product.claimedQuantity || 0))"
-                            class="text-center rounded-xl h-12 border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                            :model-value="quotaQuantities[product.id] || 1"
-                            @update:model-value="val => quotaQuantities[product.id] = Math.max(1, Math.min((product.desiredQuantity || 99) - (product.claimedQuantity || 0), Number(val)))"
-                          />
-                          <Button variant="outline" class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100" @click="quotaQuantities[product.id] = Math.min((product.desiredQuantity || 99) - (product.claimedQuantity || 0), (quotaQuantities[product.id] || 1) + 1)">+</Button>
+                          <Button variant="outline"
+                            class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
+                            @click="quotaQuantities[product.$id] = Math.max(1, (quotaQuantities[product.$id] || 1) - 1)">-</Button>
+                          <Input type="number" min="1"
+                            :max="Math.max(1, (product.desired_quantity || 99) - (product.claimed_quantity || 0))"
+                            class="text-center rounded-xl h-12 border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            :model-value="quotaQuantities[product.$id] || 1"
+                            @update:model-value="val => quotaQuantities[product.$id] = Math.max(1, Math.min((product.desired_quantity || 99) - (product.claimed_quantity || 0), Number(val)))" />
+                          <Button variant="outline"
+                            class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
+                            @click="quotaQuantities[product.$id] = Math.min((product.desired_quantity || 99) - (product.claimed_quantity || 0), (quotaQuantities[product.$id] || 1) + 1)">+</Button>
                         </div>
-                        <Button class="w-full rounded-xl py-4 font-medium shadow-sm hover:shadow-md transition-all" @click="openPixModal(product)">
+                        <Button class="w-full rounded-xl py-4 font-medium shadow-sm hover:shadow-md transition-all"
+                          @click="openPixModal(product)">
                           Presentear com PIX
                         </Button>
                       </template>
                       <template v-else-if="product.type === 'physical'">
-                        <Button v-if="product.links && product.links.length > 0" variant="outline" class="w-full rounded-xl py-4 border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors" @click="openLinksModal(product)">
+                        {{ console.log(product.links) }}
+                        <Button v-if="product.links && product.links.length > 0" variant="outline"
+                          class="w-full rounded-xl py-4 border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                          @click="openLinksModal(product)">
                           Comprar na Loja
                         </Button>
-                        <Button v-if="product.basePrice" class="w-full rounded-xl py-4 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out" @click="openPixModal(product)">
+                        <Button v-if="product.base_price"
+                          class="w-full rounded-xl py-4 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out"
+                          @click="openPixModal(product)">
                           Presentear via PIX
                         </Button>
                       </template>
                     </div>
-                    <div v-else class="text-center p-5 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col gap-4">
+                    <div v-else
+                      class="text-center p-5 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col gap-4">
                       <p class="text-slate-500 font-light text-sm">Faça login com sua conta Google para presentear.</p>
-                      <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant?.theme?.primaryColor" class="mx-auto w-full" />
+                      <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color"
+                        class="mx-auto w-full" />
                     </div>
                   </div>
                 </div>
@@ -428,8 +433,10 @@ const deleteMessage = async (msgId: string) => {
             <div class="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
               <div class="flex items-center gap-3">
                 <span class="text-sm font-medium text-slate-600 whitespace-nowrap">Itens por página</span>
-                <Select :model-value="itemsPerPage.toString()" @update:model-value="(val) => itemsPerPage = parseInt(val, 10)">
-                  <SelectTrigger class="w-[90px] h-10 rounded-xl border-slate-200 bg-white shadow-sm focus:ring-primary">
+                <Select :model-value="itemsPerPage.toString()"
+                  @update:model-value="(val) => itemsPerPage = parseInt(val as string, 10)">
+                  <SelectTrigger
+                    class="w-[90px] h-10 rounded-xl border-slate-200 bg-white shadow-sm focus:ring-primary">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent class="bg-white rounded-xl border-slate-200 shadow-xl z-50">
@@ -445,28 +452,42 @@ const deleteMessage = async (msgId: string) => {
               </div>
 
               <!-- Pagination -->
-              <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges :default-page="1" v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
+              <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges
+                :default-page="1" v-model:page="currentPage" :items-per-page="itemsPerPage"
+                class="w-auto mx-0 flex-none">
                 <PaginationContent v-slot="{ items }" class="gap-2">
-                  <PaginationFirst size="icon" class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer" @click="currentPage = 1">
+                  <PaginationFirst size="icon"
+                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
+                    @click="currentPage = 1">
                     <ChevronsLeft class="w-5 h-5" />
                   </PaginationFirst>
 
-                  <PaginationPrevious size="icon" class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer" @click="currentPage = Math.max(1, currentPage - 1)">
+                  <PaginationPrevious size="icon"
+                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
+                    @click="currentPage = Math.max(1, currentPage - 1)">
                     <ChevronLeft class="w-5 h-5" />
                   </PaginationPrevious>
 
                   <template v-for="(item, index) in items">
-                    <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value" :is-active="item.value === page" class="w-10 h-10 rounded-xl transition-all font-medium cursor-pointer" :class="item.value === page ? 'shadow-md scale-105 bg-primary text-white border-transparent hover:opacity-90' : 'border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50'" @click="currentPage = item.value">
+                    <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
+                      :is-active="item.value === page"
+                      class="w-10 h-10 rounded-xl transition-all font-medium cursor-pointer"
+                      :class="item.value === page ? 'shadow-md scale-105 bg-primary text-white border-transparent hover:opacity-90' : 'border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50'"
+                      @click="currentPage = item.value">
                       {{ item.value }}
                     </PaginationItem>
                     <PaginationEllipsis v-else :key="item.type" :index="index" class="text-slate-400" />
                   </template>
 
-                  <PaginationNext size="icon" class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer" @click="currentPage = Math.min(totalPages, currentPage + 1)">
+                  <PaginationNext size="icon"
+                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
+                    @click="currentPage = Math.min(totalPages, currentPage + 1)">
                     <ChevronRight class="w-5 h-5" />
                   </PaginationNext>
 
-                  <PaginationLast size="icon" class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer" @click="currentPage = totalPages">
+                  <PaginationLast size="icon"
+                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
+                    @click="currentPage = totalPages">
                     <ChevronsRight class="w-5 h-5" />
                   </PaginationLast>
                 </PaginationContent>
@@ -476,31 +497,39 @@ const deleteMessage = async (msgId: string) => {
 
           <!-- RSVP & Message Wall (2-column grid) -->
           <section class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-20">
-            
+
             <!-- RSVP Column -->
             <div class="lg:col-span-7 space-y-10">
               <div class="mb-6">
                 <h2 class="text-3xl font-serif text-slate-900 mb-4 tracking-tight">Confirme sua Presença</h2>
-                <p class="text-slate-500 font-light leading-relaxed">Ficaremos imensamente felizes em celebrar esse momento único com você. Por favor, confirme abaixo.</p>
+                <p class="text-slate-500 font-light leading-relaxed">Ficaremos imensamente felizes em celebrar esse
+                  momento único
+                  com você. Por favor, confirme abaixo.</p>
               </div>
-              
-              <form @submit.prevent="submitRsvp" class="space-y-6 bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80">
+
+              <form @submit.prevent="submitRsvp"
+                class="space-y-6 bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80">
                 <div class="space-y-5">
                   <FormGroup label="Nome Completo" :error="errors.guestName">
-                    <Input v-model="guestName" placeholder="Seu nome" class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
+                    <Input v-model="guestName" placeholder="Seu nome"
+                      class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
                   </FormGroup>
                   <FormGroup label="E-mail" :error="errors.email">
-                    <Input v-model="email" type="email" placeholder="Seu e-mail" class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
+                    <Input v-model="email" type="email" placeholder="Seu e-mail"
+                      class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
                   </FormGroup>
                   <FormGroup label="Telefone / WhatsApp" :error="errors.phone">
-                    <Input v-model="phone" v-maska="'(##) #####-####'" type="tel" placeholder="(11) 99999-9999" class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
+                    <Input v-model="phone" v-maska="'(##) #####-####'" type="tel" placeholder="(11) 99999-9999"
+                      class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
                   </FormGroup>
                   <div class="grid grid-cols-2 gap-5">
                     <FormGroup label="Adultos" :error="errors.totalAdults">
-                      <Input v-model.number="totalAdults" type="number" min="0" class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
+                      <Input v-model.number="totalAdults" type="number" min="0"
+                        class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
                     </FormGroup>
                     <FormGroup label="Crianças" :error="errors.totalChildren">
-                      <Input v-model.number="totalChildren" type="number" min="0" class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
+                      <Input v-model.number="totalChildren" type="number" min="0"
+                        class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
                     </FormGroup>
                   </div>
                   <FormGroup label="Você irá ao evento?">
@@ -517,7 +546,9 @@ const deleteMessage = async (msgId: string) => {
                     </Select>
                   </FormGroup>
                 </div>
-                <Button type="submit" class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out" :disabled="rsvpLoading">
+                <Button type="submit"
+                  class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out"
+                  :disabled="rsvpLoading">
                   {{ rsvpLoading ? 'Enviando...' : 'Confirmar Presença' }}
                 </Button>
               </form>
@@ -529,59 +560,84 @@ const deleteMessage = async (msgId: string) => {
                 <h2 class="text-3xl font-serif text-slate-900 mb-4 tracking-tight">Mural de Recados</h2>
                 <p class="text-slate-500 font-light leading-relaxed">Deixe uma mensagem carinhosa para os noivos.</p>
               </div>
-              
-              <div class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mb-10 transition-shadow duration-300 hover:shadow-md">
-                <div v-if="!currentUser" class="text-center p-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+
+              <div
+                class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mb-10 transition-shadow duration-300 hover:shadow-md">
+                <div v-if="!currentUser"
+                  class="text-center p-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                   <p class="text-slate-500 mb-4">Faça login com sua conta Google para deixar um recado especial.</p>
-                  <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant?.theme?.primaryColor" class="mx-auto" />
+                  <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color"
+                    class="mx-auto" />
                 </div>
                 <div v-else>
-                  <textarea 
-                    v-model="messageContent" 
+                  <textarea v-model="messageContent"
                     class="w-full h-32 p-2 border-none bg-transparent focus:outline-none resize-none text-slate-700 font-sans font-light placeholder:text-slate-400 text-lg"
-                    placeholder="Escreva algo especial aqui..."
-                  ></textarea>
-                  <div class="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-slate-50 gap-4">
+                    placeholder="Escreva algo especial aqui..."></textarea>
+                  <div
+                    class="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-slate-50 gap-4">
                     <div class="flex items-center gap-2">
-                      <img v-if="currentUser.photoURL" :src="currentUser.photoURL" class="w-6 h-6 rounded-full" />
-                      <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ currentUser.displayName }}</strong></span>
+                      <img v-if="(currentUser?.prefs as any)?.photoURL" :src="(currentUser.prefs as any).photoURL"
+                        alt="Foto" class="w-6 h-6 rounded-full" />
+                      <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ currentUser.name
+                          }}</strong></span>
                     </div>
-                    <Button @click="submitMessage" :disabled="!messageContent" class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
+                    <Button @click="submitMessage" :disabled="!messageContent"
+                      class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
                   </div>
                 </div>
               </div>
 
               <!-- Messages Carousel -->
-              <Carousel v-if="messages.length > 0" class="w-full relative cursor-grab active:cursor-grabbing pb-10" :opts="{ align: 'center', dragFree: true, loop: true }" :plugins="[Autoplay({ delay: 4000, stopOnInteraction: true })]">
+              <Carousel v-if="messages.length > 0" class="w-full relative cursor-grab active:cursor-grabbing pb-10"
+                :opts="{ align: 'center', dragFree: true, loop: true }"
+                :plugins="[Autoplay({ delay: 4000, stopOnInteraction: true })]">
                 <CarouselContent class="py-2">
-                  <CarouselItem v-for="(msg, index) in messages" :key="msg.id" class="basis-full md:basis-[672px] min-w-0 max-w-full">
-                    <div 
+                  <CarouselItem v-for="(msg, index) in messages" :key="msg.$id"
+                    class="basis-full md:basis-[672px] min-w-0 max-w-full">
+                    <div
                       class="h-full w-full max-w-full p-6 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col gap-6"
-                      :class="index % 2 === 0 ? 'bg-white border border-slate-100/80' : 'bg-primary border border-transparent'"
-                    >
+                      :class="index % 2 === 0 ? 'bg-white border border-slate-100/80' : 'bg-primary border border-transparent'">
                       <div class="flex justify-between items-start gap-4 z-10 w-full max-w-full">
                         <!-- Quote icon -->
-                        <svg class="w-8 h-8 shrink-0" :class="index % 2 === 0 ? 'text-primary/20' : 'text-white/20'" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+                        <svg class="w-8 h-8 shrink-0" :class="index % 2 === 0 ? 'text-primary/20' : 'text-white/20'"
+                          fill="currentColor" viewBox="0 0 24 24">
+                          <path
+                            d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                        </svg>
 
                         <!-- Delete button -->
-                        <button v-if="currentUser && (currentUser.uid === msg.guestId || currentUser.uid === tenant?.id)" @click="deleteMessage(msg.id)" 
-                          class="transition-colors p-2 -mt-2 -mr-2 rounded-full focus:opacity-100" 
+                        <button
+                          v-if="currentUser && (currentUser.$id === msg.guest_id || currentUser.$id === tenant?.$id)"
+                          @click="deleteMessage(msg.$id)"
+                          class="transition-colors p-2 -mt-2 -mr-2 rounded-full focus:opacity-100"
                           :class="index % 2 === 0 ? 'text-slate-300 hover:text-red-500 hover:bg-red-50' : 'text-white/50 hover:text-white hover:bg-white/10'"
                           title="Apagar mensagem">
-                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
 
-                      <p class="font-serif italic leading-relaxed text-lg z-10 whitespace-pre-wrap break-words w-full min-w-0 max-w-full" :class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'">"{{ msg.content }}"</p>
-                      
-                      <div class="flex items-center gap-4 mt-auto pt-6 border-t z-10 w-full max-w-full min-w-0" :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">
-                        <img v-if="msg.photoURL" :src="msg.photoURL" class="w-12 h-12 shrink-0 rounded-full border-2 shadow-sm" :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'" />
-                        <div v-else class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-bold border-2" :class="index % 2 === 0 ? 'bg-slate-50 border-slate-100 text-slate-400' : 'bg-white/10 border-white/20 text-white'">
-                          {{ msg.guestName?.charAt(0).toUpperCase() }}
+                      <p class="font-serif italic leading-relaxed text-lg z-10 whitespace-pre-wrap break-words w-full min-w-0 max-w-full"
+                        :class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'">"{{ msg.content }}"</p>
+
+                      <div class="flex items-center gap-4 mt-auto pt-6 border-t z-10 w-full max-w-full min-w-0"
+                        :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">
+                        <img v-if="msg.photo_url" :src="msg.photo_url"
+                          class="w-12 h-12 shrink-0 rounded-full border-2 shadow-sm"
+                          :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'" />
+                        <div v-else
+                          class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-bold border-2"
+                          :class="index % 2 === 0 ? 'bg-slate-50 border-slate-100 text-slate-400' : 'bg-white/10 border-white/20 text-white'">
+                          {{ msg.guest_name?.charAt(0).toUpperCase() }}
                         </div>
                         <div class="flex flex-col min-w-0">
-                          <p class="text-sm font-medium tracking-wide truncate" :class="index % 2 === 0 ? 'text-slate-900' : 'text-white'">{{ msg.guestName }}</p>
-                          <p class="text-xs font-light mt-0.5 truncate" :class="index % 2 === 0 ? 'text-slate-400' : 'text-white/70'">{{ dayjs(msg.createdAt).format('DD [de] MMMM [de] YYYY') }}</p>
+                          <p class="text-sm font-medium tracking-wide truncate"
+                            :class="index % 2 === 0 ? 'text-slate-900' : 'text-white'">{{ msg.guest_name }}</p>
+                          <p class="text-xs font-light mt-0.5 truncate"
+                            :class="index % 2 === 0 ? 'text-slate-400' : 'text-white/70'">{{
+                              dayjs(msg.$createdAt).format('DD [de] MMMM [de] YYYY') }}</p>
                         </div>
                       </div>
                     </div>
@@ -596,19 +652,23 @@ const deleteMessage = async (msgId: string) => {
     </div>
 
     <!-- PIX Modal -->
-    <Dialog v-model:open="showPixModal" :title="selectedProduct?.type === 'quota' ? 'Pagamento da Cota PIX' : 'Presentear com Valor (PIX)'">
+    <Dialog v-model:open="showPixModal"
+      :title="selectedProduct?.type === 'quota' ? 'Pagamento da Cota PIX' : 'Presentear com Valor (PIX)'">
       <div v-if="selectedProduct" class="space-y-6 text-center">
-        <p class="text-slate-600">Escaneie o QR Code abaixo para presentear <strong>{{ tenant?.coupleName }}</strong>.</p>
-        
-        <div class="flex justify-center bg-white p-4 rounded-xl inline-block border">
+        <p class="text-slate-600">Escaneie o QR Code abaixo para presentear <strong>{{ tenant?.couple_name }}</strong>.
+        </p>
+
+        <div class="flex justify-center bg-white p-4 rounded-xl border">
           <qrcode-vue :value="pixPayload" :size="200" level="H" />
         </div>
 
         <div class="space-y-2">
           <p class="text-xl font-bold text-slate-900">
-            R$ {{ (selectedProduct.type === 'quota' ? (selectedProduct.fixedQuotaValue || 0) * (quotaQuantities[selectedProduct.id] || 1) : (selectedProduct.basePrice || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+            {{ formatCurrency(selectedProduct.type === 'quota' ? (Number(selectedProduct.fixed_quota_value) || 0) * (quotaQuantities[selectedProduct.$id] || 1) : (Number(selectedProduct.base_price) || 0), { symbol: true }) }}
           </p>
-          <p class="text-sm text-slate-500">{{ selectedProduct.name }} <span v-if="selectedProduct.type === 'quota' && (quotaQuantities[selectedProduct.id] || 1) > 1">({{ quotaQuantities[selectedProduct.id] }} cotas)</span></p>
+          <p class="text-sm text-slate-500">{{ selectedProduct.name }} <span
+              v-if="selectedProduct.type === 'quota' && (quotaQuantities[selectedProduct.$id] || 1) > 1">({{
+                quotaQuantities[selectedProduct.$id] }} cotas)</span></p>
         </div>
 
         <Button class="w-full" @click="copyPix">
@@ -620,8 +680,10 @@ const deleteMessage = async (msgId: string) => {
     <!-- Store Links Modal -->
     <Dialog v-model:open="showLinksModal" :title="`Onde comprar: ${selectedProduct?.name}`">
       <div class="space-y-4">
-        <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank" class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
-          <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1 }}</span>
+        <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
+          class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
+          <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
+          }}</span>
         </a>
       </div>
     </Dialog>

@@ -1,42 +1,34 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { collection, getDocs, query, where } from 'firebase/firestore'
-import { db } from '@/firebase'
 import { useTenant } from '@/composables/useTenant'
-import type { Product, Rsvp, Message } from '@/types'
+import { listProducts, type IProductHydrated } from '@/services/product.service'
+import { listRsvps, type IRsvp } from '@/services/rsvp.service'
+import { listMessages, type IMessage } from '@/services/message.service'
 import { Wallet, Users, MessageSquare } from 'lucide-vue-next'
 
 const { tenant } = useTenant()
 
-const products = ref<Product[]>([])
-const rsvps = ref<Rsvp[]>([])
-const messages = ref<Message[]>([])
+const products = ref<IProductHydrated[]>([])
+const rsvps = ref<IRsvp[]>([])
+const messages = ref<IMessage[]>([])
 
 const totalRaised = computed(() => {
   return products.value.reduce(
-    (acc, p) => acc + (p.claimedQuantity || 0) * (p.fixedQuotaValue || p.basePrice || 0),
+    (acc, p) => acc + (p.claimed_quantity || 0) * (p.fixed_quota_value || p.base_price || 0),
     0,
   )
 })
 
 const confirmedGuests = computed(() => {
-  return rsvps.value.filter(r => r.status === 'confirmed').reduce((acc, r) => acc + r.totalAdults + r.totalChildren, 0)
+  return rsvps.value.filter(r => r.status === 'confirmed').reduce((acc, r) => acc + (r.total_adults || 0) + (r.total_children || 0), 0)
 })
 
 const loadData = async () => {
   if (!tenant.value) return
   
-  const qProducts = query(collection(db, 'products'), where('tenantId', '==', tenant.value.id))
-  const snapProducts = await getDocs(qProducts)
-  products.value = snapProducts.docs.map((d) => ({ id: d.id, ...d.data() }) as Product)
-  
-  const qRsvp = query(collection(db, 'rsvp'), where('tenantId', '==', tenant.value.id))
-  const snapRsvp = await getDocs(qRsvp)
-  rsvps.value = snapRsvp.docs.map((d) => ({ id: d.id, ...d.data() }) as Rsvp)
-
-  const qMessages = query(collection(db, 'messages'), where('tenantId', '==', tenant.value.id))
-  const snapMessages = await getDocs(qMessages)
-  messages.value = snapMessages.docs.map((d) => ({ id: d.id, ...d.data() }) as Message)
+  products.value = await listProducts(tenant.value.$id)
+  rsvps.value = await listRsvps(tenant.value.$id)
+  messages.value = await listMessages(tenant.value.$id)
 }
 
 watch(tenant, (newTenant) => {

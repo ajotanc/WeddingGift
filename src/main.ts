@@ -10,8 +10,13 @@ import './index.css'
 const app = createApp(App)
 
 app.use(createPinia())
-app.use(router)
-app.use(money)
-app.directive('maska', vMaska)
 
-app.mount('#app')
+import { useAuthStore } from './stores/auth.js'
+const authStore = useAuthStore()
+
+authStore.init().then(() => {
+  app.use(router)
+  app.use(money)
+  app.directive('maska', vMaska)
+  app.mount('#app')
+})

@@ -1,26 +1,29 @@
-import { collection, getDocs, query, where } from 'firebase/firestore'
 import { computed } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { db } from '@/firebase'
-import type { TenantSettings } from '@/types'
+import { getTenantBySlug, type ITenant } from '@/services/tenant.service'
+
+const globalTenant = ref<ITenant | null>(null)
+const globalLoading = ref(true)
+const globalError = ref<string | null>(null)
 
 export function useTenant() {
   const route = useRoute()
-  const tenant = ref<TenantSettings | null>(null)
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const tenant = globalTenant
+  const loading = globalLoading
+  const error = globalError
 
   const fetchTenant = async (slug: string) => {
     loading.value = true
     error.value = null
     try {
-      const q = query(collection(db, 'tenants'), where('slug', '==', slug))
-      const querySnapshot = await getDocs(q)
+      const result = await getTenantBySlug(slug)
 
-      if (!querySnapshot.empty) {
-        tenant.value = querySnapshot.docs[0].data() as TenantSettings
-        applyTheme(tenant.value.theme.primaryColor)
+      if (result) {
+        tenant.value = result
+        if (tenant.value.primary_color) {
+          applyTheme(tenant.value.primary_color)
+        }
       } else {
         error.value = 'Tenant not found'
         tenant.value = null
@@ -40,15 +43,23 @@ export function useTenant() {
   }
 
   onMounted(() => {
-    if (route.params.slug) {
-      fetchTenant(route.params.slug as string)
+    const currentSlug = route.params.slug as string
+    if (currentSlug) {
+      if (tenant.value?.slug === currentSlug) {
+        loading.value = false
+        if (tenant.value.primary_color) {
+          applyTheme(tenant.value.primary_color)
+        }
+      } else {
+        fetchTenant(currentSlug)
+      }
     }
   })
 
   watch(
     () => route.params.slug,
     (newSlug) => {
-      if (newSlug) {
+      if (newSlug && tenant.value?.slug !== newSlug) {
         fetchTenant(newSlug as string)
       }
     },
@@ -61,10 +72,10 @@ export function useTenant() {
     fetchTenant,
     headerStyle: computed(() => {
       const style: Record<string, string> = {
-        backgroundColor: tenant.value?.theme?.dashboardHeaderBgColor ?? 'transparent'
+        backgroundColor: tenant.value?.background_color ?? 'transparent'
       }
-      if (tenant.value?.theme?.backgroundImageUrl) {
-        style.backgroundImage = `url(${tenant.value.theme.backgroundImageUrl})`
+      if (tenant.value?.background_image) {
+        style.backgroundImage = `url(${tenant.value.background_image})`
         style.backgroundSize = 'cover'
         style.backgroundPosition = 'center'
       }

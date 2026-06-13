@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useTenant } from '@/composables/useTenant'
-import { Gift, Users, Settings, LayoutDashboard } from 'lucide-vue-next'
+import { Gift, Users, Settings, LayoutDashboard, LogOut } from 'lucide-vue-next'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const { tenant, loading, error } = useTenant()
+const authStore = useAuthStore()
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push({ name: 'login' })
+}
 
 const navItems = [
   { name: 'Dashboard', path: 'dashboard', icon: LayoutDashboard },
@@ -24,7 +31,7 @@ const isActive = (path: string) => route.path.includes(`/${path}`)
       <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <h1 class="text-xl font-serif text-slate-900 tracking-tight">Painel do Casal</h1>
-          <span v-if="tenant" :style="{ backgroundColor: tenant.theme?.primaryColor + '20', color: tenant.theme?.primaryColor }" class="hidden md:inline text-sm px-3 py-1 rounded-full font-medium">{{ tenant.coupleName }}</span>
+          <span v-if="tenant" :style="{ backgroundColor: tenant.primary_color + '20', color: tenant.primary_color }" class="hidden md:inline text-sm px-3 py-1 rounded-full font-medium">{{ tenant.couple_name }}</span>
         </div>
         
         <nav class="hidden md:flex gap-1">
@@ -38,6 +45,10 @@ const isActive = (path: string) => route.path.includes(`/${path}`)
             <component :is="item.icon" class="w-4 h-4" />
             {{ item.name }}
           </router-link>
+          <button @click="handleLogout" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2 ml-2">
+            <LogOut class="w-4 h-4" />
+            Sair
+          </button>
         </nav>
       </div>
 
@@ -53,6 +64,10 @@ const isActive = (path: string) => route.path.includes(`/${path}`)
           <component :is="item.icon" class="w-4 h-4" />
           {{ item.name }}
         </router-link>
+        <button @click="handleLogout" class="flex-none min-w-[80px] py-3 px-2 text-center text-xs font-medium transition-colors border-b-2 border-transparent text-slate-400 hover:text-red-500 hover:bg-red-50 flex flex-col items-center gap-1.5">
+          <LogOut class="w-4 h-4" />
+          Sair
+        </button>
       </nav>
     </header>
 

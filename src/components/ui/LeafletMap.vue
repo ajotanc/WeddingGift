@@ -5,8 +5,11 @@ import 'leaflet/dist/leaflet.css'
 
 
 
+import { Heart } from 'lucide-vue-next'
+
 const props = defineProps<{ address: string }>()
 const mapContainer = ref<HTMLElement | null>(null)
+const markerTemplate = ref<HTMLElement | null>(null)
 let map: L.Map | null = null
 const loading = ref(true)
 
@@ -27,15 +30,12 @@ const initMap = async () => {
     const lat = parseFloat(data[0].lat)
     const lon = parseFloat(data[0].lon)
     
-    const customIcon = L.icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      tooltipAnchor: [16, -28],
-      shadowSize: [41, 41]
+    const customIcon = L.divIcon({
+      className: 'bg-transparent border-0',
+      html: markerTemplate.value?.innerHTML || '',
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -36]
     });
     
     if (!map) {
@@ -70,5 +70,13 @@ watch(() => props.address, () => {
       <span class="text-slate-400 font-medium">Carregando mapa...</span>
     </div>
     <div ref="mapContainer" class="w-full h-full"></div>
+
+    <div ref="markerTemplate" class="hidden">
+      <div style="background-color: var(--color-primary); width: 36px; height: 36px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 6px rgba(0,0,0,0.2); border: 2px solid white; cursor: pointer;">
+        <div style="transform: rotate(45deg); display: flex; align-items: center; justify-content: center; margin-left: 1px; margin-bottom: 1px;">
+          <Heart class="w-4 h-4 text-white fill-white" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>

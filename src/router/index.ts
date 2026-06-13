@@ -50,7 +50,25 @@ const router = createRouter({
         }
       ]
     },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+    }
   ],
+})
+
+import { useAuthStore } from '@/stores/auth'
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  if (to.path.includes('/admin') && !authStore.user) {
+    next({ name: 'login' })
+  } else if (to.name === 'login' && authStore.user && authStore.tenant) {
+    next({ path: `/${authStore.tenant.slug}/admin/dashboard` })
+  } else {
+    next()
+  }
 })
 
 export default router

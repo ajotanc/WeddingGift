@@ -1,31 +1,27 @@
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/components/ui/toast/use-toast'
 import Button from '@/components/ui/button/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
-import { auth, db } from '@/firebase'
-import type { TenantSettings } from '@/types'
 
 const { toast } = useToast()
-const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(false)
 
 const form = ref({
-  groomName: '',
-  brideName: '',
+  groom_name: '',
+  bride_name: '',
   slug: '',
-  pixKey: '',
-  primaryColor: '#ec4899',
+  pix_key: '',
+  primary_color: '#ec4899',
 })
 
 const generateSlug = () => {
-  if (form.value.groomName && form.value.brideName && !form.value.slug) {
-    form.value.slug = `${form.value.groomName}-${form.value.brideName}`
+  if (form.value.groom_name && form.value.bride_name && !form.value.slug) {
+    form.value.slug = `${form.value.groom_name}-${form.value.bride_name}`
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -37,44 +33,32 @@ const generateSlug = () => {
 const registerTenant = async () => {
   loading.value = true
   try {
-    const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup(auth, provider)
-    const user = result.user
+    const coupleName = `${form.value.bride_name} & ${form.value.groom_name}`
 
-    // Check if tenant already exists for this uid
-    const q = query(collection(db, 'tenants'), where('id', '==', user.uid))
-    const snap = await getDocs(q)
-
-    if (!snap.empty) {
-      toast({ title: 'Aviso', description: 'Você já possui um painel criado!', variant: 'destructive' })
-      return
-    }
-
-    const coupleName = `${form.value.brideName} & ${form.value.groomName}`
-
-    const newTenant: TenantSettings = {
-      id: user.uid,
+    localStorage.setItem('pending_tenant', JSON.stringify({
       slug: form.value.slug,
-      coupleName: coupleName,
-      groomName: form.value.groomName,
-      brideName: form.value.brideName,
-      pixKey: form.value.pixKey,
+      couple_name: coupleName,
+      pix_key: form.value.pix_key,
       status: 'active',
-      theme: {
-        primaryColor: form.value.primaryColor,
-      },
-      createdAt: Date.now(),
       settings: {
-        showCountdown: true
+        show_countdown: true,
+        guest_limit: null
+      },
+      theme: {
+        primary_color: form.value.primary_color,
+        background_color: '#ffffff',
+        background_image: null
       }
-    }
+    }))
 
-    await setDoc(doc(db, 'tenants', user.uid), newTenant)
-    router.push('/admin')
+    // Redirect to OAuth
+    await authStore.loginWithGoogle(
+      `${window.location.origin}/`,
+      `${window.location.origin}/register?error=1`
+    )
   } catch (error) {
     console.error('Registration error', error)
-    toast({ title: 'Erro', description: 'Erro ao registrar. Verifique os dados e tente novamente.', variant: 'destructive' })
-  } finally {
+    toast({ title: 'Erro', description: 'Erro ao iniciar registro.', variant: 'destructive' })
     loading.value = false
   }
 }
@@ -93,25 +77,26 @@ const registerTenant = async () => {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <Label class="block mb-1">Nome do Noivo</Label>
-              <Input v-model="form.groomName" required placeholder="Ex: João" @blur="generateSlug" />
+              <Input v-model="form.groom_name" required placeholder="Ex: João" @blur="generateSlug" />
             </div>
             <div>
               <Label class="block mb-1">Nome da Noiva</Label>
-              <Input v-model="form.brideName" required placeholder="Ex: Maria" @blur="generateSlug" />
+              <Input v-model="form.bride_name" required placeholder="Ex: Maria" @blur="generateSlug" />
             </div>
           </div>
-          
+
           <div>
             <Label class="block mb-1">Link Personalizado</Label>
             <div class="flex items-center">
-              <span class="bg-slate-100 border border-r-0 border-slate-300 rounded-l-md px-3 h-10 flex items-center text-slate-500 text-sm">wedding.app/</span>
+              <span
+                class="bg-slate-100 border border-r-0 border-slate-300 rounded-l-md px-3 h-10 flex items-center text-slate-500 text-sm">wedding.app/</span>
               <Input v-model="form.slug" required placeholder="joao-e-maria" class="rounded-l-none" />
             </div>
           </div>
 
           <div>
             <Label class="block mb-1">Sua Chave PIX</Label>
-            <Input v-model="form.pixKey" required placeholder="Para receber as cotas direto na conta" />
+            <Input v-model="form.pix_key" required placeholder="Para receber as cotas direto na conta" />
             <p class="text-xs text-slate-500 mt-1">Nós não cobramos taxas sobre os presentes em dinheiro.</p>
           </div>
 

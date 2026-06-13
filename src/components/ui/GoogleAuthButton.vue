@@ -34,11 +34,11 @@ const buttonStyle = computed(() => {
     :style="props.user ? undefined : buttonStyle"
   >
     <template v-if="props.user">
-    <img v-if="props.user.photoURL" :src="props.user.photoURL" class="w-6 h-6 rounded-full" />
+    <img v-if="props.user.prefs?.photoURL" :src="props.user.prefs?.photoURL" class="w-6 h-6 rounded-full" />
     <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs" v-else>
-      {{ props.user.displayName?.charAt(0) || 'C' }}
+      {{ props.user.name?.charAt(0) || 'C' }}
     </div>
-    <span class="text-sm font-medium text-slate-700">{{ props.user.displayName }}</span>
+    <span class="text-sm font-medium text-slate-700">{{ props.user.name }}</span>
       <button @click.stop="$emit('logout')" class="p-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Sair">
         <LogOut class="w-4 h-4" />
       </button>
