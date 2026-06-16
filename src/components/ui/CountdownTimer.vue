@@ -1,40 +1,44 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import dayjs from "dayjs";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 interface Props {
-  eventDate: string // ISO date string
+	eventDate: string; // ISO date string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const now = ref(new Date())
-let timer: ReturnType<typeof setInterval>
+const now = ref(dayjs());
+let timer: ReturnType<typeof setInterval>;
 
 onMounted(() => {
-  timer = setInterval(() => {
-    now.value = new Date()
-  }, 1000)
-})
+	timer = setInterval(() => {
+		now.value = dayjs();
+	}, 1000);
+});
 
 onUnmounted(() => {
-  clearInterval(timer)
-})
+	clearInterval(timer);
+});
 
 const remaining = computed(() => {
-  const target = new Date(props.eventDate)
-  const diff = target.getTime() - now.value.getTime()
-  if (diff <= 0) return null
-  const totalSec = Math.floor(diff / 1000)
-  const days = Math.floor(totalSec / (3600 * 24))
-  const hours = Math.floor((totalSec % (3600 * 24)) / 3600)
-  const minutes = Math.floor((totalSec % 3600) / 60)
-  const seconds = totalSec % 60
-  return { days, hours, minutes, seconds }
-})
+	const target = dayjs(props.eventDate);
+	const diff = target.diff(now.value, "millisecond");
+	if (diff <= 0) return null;
+	const totalSec = Math.floor(diff / 1000);
+	const days = String(Math.floor(totalSec / (3600 * 24))).padStart(2, "0");
+	const hours = String(Math.floor((totalSec % (3600 * 24)) / 3600)).padStart(
+		2,
+		"0",
+	);
+	const minutes = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
+	const seconds = String(totalSec % 60).padStart(2, "0");
+	return { days, hours, minutes, seconds };
+});
 </script>
 
 <template>
-  <div v-if="remaining" class="flex gap-4 text-primary font-serif text-xl md:text-2xl justify-center">
+  <div v-if="remaining" class="flex gap-4 text-slate-900 font-serif text-xl md:text-2xl justify-center">
     <div class="text-center">
       <div class="text-4xl md:text-5xl font-bold">{{ remaining.days }}</div>
       <div class="text-sm">Dias</div>

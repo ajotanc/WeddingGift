@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router'
-import { useTenant } from '@/composables/useTenant'
-import { Gift, Users, Settings, LayoutDashboard, LogOut } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/auth'
+import { useTenant } from "@/composables/useTenant";
+import { useAuthStore } from "@/stores/auth";
+import { Gift, LayoutDashboard, Settings, Users } from "lucide-vue-next";
+import { useRoute, useRouter } from "vue-router";
 
-const route = useRoute()
-const router = useRouter()
-const { tenant, loading, error } = useTenant()
-const authStore = useAuthStore()
+const route = useRoute();
+const router = useRouter();
+const { tenant, loading, error } = useTenant();
+const authStore = useAuthStore();
 
 const handleLogout = async () => {
-  await authStore.logout()
-  router.push({ name: 'login' })
-}
+	await authStore.logout();
+	router.push({ name: "login" });
+};
 
 const navItems = [
-  { name: 'Dashboard', path: 'dashboard', icon: LayoutDashboard },
-  { name: 'Presentes & Cotas', path: 'products', icon: Gift },
-  { name: 'Convidados & Recados', path: 'guests', icon: Users },
-  { name: 'Configurações', path: 'config', icon: Settings },
-]
+	{ name: "Dashboard", path: "dashboard", icon: LayoutDashboard },
+	{ name: "Presentes & Cotas", path: "products", icon: Gift },
+	{ name: "Convidados & Recados", path: "guests", icon: Users },
+	{ name: "Configurações", path: "config", icon: Settings },
+];
 
-const isActive = (path: string) => route.path.includes(`/${path}`)
+const isActive = (path: string) => route.path.includes(`/${path}`);
 </script>
 
 <template>

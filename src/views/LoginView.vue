@@ -1,35 +1,13 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
-import { watchEffect } from 'vue'
-import { useToast } from '@/components/ui/toast/use-toast'
-import Button from '@/components/ui/Button.vue'
-import GoogleAuthButton from '@/components/ui/GoogleAuthButton.vue'
+import { useAuthStore } from "@/stores/auth";
 
-const authStore = useAuthStore()
-const router = useRouter()
-const { toast } = useToast()
-
-watchEffect(() => {
-  if (!authStore.loading && authStore.user) {
-    if (authStore.tenant) {
-      router.push(`/${authStore.tenant.slug}/admin/dashboard`)
-    } else {
-      toast({
-        title: 'Conta não encontrada',
-        description: 'Esta conta não possui um painel de casal cadastrado. Por favor, crie seu painel primeiro.',
-        variant: 'destructive',
-      })
-      authStore.logout()
-    }
-  }
-})
+const authStore = useAuthStore();
 
 const handleGoogleLogin = async () => {
-  // Use current URL to redirect back, but since we are at /login, it might redirect back to /login
-  // The router guard will catch the logged in user and redirect to their dashboard
-  await authStore.loginWithGoogle(window.location.href, window.location.href)
-}
+	// Use current URL to redirect back, but since we are at /login, it might redirect back to /login
+	// The router guard will catch the logged in user and redirect to their dashboard
+	await authStore.loginWithGoogle(window.location.href, window.location.href);
+};
 </script>
 
 <template>

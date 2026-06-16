@@ -1,66 +1,78 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { Search, MapPin } from 'lucide-vue-next'
-import { cn } from '@/lib/utils'
+import { ref } from "vue";
 
 // Props – optional placeholder
-const props = defineProps<{ placeholder?: string }>()
-const emit = defineEmits<{ (e: 'select', payload: { address: string; latitude: number; longitude: number }): void }>()
+const props = defineProps<{ placeholder?: string }>();
+const emit =
+	defineEmits<
+		(
+			e: "select",
+			payload: { address: string; latitude: number; longitude: number },
+		) => void
+	>();
 
-const query = ref('')
-const results = ref<Array<{ display_name: string; lat: string; lon: string }>>([])
-const loading = ref(false)
-const showList = ref(false)
-let debounceTimer: NodeJS.Timeout | null = null
+const query = ref("");
+const results = ref<Array<{ display_name: string; lat: string; lon: string }>>(
+	[],
+);
+const loading = ref(false);
+const showList = ref(false);
+let debounceTimer: NodeJS.Timeout | null = null;
 
 const fetchSuggestions = async (search: string) => {
-  if (!search) {
-    results.value = []
-    return
-  }
-  loading.value = true
-  try {
-    const params = new URLSearchParams({
-      format: 'json',
-      addressdetails: '1',
-      countrycodes: 'br',
-      q: search,
-      limit: '10',
-    })
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`)
-    const data = await response.json()
-    results.value = data
-    showList.value = true
-  } catch (e) {
-    console.error('Nominatim fetch error', e)
-    results.value = []
-  } finally {
-    loading.value = false
-  }
-}
+	if (!search) {
+		results.value = [];
+		return;
+	}
+	loading.value = true;
+	try {
+		const params = new URLSearchParams({
+			format: "json",
+			addressdetails: "1",
+			countrycodes: "br",
+			q: search,
+			limit: "10",
+		});
+		const response = await fetch(
+			`https://nominatim.openstreetmap.org/search?${params.toString()}`,
+		);
+		const data = await response.json();
+		results.value = data;
+		showList.value = true;
+	} catch (e) {
+		console.error("Nominatim fetch error", e);
+		results.value = [];
+	} finally {
+		loading.value = false;
+	}
+};
 
 const onInput = () => {
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    fetchSuggestions(query.value)
-  }, 500)
-}
+	if (debounceTimer) clearTimeout(debounceTimer);
+	debounceTimer = setTimeout(() => {
+		fetchSuggestions(query.value);
+	}, 500);
+};
 
-const selectSuggestion = (item: { display_name: string; lat: string; lon: string }) => {
-  const payload = {
-    address: item.display_name,
-    latitude: parseFloat(item.lat),
-    longitude: parseFloat(item.lon),
-  }
-  emit('select', payload)
-  query.value = item.display_name
-  showList.value = false
-}
+const selectSuggestion = (item: {
+	display_name: string;
+	lat: string;
+	lon: string;
+}) => {
+	const payload = {
+		address: item.display_name,
+		latitude: Number.parseFloat(item.lat),
+		longitude: Number.parseFloat(item.lon),
+	};
+	emit("select", payload);
+	query.value = item.display_name;
+	showList.value = false;
+};
 
 // Close dropdown when clicking outside
 const onBlur = () => {
-  setTimeout(() => (showList.value = false), 200)
-}
+	setTimeout(() => (showList.value = false), 200);
+};
 </script>
 
 <template>

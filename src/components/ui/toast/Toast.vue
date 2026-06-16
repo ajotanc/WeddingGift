@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import type { ToastRootEmits } from "reka-ui"
-import type { ToastProps } from "."
-import { reactiveOmit } from "@vueuse/core"
-import { ToastRoot, useForwardPropsEmits } from "reka-ui"
-import { cn } from "@/lib/utils"
-import { toastVariants } from "."
+import { reactiveOmit } from "@vueuse/core";
+import type { ToastRootEmits } from "reka-ui";
+import { useForwardPropsEmits } from "reka-ui";
+import { toastVariants, type ToastProps } from ".";
+import { cn } from "@/lib/utils";
 
-const props = defineProps<ToastProps>()
+const props = defineProps<ToastProps>();
 
-const emits = defineEmits<ToastRootEmits>()
+const emits = defineEmits<ToastRootEmits>();
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class");
 
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
+const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
 <template>

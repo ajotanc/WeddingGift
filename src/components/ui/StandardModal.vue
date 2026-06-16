@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import Dialog from '@/components/ui/Dialog.vue'
-import { cn } from '@/lib/utils'
-
 const props = defineProps<{
-  open: boolean
-  title?: string
-  description?: string
-}>()
+	open: boolean;
+	title?: string;
+	description?: string;
+}>();
 
-const emit = defineEmits<{ (e: 'update:open', v: boolean): void }>()
+const emit = defineEmits<(e: "update:open", v: boolean) => void>();
 
 function close() {
-  emit('update:open', false)
+	emit("update:open", false);
 }
 </script>
 

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { useProvideCarousel } from './useCarousel'
-import type { CarouselEmits, CarouselProps } from './interface'
+import type { CarouselEmits, CarouselProps } from "./interface";
+import { useProvideCarousel } from "./useCarousel";
 
 const props = withDefaults(defineProps<CarouselProps>(), {
-  orientation: 'horizontal',
-})
+	orientation: "horizontal",
+});
 
-const emits = defineEmits<CarouselEmits>()
+const emits = defineEmits<CarouselEmits>();
 
-const { carouselRef, orientation } = useProvideCarousel(props, emits)
+const { carouselRef, orientation } = useProvideCarousel(props, emits);
 </script>
 
 <template>

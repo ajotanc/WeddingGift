@@ -1,256 +1,225 @@
 <script setup lang="ts">
-import CountdownTimer from '@/components/ui/CountdownTimer.vue'
-import { useTenant } from '@/composables/useTenant'
-import { useAuthStore } from '@/stores/auth'
-import { listProducts, type IProductHydrated } from '@/services/product.service'
-import { createRsvp } from '@/services/rsvp.service'
-import { listMessages, createMessage, deleteMessage as deleteMessageService, type IMessage } from '@/services/message.service'
-import { useForm, useField } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
-import { vMaska } from 'maska/vue'
-import QrcodeVue from 'qrcode.vue'
-import { computed, ref, watch } from 'vue'
-import { generatePixPayload } from '@/lib/utils'
-import { LogOut } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
-import Card from '@/components/ui/Card.vue'
-import Dialog from '@/components/ui/Dialog.vue'
-import Input from '@/components/ui/Input.vue'
-import FormGroup from '@/components/ui/FormGroup.vue'
-import GoogleAuthButton from '@/components/ui/GoogleAuthButton.vue'
-import LeafletMap from '@/components/ui/LeafletMap.vue'
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
+import { useTenant } from "@/composables/useTenant";
+import { generatePixPayload } from "@/lib/utils";
+import {
+  MessageService,
+} from "@/services/message.service";
+import { RsvpService } from "@/services/rsvp.service";
+import { useAuthStore } from "@/stores/auth";
+import { toTypedSchema } from "@vee-validate/zod";
+import { useField, useForm } from "vee-validate";
+import { computed, ref, watch } from "vue";
+import * as z from "zod";
+
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import { useToast } from "@/components/ui/toast/use-toast";
+import { type IProduct } from "@/services/product.service";
 import Autoplay from 'embla-carousel-autoplay'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import Combobox from '@/components/ui/Combobox.vue'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next'
+import ProductGallery from "@/components/ui/ProductGallery.vue";
 
-import dayjs from 'dayjs'
-import 'dayjs/locale/pt-br'
-import { useToast } from '@/components/ui/toast/use-toast'
-import { formatCurrency, parseCurrency } from '@brazilian-utils/brazilian-utils'
+dayjs.locale("pt-br");
+const autoplayPlugin = Autoplay({ delay: 3000, stopOnInteraction: true })
 
-dayjs.locale('pt-br')
+const { toast } = useToast();
+const { tenant, products, messages, loading, error } = useTenant();
+const authStore = useAuthStore();
 
-const { toast } = useToast()
-const { tenant, loading, error, headerStyle, pageStyle } = useTenant()
-const authStore = useAuthStore()
-
-const products = ref<IProductHydrated[]>([])
-const messages = ref<IMessage[]>([])
-
-const currentUser = computed(() => authStore.user)
+const currentUser = computed(() => authStore.user);
 
 const requireAuth = async (): Promise<boolean> => {
-  if (currentUser.value) return true
+  if (currentUser.value) return true;
   try {
-    await authStore.loginWithGoogle(window.location.href, window.location.href)
-    return true
+    await authStore.loginWithGoogle(window.location.href, window.location.href);
+    return true;
   } catch (err) {
-    console.error('Erro na autenticação', err)
-    return false
+    console.error("Erro na autenticação", err);
+    return false;
   }
-}
+};
 
 const logout = async () => {
-  await authStore.logout()
-}
+  await authStore.logout();
+};
 
-const loadPublicData = async () => {
-  if (!tenant.value) return
-  products.value = await listProducts(tenant.value.$id)
-  const msgs = await listMessages(tenant.value.$id)
-  messages.value = msgs.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime())
-}
 
-watch(tenant, (newTenant) => {
-  if (newTenant) loadPublicData()
-}, { immediate: true })
-
-// Pagination & Filtering Logic
-const categories = computed(() => {
-  const cats = products.value.map(p => p.category).filter(Boolean) as string[]
-  return [...new Set(cats)].sort()
-})
-
-const selectedCategory = ref('all')
-const currentPage = ref(1)
-const itemsPerPage = ref(6)
+const selectedCategory = ref("all");
+const currentPage = ref(1);
+const itemsPerPage = ref(6);
 
 watch(selectedCategory, () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
+
 watch(itemsPerPage, () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === 'all') return products.value
-  return products.value.filter(p => p.category === selectedCategory.value)
-})
-
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value))
-
-const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredProducts.value.slice(start, end)
-})
+  if (selectedCategory.value === "all") return products.value;
+  return products.value.filter((p) => p.category === selectedCategory.value);
+});
 
 // Modals State
-const showPixModal = ref(false)
-const showLinksModal = ref(false)
-const selectedProduct = ref<IProductHydrated | null>(null)
+const showPixModal = ref(false);
+const showLinksModal = ref(false);
+const selectedProduct = ref<IProduct | null>(null);
 
-const quotaQuantities = ref<Record<string, number>>({})
+const quotaQuantities = ref<Record<string, number>>({});
 
 const pixPayload = computed(() => {
-  if (!tenant.value || !selectedProduct.value) return ''
-  const baseValue = selectedProduct.value.type === 'quota'
-    ? (Number(selectedProduct.value.fixed_quota_value) || 0) * (quotaQuantities.value[selectedProduct.value.$id] || 1)
-    : (Number(selectedProduct.value.base_price) || 0)
+  if (!tenant.value || !selectedProduct.value) return "";
+  const baseValue =
+    selectedProduct.value.type === "quota"
+      ? (quotaQuantities.value[selectedProduct.value.$id] || 1)
+      : Number(selectedProduct.value.base_price) || 0;
 
-  return generatePixPayload(tenant.value.pix_key, tenant.value.couple_name, baseValue)
-})
+  return generatePixPayload(
+    tenant.value.pix_key,
+    tenant.value.couple_name,
+    String(baseValue),
+  );
+});
 
-const openPixModal = async (product: IProductHydrated) => {
-  if (!currentUser.value) return
-  selectedProduct.value = product
-  showPixModal.value = true
-}
+const openPixModal = async (product: IProduct) => {
+  if (!currentUser.value) return;
+  selectedProduct.value = product;
+  showPixModal.value = true;
+};
 
-const openLinksModal = async (product: IProductHydrated) => {
-  if (!currentUser.value) return
+const openLinksModal = async (product: IProduct) => {
+  if (!currentUser.value) return;
   if (product.links && product.links.length > 0) {
-    selectedProduct.value = product
-    showLinksModal.value = true
+    selectedProduct.value = product;
+    showLinksModal.value = true;
   }
-}
+};
 
 const copyPix = () => {
-  if (!tenant.value?.pix_key) return
-  navigator.clipboard.writeText(tenant.value.pix_key)
-  toast({ title: 'Sucesso', description: 'Chave PIX copiada para a área de transferência!' })
-}
+  if (!tenant.value?.pix_key) return;
+  navigator.clipboard.writeText(tenant.value.pix_key);
+  toast({
+    title: "Sucesso",
+    description: "Chave PIX copiada para a área de transferência!",
+  });
+};
 
 // RSVP Validation Schema
 const rsvpSchema = toTypedSchema(
   z.object({
-    guestName: z.string().min(3, 'Nome muito curto'),
-    email: z.string().email('E-mail inválido'),
-    phone: z.string().min(14, 'Telefone inválido'),
-    totalAdults: z.number().min(1, 'No mínimo 1 adulto'),
+    guestName: z.string().min(3, "Nome muito curto"),
+    email: z.string().email("E-mail inválido"),
+    phone: z.string().min(14, "Telefone inválido"),
+    totalAdults: z.number().min(1, "No mínimo 1 adulto"),
     totalChildren: z.number().min(0),
-    status: z.enum(['confirmed', 'declined'])
-  })
-)
+    status: z.enum(["confirmed", "declined"]),
+  }),
+);
 
 const { handleSubmit, errors } = useForm({
   validationSchema: rsvpSchema,
   initialValues: {
-    guestName: '',
-    email: '',
-    phone: '',
+    guestName: "",
+    email: "",
+    phone: "",
     totalAdults: 1,
     totalChildren: 0,
-    status: 'confirmed'
-  }
-})
+    status: "confirmed",
+  },
+});
 
-const { value: guestName } = useField<string>('guestName')
-const { value: email } = useField<string>('email')
-const { value: phone } = useField<string>('phone')
-const { value: totalAdults } = useField<number>('totalAdults')
-const { value: totalChildren } = useField<number>('totalChildren')
-const { value: status } = useField<'confirmed' | 'declined'>('status')
+const { value: guestName } = useField<string>("guestName");
+const { value: email } = useField<string>("email");
+const { value: phone } = useField<string>("phone");
+const { value: totalAdults } = useField<number>("totalAdults");
+const { value: totalChildren } = useField<number>("totalChildren");
+const { value: status } = useField<"confirmed" | "declined">("status");
 
 watch(currentUser, (user) => {
   if (user) {
-    if (!guestName.value) guestName.value = user.name || ''
-    if (!email.value) email.value = user.email || ''
-    if (!phone.value && user.phone) phone.value = user.phone
+    if (!guestName.value) guestName.value = user.name || "";
+    if (!email.value) email.value = user.email || "";
+    if (!phone.value && user.phone) phone.value = user.phone;
   }
-})
+});
 
-const rsvpLoading = ref(false)
-const showRsvpModal = ref(false)
+const rsvpLoading = ref(false);
+const showRsvpModal = ref(false);
 
 const submitRsvp = handleSubmit(async (values) => {
-  if (!tenant.value) return
-  rsvpLoading.value = true
+  if (!tenant.value) return;
+  rsvpLoading.value = true;
   try {
-    await createRsvp(tenant.value.$id, {
-      guest_name: values.guestName,
-      email: values.email,
-      phone: values.phone,
+    await RsvpService.create({
+      tenant: tenant.value.$id,
       total_adults: values.totalAdults,
       total_children: values.totalChildren,
       status: values.status,
-    })
-    guestName.value = ''
-    email.value = ''
-    phone.value = ''
-    totalAdults.value = 1
-    totalChildren.value = 0
-    showRsvpModal.value = false
-    toast({ title: 'Sucesso', description: 'Sua resposta foi enviada com sucesso! Obrigado.' })
+      guest: authStore.guest
+    });
+
+    guestName.value = "";
+    email.value = "";
+    phone.value = "";
+    totalAdults.value = 1;
+    totalChildren.value = 0;
+    showRsvpModal.value = false;
+    toast({
+      title: "Sucesso",
+      description: "Sua resposta foi enviada com sucesso! Obrigado.",
+    });
   } catch (err) {
-    toast({ title: 'Erro', description: 'Houve um erro ao enviar sua resposta. Tente novamente.', variant: 'destructive' })
+    toast({
+      title: "Erro",
+      description: "Houve um erro ao enviar sua resposta. Tente novamente.",
+      variant: "destructive",
+    });
   } finally {
-    rsvpLoading.value = false
+    rsvpLoading.value = false;
   }
-})
+});
 
 // Emotional Messages
-const messageContent = ref('')
+const messageContent = ref("");
 const submitMessage = async () => {
-  if (!tenant.value || !messageContent.value.trim() || !currentUser.value) return
+  if (!tenant.value || !messageContent.value.trim() || !currentUser.value)
+    return;
 
   try {
-    const newMsg = await createMessage(tenant.value.$id, currentUser.value.$id, {
-      guest_name: currentUser.value.name || 'Convidado',
-      photo_url: (currentUser.value?.prefs as any)?.photoURL || '',
+    const newMsg = await MessageService.create({
+      tenant: tenant.value.$id,
       content: messageContent.value,
-    })
+      guest: authStore.guest,
+    });
 
     // Add instantly to UI array without fetching
-    messages.value.unshift(newMsg)
+    messages.value.unshift(newMsg);
 
-    messageContent.value = ''
-    toast({ title: 'Sucesso', description: 'Sua mensagem foi enviada!' })
+    messageContent.value = "";
+    toast({ title: "Sucesso", description: "Sua mensagem foi enviada!" });
   } catch (err) {
-    toast({ title: 'Erro', description: 'Erro ao enviar mensagem.', variant: 'destructive' })
+    toast({
+      title: "Erro",
+      description: "Erro ao enviar mensagem.",
+      variant: "destructive",
+    });
   }
-}
+};
 
 const deleteMessage = async (msgId: string) => {
-  if (!confirm('Deseja realmente apagar esta mensagem?')) return
+  if (!confirm("Deseja realmente apagar esta mensagem?")) return;
   try {
-    await deleteMessageService(msgId)
-    messages.value = messages.value.filter(m => m.$id !== msgId)
-    toast({ title: 'Sucesso', description: 'Mensagem apagada com sucesso.' })
+    await MessageService.delete(msgId);
+    messages.value = messages.value.filter((m) => m.$id !== msgId);
+    toast({ title: "Sucesso", description: "Mensagem apagada com sucesso." });
   } catch (err) {
-    toast({ title: 'Erro', description: 'Erro ao apagar mensagem.', variant: 'destructive' })
+    toast({
+      title: "Erro",
+      description: "Erro ao apagar mensagem.",
+      variant: "destructive",
+    });
   }
-}
+};
 </script>
 
 <template>
@@ -329,170 +298,9 @@ const deleteMessage = async (msgId: string) => {
                 coração.</p>
             </div>
 
-            <!-- Category Filter (Combobox) -->
-            <div v-if="categories.length > 0" class="flex justify-center mb-12">
-              <div class="w-full max-w-sm">
-                <Combobox v-model="selectedCategory"
-                  :options="[{ label: 'Todas as Categorias', value: 'all' }, ...categories.map(c => ({ label: c, value: c }))]"
-                  placeholder="Filtrar por categoria..." emptyText="Nenhuma categoria encontrada." />
-              </div>
-            </div>
+            <ProductGallery :products="products" :tenant="tenant" mode="public" :current-user="currentUser"
+              @open-pix="openPixModal" @open-links="openLinksModal" @require-auth="requireAuth" />
 
-            <div v-if="paginatedProducts.length === 0" class="text-center py-20 text-slate-400">
-              Nenhum presente encontrado nesta categoria.
-            </div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              <Card v-for="product in paginatedProducts" :key="product.$id"
-                class="flex flex-col overflow-hidden border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-3xl transition-all hover:-translate-y-1 hover:shadow-md duration-300 bg-white group p-6">
-                <div v-if="product.type === 'physical' && product.image_url"
-                  class="bg-slate-100/60 p-6 rounded-xl aspect-square flex items-center justify-center">
-                  <img :src="product.image_url" alt="Produto"
-                    class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
-                </div>
-                <div v-else
-                  class="bg-slate-100/60 p-6 rounded-xl aspect-square flex flex-col items-center justify-center">
-                  <span class="text-primary/60 font-serif text-3xl mb-2 italic">{{ product.category }}</span>
-                  <span class="text-slate-700 text-center font-medium px-4 text-sm">{{ product.name }}</span>
-                </div>
-
-                <div class="flex flex-col flex-1 pt-3">
-                  <div class="mb-2 flex items-center gap-2 flex-wrap">
-                    <span v-if="product.category"
-                      class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">{{
-                        product.category }}</span>
-                    <template v-if="product.type === 'quota'">
-                      <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest"
-                        :style="{ color: tenant.primary_color, backgroundColor: (tenant.primary_color || '#000000') + '1a' }">Cota</span>
-                      <span
-                        class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">{{
-                          product.claimed_quantity || 0 }}/{{ product.desired_quantity }}</span>
-                    </template>
-                    <template v-else>
-                      <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest"
-                        :style="{ color: tenant.primary_color, backgroundColor: (tenant.primary_color || '#000000') + '1a' }">{{
-                          (product.desired_quantity && product.desired_quantity === 1 ? 'Único Produto' :
-                            `${product.claimed_quantity || 0}/${product.desired_quantity}`) }}</span>
-                    </template>
-                  </div>
-                  <h3 class="font-serif text-slate-900 text-xl mb-2 leading-snug">{{ product.name }}</h3>
-                  <div class="mt-auto pt-2">
-                    <p v-if="product.type === 'quota'" class="text-primary font-bold text-xl mt-1">
-                        {{ formatCurrency(parseCurrency(product.fixed_quota_value || '0'), { symbol: true }) }} <span
-                          class="text-xs font-normal text-slate-400">/ {{ formatCurrency(parseCurrency(product.total_value || '0'), { symbol: true }) }}</span>
-                      </p>
-                      <p v-else class="text-primary font-bold text-xl mt-1">
-                        {{ formatCurrency(parseCurrency(product.base_price || '0'), { symbol: true }) }}
-                      </p>
-
-                    <div v-if="currentUser" class="flex flex-col gap-2">
-                      <template v-if="product.type === 'quota'">
-                        <div class="flex items-center gap-2">
-                          <Button variant="outline"
-                            class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
-                            @click="quotaQuantities[product.$id] = Math.max(1, (quotaQuantities[product.$id] || 1) - 1)">-</Button>
-                          <Input type="number" min="1"
-                            :max="Math.max(1, (product.desired_quantity || 99) - (product.claimed_quantity || 0))"
-                            class="text-center rounded-xl h-12 border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            :model-value="quotaQuantities[product.$id] || 1"
-                            @update:model-value="val => quotaQuantities[product.$id] = Math.max(1, Math.min((product.desired_quantity || 99) - (product.claimed_quantity || 0), Number(val)))" />
-                          <Button variant="outline"
-                            class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
-                            @click="quotaQuantities[product.$id] = Math.min((product.desired_quantity || 99) - (product.claimed_quantity || 0), (quotaQuantities[product.$id] || 1) + 1)">+</Button>
-                        </div>
-                        <Button class="w-full rounded-xl py-4 font-medium shadow-sm hover:shadow-md transition-all"
-                          @click="openPixModal(product)">
-                          Presentear com PIX
-                        </Button>
-                      </template>
-                      <template v-else-if="product.type === 'physical'">
-                        {{ console.log(product.links) }}
-                        <Button v-if="product.links && product.links.length > 0" variant="outline"
-                          class="w-full rounded-xl py-4 border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                          @click="openLinksModal(product)">
-                          Comprar na Loja
-                        </Button>
-                        <Button v-if="product.base_price"
-                          class="w-full rounded-xl py-4 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out"
-                          @click="openPixModal(product)">
-                          Presentear via PIX
-                        </Button>
-                      </template>
-                    </div>
-                    <div v-else
-                      class="text-center p-5 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col gap-4">
-                      <p class="text-slate-500 font-light text-sm">Faça login com sua conta Google para presentear.</p>
-                      <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color"
-                        class="mx-auto w-full" />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            <div class="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
-              <div class="flex items-center gap-3">
-                <span class="text-sm font-medium text-slate-600 whitespace-nowrap">Itens por página</span>
-                <Select :model-value="itemsPerPage.toString()"
-                  @update:model-value="(val) => itemsPerPage = parseInt(val as string, 10)">
-                  <SelectTrigger
-                    class="w-[90px] h-10 rounded-xl border-slate-200 bg-white shadow-sm focus:ring-primary">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent class="bg-white rounded-xl border-slate-200 shadow-xl z-50">
-                    <SelectGroup>
-                      <SelectItem value="6" class="rounded-lg cursor-pointer">6</SelectItem>
-                      <SelectItem value="12" class="rounded-lg cursor-pointer">12</SelectItem>
-                      <SelectItem value="24" class="rounded-lg cursor-pointer">24</SelectItem>
-                      <SelectItem value="48" class="rounded-lg cursor-pointer">48</SelectItem>
-                      <SelectItem value="100" class="rounded-lg cursor-pointer">100</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <!-- Pagination -->
-              <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges
-                :default-page="1" v-model:page="currentPage" :items-per-page="itemsPerPage"
-                class="w-auto mx-0 flex-none">
-                <PaginationContent v-slot="{ items }" class="gap-2">
-                  <PaginationFirst size="icon"
-                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
-                    @click="currentPage = 1">
-                    <ChevronsLeft class="w-5 h-5" />
-                  </PaginationFirst>
-
-                  <PaginationPrevious size="icon"
-                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
-                    @click="currentPage = Math.max(1, currentPage - 1)">
-                    <ChevronLeft class="w-5 h-5" />
-                  </PaginationPrevious>
-
-                  <template v-for="(item, index) in items">
-                    <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
-                      :is-active="item.value === page"
-                      class="w-10 h-10 rounded-xl transition-all font-medium cursor-pointer"
-                      :class="item.value === page ? 'shadow-md scale-105 bg-primary text-white border-transparent hover:opacity-90' : 'border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50'"
-                      @click="currentPage = item.value">
-                      {{ item.value }}
-                    </PaginationItem>
-                    <PaginationEllipsis v-else :key="item.type" :index="index" class="text-slate-400" />
-                  </template>
-
-                  <PaginationNext size="icon"
-                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
-                    @click="currentPage = Math.min(totalPages, currentPage + 1)">
-                    <ChevronRight class="w-5 h-5" />
-                  </PaginationNext>
-
-                  <PaginationLast size="icon"
-                    class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary hover:bg-slate-50 transition-all cursor-pointer"
-                    @click="currentPage = totalPages">
-                    <ChevronsRight class="w-5 h-5" />
-                  </PaginationLast>
-                </PaginationContent>
-              </Pagination>
-            </div>
           </section>
 
           <!-- RSVP & Message Wall (2-column grid) -->
@@ -579,7 +387,7 @@ const deleteMessage = async (msgId: string) => {
                       <img v-if="(currentUser?.prefs as any)?.photoURL" :src="(currentUser.prefs as any).photoURL"
                         alt="Foto" class="w-6 h-6 rounded-full" />
                       <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ currentUser.name
-                          }}</strong></span>
+                      }}</strong></span>
                     </div>
                     <Button @click="submitMessage" :disabled="!messageContent"
                       class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
@@ -589,8 +397,7 @@ const deleteMessage = async (msgId: string) => {
 
               <!-- Messages Carousel -->
               <Carousel v-if="messages.length > 0" class="w-full relative cursor-grab active:cursor-grabbing pb-10"
-                :opts="{ align: 'center', dragFree: true, loop: true }"
-                :plugins="[Autoplay({ delay: 4000, stopOnInteraction: true })]">
+                :opts="{ align: 'center', dragFree: true, loop: true }" :plugins="[autoplayPlugin]">
                 <CarouselContent class="py-2">
                   <CarouselItem v-for="(msg, index) in messages" :key="msg.$id"
                     class="basis-full md:basis-[672px] min-w-0 max-w-full">
@@ -606,8 +413,7 @@ const deleteMessage = async (msgId: string) => {
                         </svg>
 
                         <!-- Delete button -->
-                        <button
-                          v-if="currentUser && (currentUser.$id === msg.guest_id || currentUser.$id === tenant?.$id)"
+                        <button v-if="currentUser && (currentUser.$id === msg.guest.$id)"
                           @click="deleteMessage(msg.$id)"
                           class="transition-colors p-2 -mt-2 -mr-2 rounded-full focus:opacity-100"
                           :class="index % 2 === 0 ? 'text-slate-300 hover:text-red-500 hover:bg-red-50' : 'text-white/50 hover:text-white hover:bg-white/10'"
@@ -624,17 +430,17 @@ const deleteMessage = async (msgId: string) => {
 
                       <div class="flex items-center gap-4 mt-auto pt-6 border-t z-10 w-full max-w-full min-w-0"
                         :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">
-                        <img v-if="msg.photo_url" :src="msg.photo_url"
+                        <img v-if="msg.guest.photo_url" :src="msg.guest.photo_url"
                           class="w-12 h-12 shrink-0 rounded-full border-2 shadow-sm"
                           :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'" />
                         <div v-else
                           class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-bold border-2"
                           :class="index % 2 === 0 ? 'bg-slate-50 border-slate-100 text-slate-400' : 'bg-white/10 border-white/20 text-white'">
-                          {{ msg.guest_name?.charAt(0).toUpperCase() }}
+                          {{ msg.guest.name?.charAt(0).toUpperCase() }}
                         </div>
                         <div class="flex flex-col min-w-0">
                           <p class="text-sm font-medium tracking-wide truncate"
-                            :class="index % 2 === 0 ? 'text-slate-900' : 'text-white'">{{ msg.guest_name }}</p>
+                            :class="index % 2 === 0 ? 'text-slate-900' : 'text-white'">{{ msg.guest.name }}</p>
                           <p class="text-xs font-light mt-0.5 truncate"
                             :class="index % 2 === 0 ? 'text-slate-400' : 'text-white/70'">{{
                               dayjs(msg.$createdAt).format('DD [de] MMMM [de] YYYY') }}</p>
@@ -664,7 +470,8 @@ const deleteMessage = async (msgId: string) => {
 
         <div class="space-y-2">
           <p class="text-xl font-bold text-slate-900">
-            {{ formatCurrency(selectedProduct.type === 'quota' ? (Number(selectedProduct.fixed_quota_value) || 0) * (quotaQuantities[selectedProduct.$id] || 1) : (Number(selectedProduct.base_price) || 0), { symbol: true }) }}
+            {{ selectedProduct.type === 'quota' ? (quotaQuantities[selectedProduct.$id] || 1) :
+              (Number(selectedProduct.base_price) || 0) }}
           </p>
           <p class="text-sm text-slate-500">{{ selectedProduct.name }} <span
               v-if="selectedProduct.type === 'quota' && (quotaQuantities[selectedProduct.$id] || 1) > 1">({{
@@ -683,7 +490,7 @@ const deleteMessage = async (msgId: string) => {
         <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
           class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
           <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
-          }}</span>
+            }}</span>
         </a>
       </div>
     </Dialog>

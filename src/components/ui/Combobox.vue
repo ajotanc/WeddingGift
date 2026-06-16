@@ -1,32 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Check, ChevronsUpDown } from 'lucide-vue-next'
-
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { cn } from "@/lib/utils";
+import { ref } from "vue";
 
 const props = defineProps<{
-  options: { label: string; value: string }[]
-  placeholder?: string
-  emptyText?: string
-}>()
+	options: { label: string; value: string }[];
+	placeholder?: string;
+	emptyText?: string;
+}>();
 
-const model = defineModel<string>()
+const model = defineModel<string>();
 
-const open = ref(false)
+const open = ref(false);
 </script>
 
 <template>

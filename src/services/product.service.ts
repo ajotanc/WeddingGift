@@ -1,153 +1,208 @@
-import { tables, storage, DATABASE_ID, BUCKET_ID, Permission, Role } from '@/lib/appwrite'
-import { Query, ID, type Models } from 'appwrite'
-import { TABLE_PRODUCTS, TABLE_PRODUCT_LINKS } from '@/lib/collections'
-import { uploadFile } from '@/lib/utils'
+import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
+import { TABLE_PRODUCTS, TABLE_PRODUCT_LINKS } from "@/lib/collections";
+import { AppwriteException, ID, type Models, Query } from "appwrite";
+import { StorageService } from "./storage.service";
+
+export type ProductType = "physical" | "quota";
 
 export interface IProductLink extends Models.Row {
-  product: string
-  store: string
-  url: string
+	product: string;
+	store: string;
+	url: string;
 }
 
-export interface IProductHydrated extends Models.Row {
-  tenant: string
-  type: 'physical' | 'quota'
-  name: string
-  base_price?: string
-  fixed_quota_value?: string
-  total_value?: string
-  desired_quantity: number
-  claimed_quantity: number
-  image_url?: string
-  category?: string
-  links?: IProductLink[]
+export interface IProduct extends Models.Row {
+	tenant: string;
+	type: ProductType;
+	name: string;
+	base_price?: string;
+	desired_quantity: number;
+	claimed_quantity: number;
+	pix_payment?: number;
+	image_url?: string;
+	category?: string;
+	links?: IProductLink[];
 }
 
-export const listProducts = async (tenantId: string): Promise<IProductHydrated[]> => {
-  const res = await tables.listRows<IProductHydrated>({
-    databaseId: DATABASE_ID,
-    tableId: TABLE_PRODUCTS,
-    queries: [
-      Query.equal('tenant', tenantId),
-      Query.select(['*', 'links.*'])
-    ]
-  })
+export const ProductService = {
+	async get(id: string): Promise<IProduct | null> {
+		try {
+			const res = await tables.getRow<IProduct>({
+				databaseId: DATABASE_ID,
+				tableId: TABLE_PRODUCTS,
+				rowId: id,
+			});
+			return res;
+		} catch (error) {
+			if (error instanceof AppwriteException && error.code === 404) return null;
+			throw error;
+		}
+	},
 
-  return res.rows
-}
+	async list(tenantId: string): Promise<IProduct[]> {
+		const res = await tables.listRows<IProduct>({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			queries: [
+				Query.equal("tenant", tenantId),
+				Query.select(["*", "links.*"]),
+			],
+		});
 
-export const createProduct = async (userId: string, tenantId: string, data: Partial<IProductHydrated>, file?: File | null): Promise<IProductHydrated> => {
-  let image_url = data.image_url
+		return res.rows;
+	},
 
-  if (file) {
-    image_url = await uploadFile(ID.unique(), file, 'product')
-  }
+	async create(
+		data: Omit<IProduct, keyof Models.Row | "links"> & {
+			links?: IProductLink[];
+		},
+		customId?: string,
+		file?: File | null,
+	): Promise<IProduct> {
+		let image_url = data.image_url;
+		const rowId = customId || ID.unique();
 
-  const payload: Omit<Partial<IProductHydrated>, keyof Models.Row> = {
-    ...data,
-    tenant: tenantId,
-    image_url,
-    claimed_quantity: 0
-  }
+		if (file) {
+			image_url = await StorageService.uploadFile(rowId, file, "product");
+		}
 
-  const links = payload.links || []
-  delete payload.links
+		const payload: Partial<Omit<IProduct, keyof Models.Row>> = {
+			...data,
+			image_url,
+			claimed_quantity: data.claimed_quantity || 0,
+		};
 
-  const row = await tables.upsertRow<IProductHydrated>({
-    databaseId: DATABASE_ID,
-    tableId: TABLE_PRODUCTS,
-    rowId: ID.unique(),
-    data: payload,
-    permissions: [
-      Permission.read(Role.any()),
-      Permission.write(Role.user(userId))
-    ]
-  })
+		const links = payload.links || [];
+		delete payload.links;
 
-  if (links.length > 0) {
-    for (const link of links) {
-      await tables.upsertRow<IProductLink>({
-        databaseId: DATABASE_ID,
-        tableId: TABLE_PRODUCT_LINKS,
-        rowId: ID.unique(),
-        data: {
-          store: link.store,
-          url: link.url,
-          product: row.$id
-        },
-        permissions: [
-          Permission.read(Role.any()),
-          Permission.write(Role.user(userId))
-        ]
-      })
-    }
-  }
+		const row = await tables.createRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			rowId,
+			data: payload as Omit<IProduct, keyof Models.Row>,
+			permissions: PUBLIC_PERMISSIONS,
+		});
 
-  return row
-}
+		if (links.length > 0) {
+			for (const link of links) {
+				await tables.createRow({
+					databaseId: DATABASE_ID,
+					tableId: TABLE_PRODUCT_LINKS,
+					rowId: ID.unique(),
+					data: {
+						store: link.store,
+						url: link.url,
+						product: row.$id,
+					},
+					permissions: PUBLIC_PERMISSIONS,
+				});
+			}
+		}
 
-export const updateProduct = async (userId: string, productId: string, data: Partial<IProductHydrated>, file?: File | null): Promise<IProductHydrated> => {
-  let imageUrl = data.image_url
-  if (file) {
-    imageUrl = await uploadFile(productId, file, `product`)
-  }
+		return row;
+	},
 
-  const payload: Omit<Partial<IProductHydrated>, keyof Models.Row> = {
-    ...data,
-    image_url: imageUrl
-  }
+	async update(
+		id: string,
+		data: Partial<Omit<IProduct, "links"> & { links?: IProductLink[] }>,
+		file?: File | null,
+	): Promise<IProduct> {
+		let imageUrl = data.image_url;
+		if (file) {
+			imageUrl = await StorageService.uploadFile(id, file, `product`);
+		}
 
-  const links = payload.links || []
-  delete payload.links
+		const payload: Partial<Omit<IProduct, keyof Models.Row>> = {
+			...data,
+		};
+		if (imageUrl) payload.image_url = imageUrl;
 
-  const row = await tables.upsertRow<IProductHydrated>({
-    databaseId: DATABASE_ID,
-    tableId: TABLE_PRODUCTS,
-    rowId: productId,
-    data: payload
-  })
+		const links = payload.links;
+		delete payload.links;
 
-  // Update links: delete existing and insert new ones
-  const existingLinks = await tables.listRows<IProductLink>({
-    databaseId: DATABASE_ID,
-    tableId: TABLE_PRODUCT_LINKS,
-    queries: [Query.equal('product', productId)]
-  })
+		const row = await tables.updateRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			rowId: id,
+			data: payload as Partial<Omit<IProduct, keyof Models.Row>>,
+			permissions: PUBLIC_PERMISSIONS,
+		});
 
-  for (const el of existingLinks.rows) {
-    await tables.deleteRow({
-      databaseId: DATABASE_ID,
-      tableId: TABLE_PRODUCT_LINKS,
-      rowId: el.$id
-    })
-  }
+		if (links) {
+			const existingLinks = await tables.listRows<IProductLink>({
+				databaseId: DATABASE_ID,
+				tableId: TABLE_PRODUCT_LINKS,
+				queries: [Query.equal("product", id)],
+			});
 
-  if (links.length > 0) {
-    for (const link of links) {
-      await tables.upsertRow<IProductLink>({
-        databaseId: DATABASE_ID,
-        tableId: TABLE_PRODUCT_LINKS,
-        rowId: ID.unique(),
-        data: {
-          store: link.store,
-          url: link.url,
-          product: row.$id
-        },
-        permissions: [
-          Permission.read(Role.any()),
-          Permission.write(Role.user(userId))
-        ]
-      })
-    }
-  }
+			for (const el of existingLinks.rows) {
+				await tables.deleteRow({
+					databaseId: DATABASE_ID,
+					tableId: TABLE_PRODUCT_LINKS,
+					rowId: el.$id,
+				});
+			}
 
-  return row
-}
+			if (links.length > 0) {
+				for (const link of links) {
+					await tables.createRow({
+						databaseId: DATABASE_ID,
+						tableId: TABLE_PRODUCT_LINKS,
+						rowId: ID.unique(),
+						data: {
+							store: link.store,
+							url: link.url,
+							product: row.$id,
+						},
+						permissions: PUBLIC_PERMISSIONS,
+					});
+				}
+			}
+		}
 
-export const deleteProduct = async (id: string): Promise<void> => {
-  await tables.deleteRow({
-    databaseId: DATABASE_ID,
-    tableId: TABLE_PRODUCTS,
-    rowId: id
-  })
-}
+		return row;
+	},
+
+	async upsert(
+		rowId: string | null,
+		data: Partial<Omit<IProduct, "links"> & { links?: IProductLink[] }>,
+		file?: File | null,
+	): Promise<IProduct> {
+		const isUpdate = !!rowId;
+		const id = rowId || ID.unique();
+
+		if (file instanceof File) {
+			if (isUpdate && data.image_url) {
+				await StorageService.deleteFile(id, "product");
+			}
+
+			data.image_url = await StorageService.uploadFile(id, file, "product");
+		}
+
+		return await tables.upsertRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			rowId: id,
+			data,
+			permissions: PUBLIC_PERMISSIONS,
+		});
+	},
+
+	async delete(id: string): Promise<void> {
+		await tables.deleteRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			rowId: id,
+		});
+	},
+
+	async updatePublic(rowId: string, data: Partial<IProduct>): Promise<void> {
+		await tables.updateRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			rowId,
+			data,
+			permissions: PUBLIC_PERMISSIONS,
+		});
+	},
+};

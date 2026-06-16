@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import type { CalendarGridHeadProps } from "reka-ui"
-import { CalendarGridHead } from "reka-ui"
+import type { CalendarGridHeadProps } from "reka-ui";
 
-const props = defineProps<CalendarGridHeadProps>()
+const props = defineProps<CalendarGridHeadProps>();
 </script>
 
 <template>

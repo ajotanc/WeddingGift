@@ -1,70 +1,62 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { Calendar as CalendarIcon } from 'lucide-vue-next'
-import { CalendarDate } from '@internationalized/date'
-import { vMaska } from 'maska/vue'
-import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
+import { CalendarDate } from "@internationalized/date";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { computed, ref, watch } from "vue";
 
-dayjs.extend(customParseFormat)
+dayjs.extend(customParseFormat);
 
-import { cn } from '@/lib/utils'
-import Input from '@/components/ui/Input.vue'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+const props = defineProps<{ modelValue?: string }>();
+const emit = defineEmits(["update:modelValue"]);
 
-const props = defineProps<{ modelValue?: string }>()
-const emit = defineEmits(['update:modelValue'])
-
-const popoverOpen = ref(false)
+const popoverOpen = ref(false);
 
 const dateValue = computed({
-  get: () => {
-    if (!props.modelValue) return undefined
-    const d = dayjs(props.modelValue, 'YYYY-MM-DD', true)
-    if (!d.isValid()) return undefined
-    return new CalendarDate(d.year(), d.month() + 1, d.date())
-  },
-  set: (val: CalendarDate | undefined) => {
-    if (!val) {
-      emit('update:modelValue', '')
-      return
-    }
-    const d = dayjs(`${val.year}-${val.month}-${val.day}`, 'YYYY-M-D')
-    emit('update:modelValue', d.format('YYYY-MM-DD'))
-    popoverOpen.value = false
-  }
-})
+	get: () => {
+		if (!props.modelValue) return undefined;
+		const d = dayjs(props.modelValue, "YYYY-MM-DD", true);
+		if (!d.isValid()) return undefined;
+		return new CalendarDate(d.year(), d.month() + 1, d.date());
+	},
+	set: (val: CalendarDate | undefined) => {
+		if (!val) {
+			emit("update:modelValue", "");
+			return;
+		}
+		const d = dayjs(`${val.year}-${val.month}-${val.day}`, "YYYY-M-D");
+		emit("update:modelValue", d.format("YYYY-MM-DD"));
+		popoverOpen.value = false;
+	},
+});
 
-const displayValue = ref('')
+const displayValue = ref("");
 
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    const d = dayjs(newVal, 'YYYY-MM-DD')
-    displayValue.value = d.isValid() ? d.format('DD/MM/YYYY') : ''
-  } else {
-    displayValue.value = ''
-  }
-}, { immediate: true })
+watch(
+	() => props.modelValue,
+	(newVal) => {
+		if (newVal) {
+			const d = dayjs(newVal, "YYYY-MM-DD");
+			displayValue.value = d.isValid() ? d.format("DD/MM/YYYY") : "";
+		} else {
+			displayValue.value = "";
+		}
+	},
+	{ immediate: true },
+);
 
 const onInputBlur = () => {
-  if (displayValue.value.length === 10) {
-    const d = dayjs(displayValue.value, 'DD/MM/YYYY', true)
-    if (d.isValid()) {
-      const iso = d.format('YYYY-MM-DD')
-      if (props.modelValue !== iso) {
-        emit('update:modelValue', iso)
-      }
-    }
-  } else if (!displayValue.value) {
-    emit('update:modelValue', '')
-  }
-}
+	if (displayValue.value.length === 10) {
+		const d = dayjs(displayValue.value, "DD/MM/YYYY", true);
+		if (d.isValid()) {
+			const iso = d.format("YYYY-MM-DD");
+			if (props.modelValue !== iso) {
+				emit("update:modelValue", iso);
+			}
+		}
+	} else if (!displayValue.value) {
+		emit("update:modelValue", "");
+	}
+};
 </script>
 
 <template>

@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import Button from '@/components/ui/Button.vue'
+import { useRouter } from "vue-router";
 
-const router = useRouter()
+const router = useRouter();
 
 const goRegister = () => {
-  router.push('/register')
-}
+	router.push("/register");
+};
+
+const goLogin = () => {
+	router.push("/login");
+};
 </script>
 
 <template>
@@ -15,7 +18,7 @@ const goRegister = () => {
     <nav class="flex items-center justify-between px-6 py-4 border-b border-slate-100 max-w-7xl mx-auto">
       <div class="text-2xl font-bold tracking-tight text-primary">WeddingGift SaaS</div>
       <div>
-        <Button variant="ghost" class="mr-2">Entrar</Button>
+        <Button @click="goLogin" variant="ghost" class="mr-2">Entrar</Button>
         <Button @click="goRegister">Criar Lista Grátis</Button>
       </div>
     </nav>

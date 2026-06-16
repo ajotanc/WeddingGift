@@ -1,67 +1,70 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useToast } from '@/components/ui/toast/use-toast'
-import Button from '@/components/ui/button/Button.vue'
-import Card from '@/components/ui/Card.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Label from '@/components/ui/label/Label.vue'
+import { useToast } from "@/components/ui/toast/use-toast";
+import { useAuthStore } from "@/stores/auth";
+import { ref } from "vue";
 
-const { toast } = useToast()
-const authStore = useAuthStore()
-const loading = ref(false)
+const { toast } = useToast();
+const authStore = useAuthStore();
+const loading = ref(false);
 
 const form = ref({
-  groom_name: '',
-  bride_name: '',
-  slug: '',
-  pix_key: '',
-  primary_color: '#ec4899',
-})
+	groom_name: "",
+	bride_name: "",
+	slug: "",
+	pix_key: "",
+	primary_color: "#ec4899",
+});
 
 const generateSlug = () => {
-  if (form.value.groom_name && form.value.bride_name && !form.value.slug) {
-    form.value.slug = `${form.value.groom_name}-${form.value.bride_name}`
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '')
-  }
-}
+	if (form.value.groom_name && form.value.bride_name && !form.value.slug) {
+		form.value.slug = `${form.value.groom_name}-${form.value.bride_name}`
+			.toLowerCase()
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/(^-|-$)+/g, "");
+	}
+};
 
 const registerTenant = async () => {
-  loading.value = true
-  try {
-    const coupleName = `${form.value.bride_name} & ${form.value.groom_name}`
+	loading.value = true;
+	try {
+		const coupleName = `${form.value.bride_name} & ${form.value.groom_name}`;
 
-    localStorage.setItem('pending_tenant', JSON.stringify({
-      slug: form.value.slug,
-      couple_name: coupleName,
-      pix_key: form.value.pix_key,
-      status: 'active',
-      settings: {
-        show_countdown: true,
-        guest_limit: null
-      },
-      theme: {
-        primary_color: form.value.primary_color,
-        background_color: '#ffffff',
-        background_image: null
-      }
-    }))
+		localStorage.setItem(
+			"pending_tenant",
+			JSON.stringify({
+				slug: form.value.slug,
+				couple_name: coupleName,
+				pix_key: form.value.pix_key,
+				status: "active",
+				settings: {
+					show_countdown: true,
+					guest_limit: null,
+				},
+				theme: {
+					primary_color: form.value.primary_color,
+					background_color: "#ffffff",
+					background_image: null,
+				},
+			}),
+		);
 
-    // Redirect to OAuth
-    await authStore.loginWithGoogle(
-      `${window.location.origin}/`,
-      `${window.location.origin}/register?error=1`
-    )
-  } catch (error) {
-    console.error('Registration error', error)
-    toast({ title: 'Erro', description: 'Erro ao iniciar registro.', variant: 'destructive' })
-    loading.value = false
-  }
-}
+		// Redirect to OAuth
+		await authStore.loginWithGoogle(
+			`${window.location.origin}/`,
+			`${window.location.origin}/register?error=1`,
+		);
+	} catch (error) {
+		console.error("Registration error", error);
+		toast({
+			title: "Erro",
+			description: "Erro ao iniciar registro.",
+			variant: "destructive",
+		});
+		loading.value = false;
+	}
+};
 </script>
 
 <template>

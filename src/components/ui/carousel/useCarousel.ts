@@ -1,19 +1,16 @@
-import { createInjectionState } from '@vueuse/core'
-import emblaCarouselVue from 'embla-carousel-vue'
-import { onMounted, ref } from 'vue'
-import type { UnwrapRef } from 'vue'
-import type { CarouselEmits, CarouselProps } from './interface'
+import { createInjectionState } from "@vueuse/core"
+import emblaCarouselVue from "embla-carousel-vue"
+import { onMounted, ref } from "vue"
+// 1. IMPORTAR O TIPO NATIVO DA API DO EMBLA CAROUSEL
+import type { EmblaCarouselType } from "embla-carousel"
+import type { CarouselEmits, CarouselProps } from "./interface"
 
 const [useProvideCarousel, useInjectCarousel] = createInjectionState(
-  ({
-    opts,
-    orientation,
-    plugins,
-  }: CarouselProps, emits: CarouselEmits) => {
+  ({ opts, orientation, plugins }: CarouselProps, emits: CarouselEmits) => {
     const [carouselRef, emblaApi] = emblaCarouselVue(
       {
         ...opts,
-        axis: orientation === 'horizontal' ? 'x' : 'y',
+        axis: orientation === "horizontal" ? "x" : "y",
       },
       plugins,
     )
@@ -31,23 +28,33 @@ const [useProvideCarousel, useInjectCarousel] = createInjectionState(
       emblaApi.value?.scrollTo(index)
     }
 
-    const onSelect = (api: NonNullable<UnwrapRef<typeof emblaApi>>) => {
+    // 2. CORREÇÃO DA ASSINATURA: Tipagem direta com a API nativa do Embla
+    const onSelect = (api: EmblaCarouselType) => {
       canScrollNext.value = api.canScrollNext()
       canScrollPrev.value = api.canScrollPrev()
     }
 
     onMounted(() => {
-      if (!emblaApi.value)
-        return
+      if (!emblaApi.value) return
 
-      emblaApi.value?.on('init', onSelect)
-      emblaApi.value?.on('reInit', onSelect)
-      emblaApi.value?.on('select', onSelect)
+      // Agora os listeners aceitam o callback perfeitamente sem erros de atribuição
+      emblaApi.value.on("init", onSelect)
+      emblaApi.value.on("reInit", onSelect)
+      emblaApi.value.on("select", onSelect)
 
-      emits('init-api', emblaApi.value)
+      emits("init-api", emblaApi.value)
     })
 
-    return { carouselRef, carouselApi: emblaApi, canScrollPrev, canScrollNext, scrollPrev, scrollNext, scrollTo, orientation }
+    return {
+      carouselRef,
+      carouselApi: emblaApi,
+      canScrollPrev,
+      canScrollNext,
+      scrollPrev,
+      scrollNext,
+      scrollTo,
+      orientation,
+    }
   },
 )
 

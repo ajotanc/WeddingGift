@@ -1,78 +1,106 @@
-import { defineStore } from 'pinia'
-import { account } from '@/lib/appwrite'
-import { getTenantById, createTenant, type ITenantHydrated } from '@/services/tenant.service'
-import { OAuthProvider, type Models } from 'appwrite'
+import { account } from "@/lib/appwrite";
+import { GuestService, IGuest } from "@/services/guest.service";
+import {
+	type ITenant,
+	TenantService
+} from "@/services/tenant.service";
+import { type Models, OAuthProvider } from "appwrite";
+import { defineStore } from "pinia";
 
 interface AuthState {
-  user: Models.User<Models.Preferences> | null
-  tenant: ITenantHydrated | null
-  loading: boolean
+	user: Models.User<Models.Preferences> | null;
+	tenant: ITenant;
+	guest: IGuest;
+	loading: boolean;
 }
 
-export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => ({
-    user: null,
-    tenant: null,
-    loading: true,
-  }),
-  actions: {
-    async init() {
-      this.loading = true
-      try {
-        const sessionUser = await account.get()
-        this.user = sessionUser
-        if (sessionUser) {
-          try {
-            const session = await account.getSession('current')
-            console.log(session);
-            if (session.provider === 'google' && session.providerAccessToken && !sessionUser.prefs?.photoURL) {
-              const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${session.providerAccessToken}`)
-              const data = await res.json()
-              if (data.picture) {
-                await account.updatePrefs({ ...sessionUser.prefs, photoURL: data.picture })
-                this.user.prefs = { ...sessionUser.prefs, photoURL: data.picture }
-              }
-            }
-          } catch (e) {
-            console.error('Failed to fetch Google Avatar:', e)
-          }
+export const useAuthStore = defineStore("auth", {
+	state: (): AuthState => ({
+		user: null,
+		tenant: {} as ITenant,
+		guest: {} as IGuest,
+		loading: true,
+	}),
+	actions: {
+		async init() {
+			this.loading = true;
+			try {
+				const sessionUser = await account.get();
+				this.user = sessionUser;
+				if (sessionUser) {
+					try {
+						const session = await account.getSession({ sessionId: "current" });
 
-          const pending = localStorage.getItem('pending_tenant')
-          if (pending) {
-            const data = JSON.parse(pending)
-            await createTenant(sessionUser.$id, data)
-            localStorage.removeItem('pending_tenant')
-            // Redirect to their admin dashboard
-            window.location.href = `/${data.slug}/admin`
-            return
-          }
-          const t = await getTenantById(sessionUser.$id)
-          this.tenant = t
-        }
-      } catch (err) {
-        this.user = null
-        this.tenant = null
-      } finally {
-        this.loading = false
-      }
-    },
-    async loginWithGoogle(successUrl: string, failureUrl: string) {
-      account.createOAuth2Session({ 
-        provider: OAuthProvider.Google, 
-        success: successUrl, 
-        failure: failureUrl,
-        scopes: ['profile', 'email']
-      })
-    },
-    async logout() {
-      await account.deleteSession('current')
-      this.user = null
-      this.tenant = null
-    },
-    async registerTenant(data: Partial<ITenantHydrated>) {
-      if (!this.user) return
-      const t = await createTenant(this.user.$id, data)
-      this.tenant = t
-    }
-  }
-})
+						if (
+							session.provider === "google" &&
+							session.providerAccessToken &&
+							!sessionUser.prefs?.photoURL
+						) {
+							const res = await fetch(
+								`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${session.providerAccessToken}`,
+							);
+							const data = await res.json();
+
+							if (data.picture) {
+								await account.updatePrefs({
+									prefs: {
+										...sessionUser.prefs,
+										photoURL: data.picture,
+									}
+								});
+
+								this.user.prefs = {
+									...sessionUser.prefs,
+									photoURL: data.picture,
+								};
+							}
+						}
+					} catch (e) {
+						console.error("Failed to fetch Google Avatar:", e);
+					}
+
+					const pending = localStorage.getItem("pending_tenant");
+
+					if (pending) {
+						const data = JSON.parse(pending);
+						await TenantService.create(data, sessionUser.$id);
+						localStorage.removeItem("pending_tenant");
+
+						window.location.href = `/${data.slug}/admin`;
+						return;
+					}
+
+					const t = await TenantService.get(sessionUser.$id);
+					this.tenant = t;
+
+					this.guest = await GuestService.get(sessionUser.$id);
+				}
+			} catch (err) {
+				this.user = null;
+				this.tenant = {} as ITenant;
+				this.guest = {} as IGuest;
+			} finally {
+				this.loading = false;
+			}
+		},
+		async loginWithGoogle(successUrl: string, failureUrl: string) {
+			account.createOAuth2Session({
+				provider: OAuthProvider.Google,
+				success: successUrl,
+				failure: failureUrl,
+				scopes: ["profile", "email"],
+			});
+		},
+		async logout() {
+			await account.deleteSession({ sessionId: "current" });
+			this.user = null;
+			this.tenant = {} as ITenant;
+			this.guest = {} as IGuest
+		},
+		async registerTenant(data: ITenant) {
+			if (!this.user) return;
+			const t = await TenantService.create(data, this.user.$id);
+			this.tenant = t;
+		},
+	},
+});

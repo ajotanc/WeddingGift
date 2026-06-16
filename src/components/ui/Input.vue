@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { cn } from '@/lib/utils'
-
 interface Props {
-  modelValue?: string | number
-  class?: string
-  type?: string
-  placeholder?: string
-  disabled?: boolean
-  required?: boolean
+	modelValue?: string | number;
+	class?: string;
+	type?: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  type: 'text',
-})
+	type: "text",
+});
 
-const emit = defineEmits<(e: 'update:modelValue', value: string | number) => void>()
+const emit =
+	defineEmits<(e: "update:modelValue", value: string | number) => void>();
 
 const onInput = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  emit('update:modelValue', target.value)
-}
+	const target = event.target as HTMLInputElement;
+	emit("update:modelValue", target.value);
+};
 </script>
 
 <template>

@@ -1,29 +1,27 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next'
-import { cn } from '@/lib/utils'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from "vue";
 
 const props = defineProps<{
-  open: boolean
-  title?: string
-  description?: string
-  class?: string
-}>()
+	open: boolean;
+	title?: string;
+	description?: string;
+	class?: string;
+}>();
 
-const emit = defineEmits<(e: 'update:open', value: boolean) => void>()
+const emit = defineEmits<(e: "update:open", value: boolean) => void>();
 
 const close = () => {
-  emit('update:open', false)
-}
+	emit("update:open", false);
+};
 
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && props.open) {
-    close()
-  }
-}
+	if (e.key === "Escape" && props.open) {
+		close();
+	}
+};
 
-onMounted(() => document.addEventListener('keydown', handleKeydown))
-onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
+onMounted(() => document.addEventListener("keydown", handleKeydown));
+onUnmounted(() => document.removeEventListener("keydown", handleKeydown));
 </script>
 
 <template>

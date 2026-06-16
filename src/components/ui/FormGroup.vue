@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import Label from '@/components/ui/label/Label.vue'
-
 defineProps<{
-  label?: string
-  error?: string
-}>()
+	label?: string;
+	error?: string;
+}>();
 </script>
 
 <template>

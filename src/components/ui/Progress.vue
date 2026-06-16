@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { cn } from '@/lib/utils'
+import { computed } from "vue";
 
 const props = defineProps<{
-  class?: string
-  modelValue?: number
-}>()
+	class?: string;
+	modelValue?: number;
+}>();
 
 const progressStyle = computed(() => ({
-  transform: `translateX(-${100 - (props.modelValue || 0)}%)`,
-}))
+	transform: `translateX(-${100 - (props.modelValue || 0)}%)`,
+}));
 </script>
 
 <template>
