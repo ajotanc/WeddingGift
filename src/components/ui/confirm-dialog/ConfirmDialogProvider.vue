@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useConfirm } from "@/components/ui/confirm-dialog/useConfirm";
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, Teleport } from "vue";
+import { Button } from "@/components/ui/button";
 
 const { state, onConfirm, onCancel } = useConfirm();
 

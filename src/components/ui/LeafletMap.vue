@@ -2,6 +2,7 @@
 import L from "leaflet";
 import { onMounted, ref, watch } from "vue";
 import "leaflet/dist/leaflet.css";
+import { Heart } from "lucide-vue-next";
 
 const props = defineProps<{ address: string }>();
 const mapContainer = ref<HTMLElement | null>(null);

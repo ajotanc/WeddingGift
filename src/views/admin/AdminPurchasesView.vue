@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from "@/components/reusable/PageHeader.vue";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney, parseMoney } from "@/lib/money";
 import dayjs from "dayjs";
@@ -16,12 +17,12 @@ const totalAmount = computed(() => {
 
 <template>
   <div class="space-y-6">
-    <AdminHeader title="Presentes Recebidos" description="Acompanhe todos os presentes comprados pelos seus convidados.">
+    <PageHeader title="Presentes Recebidos" description="Acompanhe todos os presentes comprados pelos seus convidados.">
       <div class="bg-primary/10 px-4 py-2 rounded-xl border border-primary/20">
         <p class="text-sm text-primary font-medium">Total em Presentes</p>
         <p class="text-xl font-bold text-primary">{{ formatMoney(totalAmount) }}</p>
       </div>
-    </AdminHeader>
+    </PageHeader>
 
     <div v-if="loading" class="text-center py-20 text-slate-400">
       Carregando...

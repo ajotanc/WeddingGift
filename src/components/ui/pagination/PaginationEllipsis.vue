@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { cn } from "@/lib/utils";
-import { reactiveOmit } from "@vueuse/core";
-// CORRIGIDO: Importando o componente físico PaginationEllipsis
-import { PaginationEllipsis, type PaginationEllipsisProps } from "reka-ui";
-import type { HTMLAttributes } from "vue";
+import type { PaginationEllipsisProps } from "reka-ui"
+import type { HTMLAttributes } from "vue"
+import { MoreHorizontal } from "lucide-vue-next"
+import { reactiveOmit } from "@vueuse/core"
+import { PaginationEllipsis } from "reka-ui"
+import { cn } from "@/lib/utils"
 
-const props = defineProps<
-  PaginationEllipsisProps & { class?: HTMLAttributes["class"] }
->();
+const props = defineProps<PaginationEllipsisProps & { class?: HTMLAttributes["class"] }>()
 
-const delegatedProps = reactiveOmit(props, "class");
+const delegatedProps = reactiveOmit(props, "class")
 </script>
 
 <template>

@@ -10,6 +10,9 @@ import dayjs from "dayjs";
 import { Copy, Download, MessageCircle, Sparkles, Trash2, Users } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import * as XLSX from "xlsx";
+import PageHeader from "@/components/reusable/PageHeader.vue";
+import { Button } from "@/components/ui/button";
+import Modal from "@/components/reusable/Modal.vue";
 
 const { toast } = useToast();
 const { confirm } = useConfirm();
@@ -149,7 +152,7 @@ const exportToExcel = () => {
 <template>
   <div class="space-y-12">
     <!-- Header -->
-    <AdminHeader title="Convidados & Recados" description="Acompanhe as confirmações de presença e o mural." />
+    <PageHeader title="Convidados &amp; Recados" description="Acompanhe as confirmações de presença e o mural." />
 
     <!-- Metrics -->
     <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
@@ -243,7 +246,7 @@ const exportToExcel = () => {
     </div>
 
     <!-- IA Thanks Modal -->
-    <Dialog v-model:open="showThanksModal" title="Agradecimento IA">
+    <Modal v-model:open="showThanksModal" title="Agradecimento IA">
       <div class="space-y-4 text-center">
         <div v-if="generatingThanks" class="text-slate-500 py-6 animate-pulse font-light">A IA do Gemini está
           escrevendo...</div>
@@ -260,6 +263,6 @@ const exportToExcel = () => {
           </div>
         </div>
       </div>
-    </Dialog>
+    </Modal>
   </div>
 </template>

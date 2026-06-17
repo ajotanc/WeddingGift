@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { SelectRoot, type SelectRootEmits, type SelectRootProps, useForwardPropsEmits } from 'radix-vue'
+import type { SelectRootEmits, SelectRootProps } from "reka-ui"
+import { SelectRoot, useForwardPropsEmits } from "reka-ui"
 
 const props = defineProps<SelectRootProps>()
-const emit = defineEmits<SelectRootEmits>()
+const emits = defineEmits<SelectRootEmits>()
 
-const forwarded = useForwardPropsEmits(props, emit)
+const forwarded = useForwardPropsEmits(props, emits)
 </script>
 
 <template>
-  <SelectRoot v-forward-props-emits="forwarded">
-    <slot />
+  <SelectRoot
+    v-slot="slotProps"
+    data-slot="select"
+    v-bind="forwarded"
+  >
+    <slot v-bind="slotProps" />
   </SelectRoot>
 </template>

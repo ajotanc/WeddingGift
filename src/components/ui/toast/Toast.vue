@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { cn } from "@/lib/utils";
 import { reactiveOmit } from "@vueuse/core";
-import type { ToastRootEmits } from "reka-ui";
-import { useForwardPropsEmits } from "reka-ui";
+import { ToastRoot, type ToastRootEmits, useForwardPropsEmits } from "reka-ui";
 import { type ToastProps, toastVariants } from ".";
 
 const props = defineProps<ToastProps>();

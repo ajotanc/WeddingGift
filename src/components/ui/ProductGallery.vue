@@ -20,12 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
-import Combobox from "@/components/ui/Combobox.vue";
 import {
   Pagination,
   PaginationContent,
 } from "@/components/ui/pagination";
-import Card from "./Card.vue";
+import { Card } from "@/components/ui/card";
+
+import Combobox from "../reusable/Combobox.vue";
 
 const props = defineProps<{
   products: IProduct[];

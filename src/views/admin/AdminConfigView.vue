@@ -9,6 +9,16 @@ import { StorageService } from "@/services/storage.service";
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
 import * as z from "zod";
+import PageHeader from "@/components/reusable/PageHeader.vue";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import FormGroup from "@/components/reusable/FormGroup.vue";
+import { InputGroup, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
+import { Loader2 } from "lucide-vue-next";
+import DatePicker from "@/components/reusable/DatePicker.vue";
+import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 const { toast } = useToast();
 const { tenant } = useTenant();
@@ -66,6 +76,8 @@ const { handleSubmit, errors, setValues, defineField } =
 			slug: "",
 			pix_key: "",
 			couple_history: "",
+			event_date: null,
+			event_time: null,
 			show_countdown: true,
 			primary_color: "#ec4899",
 			background_color: "#ffffff",
@@ -89,6 +101,7 @@ const [background_color] = defineField("background_color");
 const isSaving = ref(false);
 
 const loadSettings = () => {
+	console.log(tenant.value);
 	if (tenant.value) {
 		setValues({
 			groom_name: tenant.value.groom_name || "",
@@ -98,8 +111,8 @@ const loadSettings = () => {
 			couple_history: tenant.value.couple_history || "",
 			event_date: tenant.value.event_date || null,
 			event_time: tenant.value.event_time || null,
-			event_location: tenant.value.event_location || null,
-			guest_limit: tenant.value.guest_limit ?? null,
+			event_location: tenant.value.event_location || "",
+			guest_limit: tenant.value.guest_limit ?? 0,
 			show_countdown: tenant.value.show_countdown ?? true,
 			primary_color: tenant.value.primary_color || "#ec4899",
 			background_image: tenant.value.background_image || "",
@@ -239,7 +252,7 @@ const saveSettings = handleSubmit(async (values) => {
 <template>
 	<div class="space-y-12 w-full">
 		<!-- Header -->
-		<AdminHeader title="Configurações Gerais" description="Personalize o seu site de casamento." />
+		<PageHeader title="Configurações Gerais" description="Personalize o seu site de casamento." />
 
 		<form @submit.prevent="saveSettings"
 			class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8">
@@ -255,15 +268,14 @@ const saveSettings = handleSubmit(async (values) => {
 					<Input v-model="pix_key" placeholder="CPF, Email ou Telefone" class="bg-slate-50/50" />
 				</FormGroup>
 				<FormGroup label="Link Personalizado" :error="errors.slug">
-					<div class="flex items-stretch shadow-sm rounded-xl overflow-hidden border transition-colors"
+					<InputGroup
 						:class="{ 'border-red-400': slugStatus === 'unavailable', 'border-emerald-400': slugStatus === 'available', 'border-slate-200': slugStatus === 'idle' || slugStatus === 'checking' }">
-						<div class="bg-slate-100 px-4 flex items-center justify-center border-r"
-							:class="{ 'border-red-400': slugStatus === 'unavailable', 'border-emerald-400': slugStatus === 'available', 'border-slate-200': slugStatus === 'idle' || slugStatus === 'checking' }">
+						<InputGroupText align="inline-start">
 							<span class="text-slate-500 font-medium text-sm">https://{{ hostName }}/</span>
-						</div>
-						<input type="text" v-model="slug" placeholder="joao-maria" @blur="checkSlug"
-							class="flex-1 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-700" />
-					</div>
+						</InputGroupText>
+						<InputGroupInput v-model="slug" type="text" placeholder="joao-maria" @blur="checkSlug"
+							class="bg-white focus:outline-none text-slate-700" />
+					</InputGroup>
 					<div class="flex items-center gap-2 mt-1 min-h-[20px]">
 						<p class="text-xs text-red-400">Atenção: alterar o link invalida o acesso antigo.</p>
 						<span v-if="slugStatus === 'checking'" class="text-xs text-slate-500 ml-auto flex items-center">
@@ -301,15 +313,7 @@ const saveSettings = handleSubmit(async (values) => {
 					<p class="text-xs text-slate-500 mt-1">Selecionado: {{ event_location }}</p>
 				</FormGroup>
 
-				<FormGroup label="Exibir Contagem Regressiva">
-					<label class="relative inline-flex items-center cursor-pointer mt-2">
-						<input type="checkbox" v-model="show_countdown" class="sr-only peer">
-						<div
-							class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-						</div>
-						<span class="ml-3 text-sm font-medium text-slate-700">Ativar contagem na página pública</span>
-					</label>
-				</FormGroup>
+
 
 				<FormGroup label="Limite de Convidados" :error="errors.guest_limit">
 					<Input type="number" v-model.number="guest_limit" min="0" class="bg-slate-50/50" />
@@ -317,13 +321,13 @@ const saveSettings = handleSubmit(async (values) => {
 
 				<FormGroup label="Cor Principal (Tema)">
 					<div class="flex items-center gap-4">
-						<input type="color" v-model="primary_color" class="w-12 h-12 rounded cursor-pointer border-0 p-0" />
+						<Input type="color" v-model="primary_color" class="w-12 h-12 rounded cursor-pointer border-0 p-0" />
 						<span class="text-sm font-medium text-slate-600">{{ primary_color }}</span>
 					</div>
 				</FormGroup>
 
 				<FormGroup label="Cor do Cabeçalho do Dashboard" :error="errors.background_color">
-					<input type="color" v-model="background_color" class="w-12 h-12 rounded cursor-pointer border-0 p-0" />
+					<Input type="color" v-model="background_color" class="w-12 h-12 rounded cursor-pointer border-0 p-0" />
 				</FormGroup>
 
 				<FormGroup label="Imagem de Fundo" class="md:col-span-2" :error="errors.background_image">
@@ -332,7 +336,7 @@ const saveSettings = handleSubmit(async (values) => {
 							class="bg-slate-50/50" />
 						<div class="flex items-center gap-4">
 							<span class="text-sm text-slate-500 font-medium">Ou faça o upload:</span>
-							<input type="file" @change="onFileSelect" accept="image/*"
+							<Input type="file" @change="onFileSelect" accept="image/*"
 								class="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
 						</div>
 						<img v-if="background_image" :src="background_image"

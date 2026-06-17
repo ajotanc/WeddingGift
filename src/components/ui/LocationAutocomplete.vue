@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { Input } from "@/components/ui/input";
+import { MapPin, Search } from "lucide-vue-next";
 
 // Props – optional placeholder
 const props = defineProps<{ placeholder?: string }>();
@@ -79,7 +81,7 @@ const onBlur = () => {
   <div class="relative w-full" @blur="onBlur">
     <div class="relative">
       <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-      <input
+      <Input
         v-model="query"
         :placeholder="props.placeholder ?? 'Encontrar endereço…'"
         class="w-full pl-10 px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-700"

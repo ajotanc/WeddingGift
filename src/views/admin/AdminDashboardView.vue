@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from "@/components/reusable/PageHeader.vue";
 import { useTenant } from "@/composables/useTenant";
 import { MessageSquare, Users, Wallet } from "lucide-vue-next";
 import { computed } from "vue";
@@ -6,31 +7,26 @@ import { computed } from "vue";
 const { purchases, rsvps, messages } = useTenant();
 
 const totalRaised = computed(() => {
-	return purchases.value.reduce(
-		(acc, p) => acc + (Number(p.price_paid) || 0),
-		0,
-	);
+  return purchases.value.reduce(
+    (acc, p) => acc + (Number(p.price_paid) || 0),
+    0,
+  );
 });
 
 const confirmedGuests = computed(() => {
-	return rsvps.value
-		.filter((r) => r.status === "confirmed")
-		.reduce(
-			(acc, r) => acc + (r.total_adults || 0) + (r.total_children || 0),
-			0,
-		);
+  return rsvps.value
+    .filter((r) => r.status === "confirmed")
+    .reduce(
+      (acc, r) => acc + (r.total_adults || 0) + (r.total_children || 0),
+      0,
+    );
 });
 </script>
 
 <template>
   <div class="space-y-12">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div>
-        <h2 class="text-2xl font-serif text-slate-900 tracking-tight">Visão Geral</h2>
-        <p class="text-sm text-slate-500">Resumo do seu casamento até agora.</p>
-      </div>
-    </div>
+    <PageHeader title="Visão Geral" description="Resumo do seu casamento até agora." />
 
     <!-- Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import { cn } from "@/lib/utils";
-import { reactiveOmit } from "@vueuse/core";
-// CORRIGIDO: Importando o componente físico PaginationRoot além dos tipos
-import { PaginationRoot, type PaginationRootEmits, type PaginationRootProps } from "reka-ui";
-import { useForwardPropsEmits } from "reka-ui";
-import type { HTMLAttributes } from "vue";
+import type { PaginationRootEmits, PaginationRootProps } from "reka-ui"
+import type { HTMLAttributes } from "vue"
+import { reactiveOmit } from "@vueuse/core"
+import { PaginationRoot, useForwardPropsEmits } from "reka-ui"
+import { cn } from "@/lib/utils"
 
-const props = defineProps<
-  PaginationRootProps & {
-    class?: HTMLAttributes["class"];
-  }
->();
-const emits = defineEmits<PaginationRootEmits>();
+const props = defineProps<PaginationRootProps & {
+  class?: HTMLAttributes["class"]
+}>()
+const emits = defineEmits<PaginationRootEmits>()
 
-const delegatedProps = reactiveOmit(props, "class");
-const forwarded = useForwardPropsEmits(delegatedProps, emits);
+const delegatedProps = reactiveOmit(props, "class")
+const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
-  <PaginationRoot v-slot="slotProps" data-slot="pagination" v-bind="forwarded"
-    :class="cn('mx-auto flex w-full justify-center', props.class)">
+  <PaginationRoot
+    v-slot="slotProps"
+    data-slot="pagination"
+    v-bind="forwarded"
+    :class="cn('mx-auto flex w-full justify-center', props.class)"
+  >
     <slot v-bind="slotProps" />
   </PaginationRoot>
 </template>

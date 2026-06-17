@@ -1,26 +1,22 @@
 <script setup lang="ts">
-import { buttonVariants, type ButtonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { reactiveOmit } from "@vueuse/core";
-// CORRIGIDO: Importando o componente físico PaginationLast
-import { PaginationLast, type PaginationLastProps } from "reka-ui";
-import { useForwardProps } from "reka-ui";
-import type { HTMLAttributes } from "vue";
+import type { PaginationLastProps } from "reka-ui"
+import type { HTMLAttributes } from "vue"
+import type { ButtonVariants } from "@/components/ui/button"
+import { ChevronRightIcon } from "lucide-vue-next"
+import { reactiveOmit } from "@vueuse/core"
+import { PaginationLast, useForwardProps } from "reka-ui"
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
 
-const props = withDefaults(
-  defineProps<
-    PaginationLastProps & {
-      size?: ButtonVariants["size"];
-      class?: HTMLAttributes["class"];
-    }
-  >(),
-  {
-    size: "default",
-  },
-);
+const props = withDefaults(defineProps<PaginationLastProps & {
+  size?: ButtonVariants["size"]
+  class?: HTMLAttributes["class"]
+}>(), {
+  size: "default",
+})
 
-const delegatedProps = reactiveOmit(props, "class", "size");
-const forwarded = useForwardProps(delegatedProps);
+const delegatedProps = reactiveOmit(props, "class", "size")
+const forwarded = useForwardProps(delegatedProps)
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from "@/components/reusable/PageHeader.vue";
 import { useConfirm } from "@/components/ui/confirm-dialog/useConfirm";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { useTenant } from "@/composables/useTenant";
@@ -495,10 +496,10 @@ const deleteProduct = async (product: IProduct) => {
 <template>
 	<div class="space-y-12">
 		<!-- Header -->
-		<AdminHeader title="Lista de Presentes" description="Gerencie produtos físicos e cotas financeiras.">
+		<PageHeader title="Lista de Presentes" description="Gerencie produtos físicos e cotas financeiras.">
 			<Button @click="openNewQuota" variant="default" class="shadow-sm">Nova Cota (PIX)</Button>
 			<Button @click="openNewPhysical" variant="outline" class="shadow-sm bg-white">Novo Produto</Button>
-		</AdminHeader>
+		</PageHeader>
 
 		<!-- Products Gallery -->
 		<ProductGallery :products="products" :tenant="tenant!" mode="admin"
@@ -507,8 +508,8 @@ const deleteProduct = async (product: IProduct) => {
 
 		<!-- Modals -->
 		<!-- Physical Modal -->
-		<Dialog v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'">
-			<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
+		<Modal v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'" class="max-w-2xl">
+				<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
 				<FormGroup label="Nome do Produto" :error="physicalErrors.name">
 					<Input v-model="pName" placeholder="Ex: Jogo de Panelas Tramontina" />
 				</FormGroup>
@@ -595,11 +596,11 @@ const deleteProduct = async (product: IProduct) => {
 				</Button>
 				<Button class="flex-1" @click="productSubmit">Salvar Produto</Button>
 			</div>
-		</Dialog>
+		</Modal>
 
 		<!-- Quota Modal -->
-		<Dialog v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'">
-			<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
+		<Modal v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'" class="max-w-2xl">
+				<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
 				<FormGroup label="Nome da Experiência" :error="quotaErrors.name">
 					<Input v-model="qName" placeholder="Ex: Jantar Romântico" />
 				</FormGroup>
@@ -647,10 +648,10 @@ const deleteProduct = async (product: IProduct) => {
 						</button>
 					</div>
 				</FormGroup>
-			</div>
+				</div>
 			<div class="pt-4 mt-2 border-t border-slate-100">
 				<Button class="w-full" @click="quotaSubmit">Salvar Cota</Button>
 			</div>
-		</Dialog>
+		</Modal>
 	</div>
 </template>

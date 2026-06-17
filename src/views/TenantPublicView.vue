@@ -2,13 +2,13 @@
 // 1. Importações dos componentes de UI (Shadcn) que estão faltando
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 // 2. Importações de componentes específicos do seu projeto
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
 import CountdownTimer from "@/components/ui/CountdownTimer.vue";
 import LeafletMap from "@/components/ui/LeafletMap.vue";
+import Modal from "@/components/reusable/Modal.vue";
 
 import { useTenant } from "@/composables/useTenant";
 import { generatePixPayload } from "@/lib/utils";
@@ -23,12 +23,12 @@ import * as z from "zod";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import ProductGallery from "@/components/ui/ProductGallery.vue";
-import QrcodeVue from "qrcode-vue";
+import QrcodeSvg from "qrcode.vue";
 import { useToast } from "@/components/ui/toast/use-toast";
 import type { IGuest } from "@/services/guest.service";
 import type { IProduct } from "@/services/product.service";
 import Autoplay from "embla-carousel-autoplay";
-import FormGroup from "@/components/ui/FormGroup.vue";
+import FormGroup from "@/components/reusable/FormGroup.vue";
 
 dayjs.locale("pt-br");
 
@@ -400,7 +400,7 @@ const deleteMessage = async (msgId: string) => {
                       <img v-if="(currentUser?.prefs as any)?.photoURL" :src="(currentUser.prefs as any).photoURL"
                         alt="Foto" class="w-6 h-6 rounded-full" />
                       <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ currentUser.name
-                          }}</strong></span>
+                      }}</strong></span>
                     </div>
                     <Button @click="submitMessage" :disabled="!messageContent"
                       class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
@@ -480,14 +480,14 @@ const deleteMessage = async (msgId: string) => {
     </div>
 
     <!-- PIX Modal -->
-    <Dialog v-model:open="showPixModal"
+    <Modal v-model:open="showPixModal"
       :title="selectedProduct?.type === 'quota' ? 'Pagamento da Cota PIX' : 'Presentear com Valor (PIX)'">
       <div v-if="selectedProduct" class="space-y-6 text-center">
         <p class="text-slate-600">Escaneie o QR Code abaixo para presentear <strong>{{ tenant?.couple_name }}</strong>.
         </p>
 
         <div class="flex justify-center bg-white p-4 rounded-xl border">
-          <qrcode-vue :value="pixPayload" :size="200" level="H" />
+          <qrcode-svg :value="pixPayload" :size="200" level="H" />
         </div>
 
         <div class="space-y-2">
@@ -496,7 +496,7 @@ const deleteMessage = async (msgId: string) => {
               (Number(selectedProduct.base_price) || 0) }}
           </p>
           <p class="text-sm text-slate-500">{{ selectedProduct.name }} <span
-              v-if="selectedProduct.type === 'quota' && (quotaQuantities[selectedProduct.$id] || 1) > 1">({{
+              v-if="selectedProduct.type === 'quota' && (quotaQuantities[selectedProduct.$id] || 1) > 1">(({{
                 quotaQuantities[selectedProduct.$id] }} cotas)</span></p>
         </div>
 
@@ -504,18 +504,18 @@ const deleteMessage = async (msgId: string) => {
           Copiar Chave PIX
         </Button>
       </div>
-    </Dialog>
+    </Modal>
 
     <!-- Store Links Modal -->
-    <Dialog v-model:open="showLinksModal" :title="`Onde comprar: ${selectedProduct?.name}`">
+    <Modal v-model:open="showLinksModal" :title="`Onde comprar: ${selectedProduct?.name}`">
       <div class="space-y-4">
         <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
           class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
           <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
-          }}</span>
+            }}</span>
         </a>
       </div>
-    </Dialog>
+    </Modal>
 
   </main>
 </template>
