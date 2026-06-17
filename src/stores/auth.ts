@@ -65,17 +65,35 @@ export const useAuthStore = defineStore("auth", {
 						localStorage.removeItem("pending_tenant");
 						const t = await TenantService.get(sessionUser.$id);
 						this.tenant = t;
-						this.guest = await GuestService.get(sessionUser.$id);
+						const g = await GuestService.get(sessionUser.$id);
+						this.guest = g && g.$id ? g : {
+							$id: sessionUser.$id,
+							email: sessionUser.email,
+							name: sessionUser.name,
+						} as IGuest;
 						return;
 					}
 
 					try {
 						const t = await TenantService.get(sessionUser.$id);
 						this.tenant = t;
-						this.guest = await GuestService.get(sessionUser.$id);
 					} catch (e) {
 						this.tenant = null;
-						this.guest = null;
+					}
+
+					try {
+						const g = await GuestService.get(sessionUser.$id);
+						this.guest = g && g.$id ? g : {
+							$id: sessionUser.$id,
+							email: sessionUser.email,
+							name: sessionUser.name,
+						} as IGuest;
+					} catch (e) {
+						this.guest = {
+							$id: sessionUser.$id,
+							email: sessionUser.email,
+							name: sessionUser.name,
+						} as IGuest;
 					}
 				}
 			} catch (err) {

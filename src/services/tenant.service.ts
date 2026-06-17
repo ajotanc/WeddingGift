@@ -16,6 +16,7 @@ export interface ITenant extends Models.Row {
 	event_time?: string | null;
 	event_location: string | null;
 	couple_history?: string;
+	quote?: string;
 	status: "active" | "pending";
 	primary_color: string;
 	background_color: string;

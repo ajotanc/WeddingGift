@@ -8,6 +8,10 @@ import type { IPurchase } from "@/services/purchase.service";
 import { useAuthStore } from "@/stores/auth";
 import { ref, watch } from "vue";
 
+import Modal from "@/components/reusable/Modal.vue";
+import FormGroup from "@/components/reusable/FormGroup.vue";
+import { User, Gift, Receipt, Loader2 } from "lucide-vue-next";
+
 const props = defineProps<{
 	open: boolean;
 	tenantPurchases?: IPurchase[];

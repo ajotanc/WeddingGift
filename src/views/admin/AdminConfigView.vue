@@ -17,7 +17,6 @@ import { InputGroup, InputGroupInput, InputGroupText } from "@/components/ui/inp
 import { Loader2 } from "lucide-vue-next";
 import DatePicker from "@/components/reusable/DatePicker.vue";
 import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 const { toast } = useToast();
@@ -35,6 +34,7 @@ const zodSchema = z.object({
 		.regex(/^[a-z0-9-]+$/, "Apenas letras minúsculas, números e hifens"),
 	pix_key: z.string().min(5, "Chave PIX inválida"),
 	couple_history: z.string().optional(),
+	quote: z.string().optional(),
 	event_date: z.string().nullable().optional(),
 	event_time: z.string().nullable().optional(),
 	event_location: z.string().nullable().optional(),
@@ -76,6 +76,7 @@ const { handleSubmit, errors, setValues, defineField } =
 			slug: "",
 			pix_key: "",
 			couple_history: "",
+			quote: "",
 			event_date: null,
 			event_time: null,
 			show_countdown: true,
@@ -89,6 +90,7 @@ const [bride_name] = defineField("bride_name");
 const [slug] = defineField("slug");
 const [pix_key] = defineField("pix_key");
 const [couple_history] = defineField("couple_history");
+const [quote] = defineField("quote");
 const [event_date] = defineField("event_date");
 const [event_time] = defineField("event_time");
 const [event_location] = defineField("event_location");
@@ -101,7 +103,6 @@ const [background_color] = defineField("background_color");
 const isSaving = ref(false);
 
 const loadSettings = () => {
-	console.log(tenant.value);
 	if (tenant.value) {
 		setValues({
 			groom_name: tenant.value.groom_name || "",
@@ -109,6 +110,7 @@ const loadSettings = () => {
 			slug: tenant.value.slug || "",
 			pix_key: tenant.value.pix_key || "",
 			couple_history: tenant.value.couple_history || "",
+			quote: tenant.value.quote || "",
 			event_date: tenant.value.event_date || null,
 			event_time: tenant.value.event_time || null,
 			event_location: tenant.value.event_location || "",
@@ -298,7 +300,13 @@ const saveSettings = handleSubmit(async (values) => {
 				</div>
 			</FormGroup>
 
-			<div class="border-t border-slate-100 pt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+			<div class="grid grid-cols-1 gap-6">
+				<FormGroup label="Citação" :error="errors.quote">
+					<Input v-model="quote" placeholder="Tudo posso naquele que me fortalece." class="bg-slate-50/50" />
+				</FormGroup>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<FormGroup label="Data do Evento" :error="errors.event_date">
 					<DatePicker v-model="event_date" class="bg-slate-50/50" />
 				</FormGroup>
@@ -313,7 +321,14 @@ const saveSettings = handleSubmit(async (values) => {
 					<p class="text-xs text-slate-500 mt-1">Selecionado: {{ event_location }}</p>
 				</FormGroup>
 
-
+				<FormGroup label="Exibir Contagem Regressiva">
+					<div class="flex items-center gap-2">
+						<Switch v-model="show_countdown" id="show_countdown" />
+						<label for="show_countdown">
+							{{ show_countdown ? 'Ativo' : 'Inativo' }}
+						</label>
+					</div>
+				</FormGroup>
 
 				<FormGroup label="Limite de Convidados" :error="errors.guest_limit">
 					<Input type="number" v-model.number="guest_limit" min="0" class="bg-slate-50/50" />

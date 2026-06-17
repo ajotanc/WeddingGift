@@ -7,6 +7,7 @@ export interface IMessage extends Models.Row {
 	tenant: string;
 	content: string;
 	guest: IGuest;
+	likes?: string[];
 }
 
 export const MessageService = {
@@ -71,6 +72,16 @@ export const MessageService = {
 			databaseId: DATABASE_ID,
 			tableId: TABLE_MESSAGES,
 			rowId: id,
+		});
+	},
+
+	async likes(rowId: string, likes: string[]): Promise<IMessage> {
+		return await tables.updateRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_MESSAGES,
+			rowId,
+			data: { likes },
+			permissions: PUBLIC_PERMISSIONS,
 		});
 	},
 };

@@ -9,10 +9,12 @@ import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
 import CountdownTimer from "@/components/ui/CountdownTimer.vue";
 import LeafletMap from "@/components/ui/LeafletMap.vue";
 import Modal from "@/components/reusable/Modal.vue";
+import GuestProfileModal from "@/components/GuestProfileModal.vue";
 
 import { useTenant } from "@/composables/useTenant";
 import { generatePixPayload } from "@/lib/utils";
-import { MessageService } from "@/services/message.service";
+import { generateThankYouMessage } from "@/lib/ai";
+import { IMessage, MessageService } from "@/services/message.service";
 import { RsvpService } from "@/services/rsvp.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -32,7 +34,11 @@ import FormGroup from "@/components/reusable/FormGroup.vue";
 
 dayjs.locale("pt-br");
 
-const carouselPlugins = [Autoplay({ delay: 3000, stopOnInteraction: true })];
+const carouselPlugins = [Autoplay({
+  delay: 3000,
+  stopOnInteraction: false,
+  stopOnMouseEnter: true,
+})];
 
 const { toast } = useToast();
 const { tenant, products, messages, loading, error } = useTenant();
@@ -232,6 +238,30 @@ const deleteMessage = async (msgId: string) => {
     });
   }
 };
+
+const toggleLike = async (msg: any) => {
+  // Garantia de segurança para o ID do convidado
+  const guestId = authStore.guest?.$id;
+  if (!guestId) return;
+
+  const originalLikes = [...(msg.likes || [])];
+  const isLiked = msg.likes?.includes(guestId);
+
+  // Optimistic UI: Atualiza array local imediatamente
+  if (isLiked) {
+    msg.likes = msg.likes.filter((id: string) => id !== guestId);
+  } else {
+    msg.likes = [...(msg.likes || []), guestId];
+  }
+
+  try {
+    await MessageService.likes(msg.$id, msg.likes);
+  } catch (err) {
+    msg.likes = originalLikes;
+
+    toast({ title: "Erro", description: "Falha ao curtir.", variant: "destructive" });
+  }
+};
 </script>
 
 <template>
@@ -397,10 +427,10 @@ const deleteMessage = async (msgId: string) => {
                   <div
                     class="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-slate-50 gap-4">
                     <div class="flex items-center gap-2">
-                      <img v-if="(currentUser?.prefs as any)?.photoURL" :src="(currentUser.prefs as any).photoURL"
-                        alt="Foto" class="w-6 h-6 rounded-full" />
-                      <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ currentUser.name
-                      }}</strong></span>
+                      <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
+                        class="w-6 h-6 rounded-full" />
+                      <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ authStore.guest?.name
+                          }}</strong></span>
                     </div>
                     <Button @click="submitMessage" :disabled="!messageContent"
                       class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
@@ -417,7 +447,7 @@ const deleteMessage = async (msgId: string) => {
                     <div
                       class="h-full w-full max-w-full p-6 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col gap-6"
                       :class="index % 2 === 0 ? 'bg-white border border-slate-100/80' : 'bg-primary border border-transparent'">
-                      <div class="flex justify-between items-start gap-4 z-10 w-full max-w-full">
+                      <div class="flex justify-between items-center gap-4 z-10 w-full max-w-full">
                         <!-- Quote icon -->
                         <svg class="w-8 h-8 shrink-0" :class="index % 2 === 0 ? 'text-primary/20' : 'text-white/20'"
                           fill="currentColor" viewBox="0 0 24 24">
@@ -425,8 +455,56 @@ const deleteMessage = async (msgId: string) => {
                             d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                         </svg>
 
+                        <!-- Likes -->
+                        <div class="flex items-center justify-center gap-2">
+                          <Button variant="ghost" @click="toggleLike(msg)"
+                            class="!p-0.5 transition-all duration-300 rounded-full hover:scale-125 active:scale-90"
+                            :class="[
+                              index % 2 === 0
+                                ? 'text-slate-300 hover:text-red-500'
+                                : 'text-white/50 hover:text-white',
+                              msg.likes?.includes(authStore.guest?.$id || '') ? 'text-red-500 scale-100' : ''
+                            ]">
+                            <svg class="w-6 h-6 transition-all duration-300"
+                              :fill="msg.likes?.includes(authStore.guest?.$id || '') ? 'currentColor' : 'none'"
+                              stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </Button>
+
+                          <span class="text-sm font-medium tabular-nums"
+                            :class="index % 2 === 0 ? 'text-slate-500' : 'text-white/80'">
+                            {{ msg.likes?.length || 0 }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p class="reveal-text font-serif italic leading-relaxed text-lg z-10 whitespace-pre-wrap break-words w-full min-w-0 max-w-full"
+                        :class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'" v-html="msg.content" />
+
+                      <div
+                        class="flex items-center justify-between mt-auto pt-6 border-t z-10 w-full max-w-full min-w-0">
+                        <div class="flex items-center gap-4 w-full"
+                          :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">
+                          <img v-if="msg.guest.photo_url" :src="msg.guest.photo_url"
+                            class="w-12 h-12 shrink-0 rounded-full border-2 shadow-sm"
+                            :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'" />
+                          <div v-else
+                            class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-bold border-2"
+                            :class="index % 2 === 0 ? 'bg-slate-50 border-slate-100 text-slate-400' : 'bg-white/10 border-white/20 text-white'">
+                            {{ msg.guest.name?.charAt(0).toUpperCase() }}
+                          </div>
+                          <div class="flex flex-col min-w-0">
+                            <p class="text-sm font-medium tracking-wide truncate"
+                              :class="index % 2 === 0 ? 'text-slate-900' : 'text-white'">{{ msg.guest.name }}</p>
+                            <p class="text-xs font-light mt-0.5 truncate"
+                              :class="index % 2 === 0 ? 'text-slate-400' : 'text-white/70'">{{
+                                dayjs(msg.$createdAt).format('DD [de] MMMM [de] YYYY') }}</p>
+                          </div>
+                        </div>
                         <!-- Delete button -->
-                        <button v-if="currentUser && (currentUser.$id === msg.guest.$id)"
+                        <Button v-if="currentUser && (currentUser.$id === msg.guest.$id)"
                           @click="deleteMessage(msg.$id)"
                           class="transition-colors p-2 -mt-2 -mr-2 rounded-full focus:opacity-100"
                           :class="index % 2 === 0 ? 'text-slate-300 hover:text-red-500 hover:bg-red-50' : 'text-white/50 hover:text-white hover:bg-white/10'"
@@ -435,29 +513,7 @@ const deleteMessage = async (msgId: string) => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
-                        </button>
-                      </div>
-
-                      <p class="font-serif italic leading-relaxed text-lg z-10 whitespace-pre-wrap break-words w-full min-w-0 max-w-full"
-                        :class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'">"{{ msg.content }}"</p>
-
-                      <div class="flex items-center gap-4 mt-auto pt-6 border-t z-10 w-full max-w-full min-w-0"
-                        :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">
-                        <img v-if="msg.guest.photo_url" :src="msg.guest.photo_url"
-                          class="w-12 h-12 shrink-0 rounded-full border-2 shadow-sm"
-                          :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'" />
-                        <div v-else
-                          class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-bold border-2"
-                          :class="index % 2 === 0 ? 'bg-slate-50 border-slate-100 text-slate-400' : 'bg-white/10 border-white/20 text-white'">
-                          {{ msg.guest.name?.charAt(0).toUpperCase() }}
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                          <p class="text-sm font-medium tracking-wide truncate"
-                            :class="index % 2 === 0 ? 'text-slate-900' : 'text-white'">{{ msg.guest.name }}</p>
-                          <p class="text-xs font-light mt-0.5 truncate"
-                            :class="index % 2 === 0 ? 'text-slate-400' : 'text-white/70'">{{
-                              dayjs(msg.$createdAt).format('DD [de] MMMM [de] YYYY') }}</p>
-                        </div>
+                        </Button>
                       </div>
                     </div>
                   </CarouselItem>
@@ -512,7 +568,7 @@ const deleteMessage = async (msgId: string) => {
         <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
           class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
           <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
-            }}</span>
+          }}</span>
         </a>
       </div>
     </Modal>
