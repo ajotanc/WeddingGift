@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import Combobox from "@/components/reusable/Combobox.vue";
+import FormGroup from "@/components/reusable/FormGroup.vue";
+import Modal from "@/components/reusable/Modal.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
-import { useConfirm } from "@/components/ui/confirm-dialog/useConfirm";
-import { useToast } from "@/components/ui/toast/use-toast";
+import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
+import { Input } from "@/components/ui/input";
+import ProductGallery from "@/components/ui/ProductGallery.vue";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney } from "@/lib/money";
 import {
@@ -13,11 +18,12 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import type { SerperItem } from "@/types";
 import { toTypedSchema } from "@vee-validate/zod";
+import { ExternalLink, Plus, Search, UploadCloud, X } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref } from "vue";
+import { toast } from "vue-sonner";
 import { z } from "zod";
 
-const { toast } = useToast();
 const { confirm } = useConfirm();
 const { tenant, products } = useTenant();
 const authStore = useAuthStore();
@@ -209,11 +215,7 @@ const editPhysical = (p: IProduct) => {
 
 const searchExternalLinks = async () => {
 	if (!pName.value) {
-		toast({
-			title: "Aviso",
-			description: "Preencha o nome do produto para buscar os links.",
-			variant: "destructive",
-		});
+		toast.info("Aviso", { description: "Preencha o nome do produto para buscar os links." });
 		return;
 	}
 	isSearchingLinks.value = true;
@@ -473,23 +475,17 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 });
 
 const deleteProduct = async (product: IProduct) => {
-	const isConfirmed = await confirm({
+	confirm({
 		title: product.name,
-		description:
-			"Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita.",
-		confirmText: "Sim",
+		description: "Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita.",
+		confirmText: "Sim, excluir",
 		cancelText: "Não",
+		confirm: async () => {
+			await ProductService.delete(product.$id);
+			products.value = products.value.filter((p) => p.$id !== product.$id);
+			toast.success("Sucesso", { description: "Item excluído com sucesso!" });
+		},
 	});
-
-	if (isConfirmed) {
-		await ProductService.delete(product.$id);
-		products.value = products.value.filter((p) => p.$id !== product.$id);
-
-		toast({
-			title: "Sucesso",
-			description: "Item excluído com sucesso!",
-		});
-	}
 };
 </script>
 
@@ -502,14 +498,14 @@ const deleteProduct = async (product: IProduct) => {
 		</PageHeader>
 
 		<!-- Products Gallery -->
-		<ProductGallery :products="products" :tenant="tenant!" mode="admin"
-			@edit="(p: IProduct) => p.type === 'quota' ? editQuota(p) : editPhysical(p)"
-			@delete="deleteProduct" />
+		<ProductGallery :products="products" :tenant="tenant" mode="admin"
+			@edit="(p: IProduct) => p.type === 'quota' ? editQuota(p) : editPhysical(p)" @delete="deleteProduct" />
 
 		<!-- Modals -->
 		<!-- Physical Modal -->
-		<Modal v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'" class="max-w-2xl">
-				<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
+		<Modal v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'"
+			class="max-w-2xl">
+			<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
 				<FormGroup label="Nome do Produto" :error="physicalErrors.name">
 					<Input v-model="pName" placeholder="Ex: Jogo de Panelas Tramontina" />
 				</FormGroup>
@@ -599,8 +595,9 @@ const deleteProduct = async (product: IProduct) => {
 		</Modal>
 
 		<!-- Quota Modal -->
-		<Modal v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'" class="max-w-2xl">
-				<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
+		<Modal v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'"
+			class="max-w-2xl">
+			<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
 				<FormGroup label="Nome da Experiência" :error="quotaErrors.name">
 					<Input v-model="qName" placeholder="Ex: Jantar Romântico" />
 				</FormGroup>
@@ -648,7 +645,7 @@ const deleteProduct = async (product: IProduct) => {
 						</button>
 					</div>
 				</FormGroup>
-				</div>
+			</div>
 			<div class="pt-4 mt-2 border-t border-slate-100">
 				<Button class="w-full" @click="quotaSubmit">Salvar Cota</Button>
 			</div>

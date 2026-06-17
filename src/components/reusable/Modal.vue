@@ -18,13 +18,15 @@ const emit = defineEmits<(e: "update:open", v: boolean) => void>();
 
 <template>
 	<Dialog :open="props.open" @update:open="emit('update:open', $event)">
-		<DialogContent>
+		<DialogContent aria-describedby="modal-description">
 			<DialogHeader v-if="props.title || props.description">
 				<DialogTitle v-if="props.title">{{ props.title }}</DialogTitle>
-				<DialogDescription v-if="props.description">
+
+				<DialogDescription :class="{ 'hidden': !props.description }">
 					{{ props.description }}
 				</DialogDescription>
 			</DialogHeader>
+
 			<slot />
 		</DialogContent>
 	</Dialog>

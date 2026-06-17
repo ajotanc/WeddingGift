@@ -30,7 +30,7 @@ import Combobox from "../reusable/Combobox.vue";
 
 const props = defineProps<{
   products: IProduct[];
-  tenant: ITenant;
+  tenant: ITenant | null;
   mode: "public" | "admin";
   currentUser?: Record<string, unknown> | null;
 }>();
@@ -148,7 +148,7 @@ const updateItemsPerPage = (event: Event) => {
 
             <template v-if="product.type === 'quota'">
               <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest"
-                :style="{ color: tenant.primary_color, backgroundColor: (tenant.primary_color || '#000000') + '1a' }">Cota</span>
+                :style="{ color: tenant?.primary_color, backgroundColor: (tenant?.primary_color || '#000000') + '1a' }">Cota</span>
               <span
                 class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">
                 {{ product.claimed_quantity || 0 }}/{{ product.desired_quantity }}
@@ -156,7 +156,7 @@ const updateItemsPerPage = (event: Event) => {
             </template>
             <template v-else>
               <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest"
-                :style="{ color: tenant.primary_color, backgroundColor: (tenant.primary_color || '#000000') + '1a' }">
+                :style="{ color: tenant?.primary_color, backgroundColor: (tenant?.primary_color || '#000000') + '1a' }">
                 {{ (product.desired_quantity && product.desired_quantity === 1 ? 'Único Produto' :
                   `${product.claimed_quantity || 0}/${product.desired_quantity}`) }}
               </span>
@@ -181,7 +181,7 @@ const updateItemsPerPage = (event: Event) => {
             </p>
 
             <div v-if="isProductSoldOut(product)"
-              class="mt-4 w-full rounded-xl h-12 flex items-center justify-center gap-2 bg-rose-50 border border-rose-100/50 text-center transition-all shadow-sm">
+              class="mt-4 w-full rounded-xl flex items-center justify-center gap-2 bg-rose-50 border border-rose-100/50 text-center transition-all shadow-sm">
               <span class="text-sm font-semibold text-rose-600 uppercase tracking-widest">Já Reservado</span>
               <Heart class="w-5 h-5 text-rose-500 fill-rose-100" />
             </div>
@@ -191,33 +191,33 @@ const updateItemsPerPage = (event: Event) => {
 
                 <div v-if="getRemainingQuantity(product) > 1" class="flex items-center gap-2 mb-2">
                   <Button variant="outline"
-                    class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
+                    class="w-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">-</Button>
 
                   <Input type="number" min="1" :max="getRemainingQuantity(product)"
-                    class="text-center rounded-xl h-12 border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="text-center rounded-xl border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     :model-value="getLocalQuantity(product.$id)"
                     @update:model-value="(val: string | number) => setLocalQuantity(product.$id, Number(val), getRemainingQuantity(product))" />
 
                   <Button variant="outline"
-                    class="w-12 h-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
+                    class="w-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">+</Button>
                 </div>
 
                 <template v-if="product.type === 'quota'">
-                  <Button class="w-full rounded-xl h-12 font-medium shadow-sm hover:shadow-md transition-all"
+                  <Button class="w-full rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
                     @click="handleOpenPix(product)">
                     Presentear com PIX
                   </Button>
                 </template>
                 <template v-else-if="product.type === 'physical'">
                   <Button v-if="product.links && product.links.length > 0" variant="outline"
-                    class="w-full rounded-xl h-12 border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    class="w-full rounded-xl border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                     @click="handleOpenLinks(product)">
                     Comprar na Loja
                   </Button>
                   <Button v-if="product.base_price"
-                    class="w-full rounded-xl h-12 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out"
+                    class="w-full rounded-xl font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out"
                     @click="handleOpenPix(product)">
                     Presentear via PIX
                   </Button>
@@ -227,19 +227,19 @@ const updateItemsPerPage = (event: Event) => {
               <div v-else
                 class="text-center p-5 mt-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col gap-4">
                 <p class="text-slate-500 font-light text-sm">Faça login com sua conta Google para presentear.</p>
-                <GoogleAuthButton @click="emit('require-auth')" :fill="true" :themeColor="tenant.primary_color"
+                <GoogleAuthButton @click="emit('require-auth')" :fill="true" :themeColor="tenant?.primary_color"
                   class="mx-auto w-full" />
               </div>
             </template>
 
             <template v-if="mode === 'admin'">
               <div class="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-                <Button variant="outline" class="flex-1 text-slate-600 hover:text-slate-900 h-12"
+                <Button variant="outline" class="flex-1 text-slate-600 hover:text-slate-900"
                   @click="emit('edit', product)">
                   <Edit2 class="w-4 h-4 mr-2" /> Editar
                 </Button>
                 <Button variant="outline"
-                  class="w-12 text-red-500 hover:text-red-600 hover:bg-red-50 h-12 p-0 flex items-center justify-center shrink-0"
+                  class="w-12 text-red-500 hover:text-red-600 hover:bg-red-50 p-0 flex items-center justify-center shrink-0"
                   @click="emit('delete', product)" :disabled="(product.claimed_quantity || 0) > 0">
                   <Trash2 class="w-4 h-4" />
                 </Button>

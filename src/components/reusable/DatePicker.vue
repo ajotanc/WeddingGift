@@ -70,7 +70,7 @@ const onInputBlur = () => {
 <template>
 	<div class="relative flex items-center w-full">
 		<input v-model="displayValue" v-maska="'##/##/####'" type="text" placeholder="DD/MM/AAAA"
-			class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-12"
+			class="flex h-12 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-12"
 			@blur="onInputBlur" @keydown.enter="onInputBlur" />
 		<Popover v-model:open="popoverOpen">
 			<PopoverTrigger as-child>

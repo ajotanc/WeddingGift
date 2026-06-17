@@ -14,7 +14,7 @@ import GuestProfileModal from "@/components/GuestProfileModal.vue";
 import { useTenant } from "@/composables/useTenant";
 import { generatePixPayload } from "@/lib/utils";
 import { generateThankYouMessage } from "@/lib/ai";
-import { IMessage, MessageService } from "@/services/message.service";
+import { type IMessage, MessageService } from "@/services/message.service";
 import { RsvpService } from "@/services/rsvp.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -26,11 +26,11 @@ import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import ProductGallery from "@/components/ui/ProductGallery.vue";
 import QrcodeSvg from "qrcode.vue";
-import { useToast } from "@/components/ui/toast/use-toast";
 import type { IGuest } from "@/services/guest.service";
 import type { IProduct } from "@/services/product.service";
 import Autoplay from "embla-carousel-autoplay";
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import { toast } from "vue-sonner";
 
 dayjs.locale("pt-br");
 
@@ -40,7 +40,6 @@ const carouselPlugins = [Autoplay({
   stopOnMouseEnter: true,
 })];
 
-const { toast } = useToast();
 const { tenant, products, messages, loading, error } = useTenant();
 const authStore = useAuthStore();
 
@@ -116,10 +115,7 @@ const openLinksModal = async (product: IProduct) => {
 const copyPix = () => {
   if (!tenant.value?.pix_key) return;
   navigator.clipboard.writeText(tenant.value.pix_key);
-  toast({
-    title: "Sucesso",
-    description: "Chave PIX copiada para a área de transferência!",
-  });
+  toast.success("Sucesso", { description: "Chave PIX copiada para a área de transferência!" });
 };
 
 // RSVP Validation Schema
@@ -239,23 +235,21 @@ const deleteMessage = async (msgId: string) => {
   }
 };
 
-const toggleLike = async (msg: any) => {
-  // Garantia de segurança para o ID do convidado
+const toggleLike = async (msg: IMessage) => {
   const guestId = authStore.guest?.$id;
   if (!guestId) return;
 
   const originalLikes = [...(msg.likes || [])];
   const isLiked = msg.likes?.includes(guestId);
 
-  // Optimistic UI: Atualiza array local imediatamente
   if (isLiked) {
-    msg.likes = msg.likes.filter((id: string) => id !== guestId);
+    msg.likes = msg.likes?.filter((id) => id !== guestId);
   } else {
     msg.likes = [...(msg.likes || []), guestId];
   }
 
   try {
-    await MessageService.likes(msg.$id, msg.likes);
+    msg.likes?.length && await MessageService.likes(msg.$id, msg.likes);
   } catch (err) {
     msg.likes = originalLikes;
 
@@ -430,7 +424,7 @@ const toggleLike = async (msg: any) => {
                       <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
                         class="w-6 h-6 rounded-full" />
                       <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ authStore.guest?.name
-                          }}</strong></span>
+                      }}</strong></span>
                     </div>
                     <Button @click="submitMessage" :disabled="!messageContent"
                       class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
@@ -568,7 +562,7 @@ const toggleLike = async (msg: any) => {
         <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
           class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
           <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
-          }}</span>
+            }}</span>
         </a>
       </div>
     </Modal>

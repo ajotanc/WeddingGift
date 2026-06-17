@@ -11,15 +11,13 @@ interface Option {
 }
 
 const props = defineProps<{
-  modelValue: string;
+  modelValue?: string;
   options: Option[];
   placeholder?: string;
   emptyText?: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', val: string): void;
-}>();
+const emit = defineEmits<(e: 'update:modelValue', val: string) => void>();
 
 const open = ref(false);
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useToast } from "@/components/ui/toast/use-toast";
 import { useTenant } from "@/composables/useTenant";
 import { TenantService } from "@/services/tenant.service";
 import { useAuthStore } from "@/stores/auth";
@@ -18,8 +17,8 @@ import { Loader2 } from "lucide-vue-next";
 import DatePicker from "@/components/reusable/DatePicker.vue";
 import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
 import { Button } from "@/components/ui/button";
+import { toast } from "vue-sonner";
 
-const { toast } = useToast();
 const { tenant } = useTenant();
 const authStore = useAuthStore();
 
@@ -134,9 +133,9 @@ watch(
 watch([groom_name, bride_name], ([groom, bride]) => {
 	if (groom && bride) {
 		const generated = `${bride}-${groom}`
-			.toLowerCase()
 			.normalize("NFD")
-			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/\p{M}/gu, "")
+			.toLowerCase()
 			.replace(/[^a-z0-9-]/g, "");
 
 		slug.value = generated;
@@ -334,15 +333,15 @@ const saveSettings = handleSubmit(async (values) => {
 					<Input type="number" v-model.number="guest_limit" min="0" class="bg-slate-50/50" />
 				</FormGroup>
 
-				<FormGroup label="Cor Principal (Tema)">
+				<FormGroup label="Cor Principal">
 					<div class="flex items-center gap-4">
-						<Input type="color" v-model="primary_color" class="w-12 h-12 rounded cursor-pointer border-0 p-0" />
+						<Input type="color" v-model="primary_color" class="w-8 h-8 rounded cursor-pointer p-0" />
 						<span class="text-sm font-medium text-slate-600">{{ primary_color }}</span>
 					</div>
 				</FormGroup>
 
-				<FormGroup label="Cor do Cabeçalho do Dashboard" :error="errors.background_color">
-					<Input type="color" v-model="background_color" class="w-12 h-12 rounded cursor-pointer border-0 p-0" />
+				<FormGroup label="Cor de Fundo" :error="errors.background_color">
+					<Input type="color" v-model="background_color" class="w-8 h-8 rounded cursor-pointer p-0" />
 				</FormGroup>
 
 				<FormGroup label="Imagem de Fundo" class="md:col-span-2" :error="errors.background_image">

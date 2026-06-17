@@ -17,17 +17,11 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
-  <MenubarRoot
-    v-slot="slotProps"
-    data-slot="menubar"
-    v-bind="forwarded"
-    :class="
-      cn(
-        'bg-background flex h-9 items-center gap-1 rounded-md border p-1 shadow-xs',
-        props.class,
-      )
-    "
-  >
+  <MenubarRoot v-slot="slotProps" data-slot="menubar" v-bind="forwarded" :class="cn(
+    'bg-white flex h-9 items-center gap-1 rounded-md border p-1 shadow-xs',
+    props.class,
+  )
+    ">
     <slot v-bind="slotProps" />
   </MenubarRoot>
 </template>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useConfirm } from "@/components/ui/confirm-dialog/useConfirm";
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { useTenant } from "@/composables/useTenant";
 import { generateThankYouMessage } from "@/lib/ai";
 import type { IGuest } from "@/services/guest.service";
@@ -13,8 +12,8 @@ import * as XLSX from "xlsx";
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/reusable/Modal.vue";
+import { toast } from "vue-sonner";
 
-const { toast } = useToast();
 const { confirm } = useConfirm();
 const { tenant, rsvps, messages } = useTenant();
 
@@ -37,23 +36,18 @@ const populatedMessages = computed(() => {
 });
 
 const deleteMsg = async (id: string) => {
-  const isConfirmed = await confirm({
+  confirm({
     title: "Excluir Recado",
-    description:
-      "Tem certeza de que deseja excluir este recado? Esta ação não pode ser desfeita.",
-    confirmText: "Sim",
+    description: "Tem certeza de que deseja excluir este recado? Esta ação não pode ser desfeita.",
+    confirmText: "Sim, excluir",
     cancelText: "Não",
+    confirm: async () => {
+      await MessageService.delete(id);
+      messages.value = messages.value.filter((m) => m.$id !== id);
+      toast({ title: "Sucesso", description: "Recado excluído com sucesso!" });
+    },
+    cancel: () => toast.warning("Ação cancelada", { description: "Recado não excluído!" })
   });
-
-  if (isConfirmed) {
-    await MessageService.delete(id);
-    messages.value = messages.value.filter((m) => m.$id !== id);
-
-    toast({
-      title: "Sucesso",
-      description: "Mensagem excluída!",
-    });
-  }
 };
 
 // Gemini AI

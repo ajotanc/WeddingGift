@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 
-import Toaster from '@/components/ui/toast/Toaster.vue'
-import ConfirmDialogProvider from '@/components/ui/confirm-dialog/ConfirmDialogProvider.vue';
+import { Toaster } from "@/components/ui/sonner"
+import Confirm from '@/components/ui/confirm/Confirm.vue';
 </script>
 
 <template>
   <RouterView />
-  <Toaster />
-  <ConfirmDialogProvider />
+  <Confirm />
+  <Toaster position="top-right" richColors />
 </template>

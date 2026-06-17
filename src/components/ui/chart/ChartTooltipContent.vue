@@ -47,42 +47,32 @@ const tooltipLabel = computed(() => {
 </script>
 
 <template>
-  <div
-    :class="cn(
-      'border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
-      props.class,
-    )"
-  >
+  <div :class="cn(
+    'border-border/50 bg-white grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
+    props.class,
+  )">
     <slot>
       <div v-if="!nestLabel && tooltipLabel" class="font-medium">
         {{ tooltipLabel }}
       </div>
       <div class="grid gap-1.5">
-        <div
-          v-for="{ value, itemConfig, indicatorColor, key } in payload"
-          :key="key"
-          :class="
-            cn('[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
-               indicator === 'dot' && 'items-center')"
-        >
+        <div v-for="{ value, itemConfig, indicatorColor, key } in payload" :key="key" :class="cn('[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
+          indicator === 'dot' && 'items-center')">
           <component :is="itemConfig.icon" v-if="itemConfig?.icon" />
           <template v-else-if="!hideIndicator">
-            <div
-              :class="cn(
-                'shrink-0 rounded-xs border-(--color-border) bg-(--color-bg)',
-                {
-                  'h-2.5 w-2.5': indicator === 'dot',
-                  'w-1': indicator === 'line',
-                  'w-0 border-[1.5px] border-dashed bg-transparent':
-                    indicator === 'dashed',
-                  'my-0.5': nestLabel && indicator === 'dashed',
-                },
-              )"
-              :style="{
+            <div :class="cn(
+              'shrink-0 rounded-xs border-(--color-border) bg-(--color-bg)',
+              {
+                'h-2.5 w-2.5': indicator === 'dot',
+                'w-1': indicator === 'line',
+                'w-0 border-[1.5px] border-dashed bg-transparent':
+                  indicator === 'dashed',
+                'my-0.5': nestLabel && indicator === 'dashed',
+              },
+            )" :style="{
                 '--color-bg': indicatorColor,
                 '--color-border': indicatorColor,
-              }"
-            />
+              }" />
           </template>
 
           <div :class="cn('flex flex-1 justify-between leading-none', nestLabel ? 'items-end' : 'items-center')">
