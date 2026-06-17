@@ -36,7 +36,7 @@ const handleSelect = (value: string) => {
   <Popover v-model:open="open">
     <PopoverTrigger as-child>
       <Button type="button" role="combobox" :aria-expanded="open" variant="outline"
-        class="flex h-12 w-full max-w-[400px] items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-left cursor-pointer">
+        class="flex h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-left cursor-pointer">
         <span class="truncate">{{ currentLabel }}</span>
         <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50 text-slate-400" />
       </Button>

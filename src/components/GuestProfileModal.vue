@@ -139,11 +139,12 @@ const saveProfile = async () => {
               <h4 class="font-medium text-slate-900 truncate">{{ p.product?.name || 'Presente removido' }}
               </h4>
               <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1 text-sm text-slate-500">
-                <span class="flex items-center gap-1">
-                  <Receipt class="w-3.5 h-3.5" /> {{ p.quantity }}x cotas
-                </span>
-                <span class="hidden sm:inline text-slate-300">•</span>
-                <span class="font-medium text-primary">{{ formatMoney(Number(p.price_paid)) }}</span>
+                <span>{{ p.quantity }}x {{ p.product.type === 'quota' ? 'cota(s)' :
+                  'unidade(s)' }}</span>
+                <template v-if="p.method === 'pix'">
+                  <span class="hidden sm:inline text-slate-300">•</span>
+                  <span class="font-medium text-primary">{{ formatMoney(p.price_paid) }}</span>
+                </template>
               </div>
             </div>
           </div>

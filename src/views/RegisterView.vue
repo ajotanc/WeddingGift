@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { useToast } from "@/components/ui/toast/use-toast";
+import { toast } from "vue-sonner";
 import { useAuthStore } from "@/stores/auth";
 import { ref } from "vue";
-
-const { toast } = useToast();
 const authStore = useAuthStore();
 const loading = ref(false);
 
@@ -57,10 +55,8 @@ const registerTenant = async () => {
 		);
 	} catch (error) {
 		console.error("Registration error", error);
-		toast({
-			title: "Erro",
+		toast.error("Erro", {
 			description: "Erro ao iniciar registro.",
-			variant: "destructive",
 		});
 		loading.value = false;
 	}

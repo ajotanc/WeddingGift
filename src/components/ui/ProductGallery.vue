@@ -14,15 +14,23 @@ import {
   Edit2,
   Trash2,
   ChevronsUpDown,
+  Package,
+  QrCode,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
+
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationItem,
+  PaginationLast,
+  PaginationNext,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Card } from "@/components/ui/card";
 
@@ -38,7 +46,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "open-pix", product: IProduct, quantity: number): void;
   (e: "open-links", product: IProduct, quantity: number): void;
-  (e: "require-auth"): void;
   (e: "edit", product: IProduct): void;
   (e: "delete", product: IProduct): void;
 }>();
@@ -129,7 +136,7 @@ const updateItemsPerPage = (event: Event) => {
       <Card v-for="product in paginatedProducts" :key="product.$id"
         class="flex flex-col overflow-hidden border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-3xl transition-all hover:-translate-y-1 hover:shadow-md duration-300 bg-white group p-6">
 
-        <div v-if="product.type === 'physical' && product.image_url"
+        <div v-if="product.type === 'physical' && product?.image_url"
           class="bg-slate-100/60 p-6 rounded-xl aspect-square flex items-center justify-center">
           <img :src="product.image_url" alt="Produto"
             class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
@@ -170,28 +177,28 @@ const updateItemsPerPage = (event: Event) => {
               class="text-primary font-bold text-xl mt-1">
               {{ formatMoney(getProductPrice(product, getLocalQuantity(product.$id))) }}
               <span v-if="product.type === 'quota'" class="text-xs font-normal text-slate-400">/ {{
-                formatMoney(product.base_price) }}</span>
+                formatMoney(product.price) }}</span>
               <span v-else-if="getRemainingQuantity(product) > 1 && getLocalQuantity(product.$id) > 1"
                 class="text-xs font-normal text-slate-400">
-                ({{ getLocalQuantity(product.$id) }}x {{ formatMoney(product.base_price) }})
+                ({{ getLocalQuantity(product.$id) }}x {{ formatMoney(product.price) }})
               </span>
             </p>
             <p v-else class="text-primary font-bold text-xl mt-1">
-              {{ formatMoney(product.base_price) }}
+              {{ formatMoney(product.price) }}
             </p>
 
             <div v-if="isProductSoldOut(product)"
-              class="mt-4 w-full rounded-xl flex items-center justify-center gap-2 bg-rose-50 border border-rose-100/50 text-center transition-all shadow-sm">
+              class="mt-4 w-full h-11 rounded-xl flex items-center justify-center gap-2 bg-rose-50 border border-rose-100/50 text-center transition-all shadow-sm">
               <span class="text-sm font-semibold text-rose-600 uppercase tracking-widest">Já Reservado</span>
               <Heart class="w-5 h-5 text-rose-500 fill-rose-100" />
             </div>
 
             <template v-if="mode === 'public' && !isProductSoldOut(product)">
-              <div v-if="currentUser" class="flex flex-col gap-2 mt-4">
+              <div class="flex flex-col gap-2 mt-4">
 
                 <div v-if="getRemainingQuantity(product) > 1" class="flex items-center gap-2 mb-2">
                   <Button variant="outline"
-                    class="w-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
+                    class="w-12 p-0"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">-</Button>
 
                   <Input type="number" min="1" :max="getRemainingQuantity(product)"
@@ -200,47 +207,36 @@ const updateItemsPerPage = (event: Event) => {
                     @update:model-value="(val: string | number) => setLocalQuantity(product.$id, Number(val), getRemainingQuantity(product))" />
 
                   <Button variant="outline"
-                    class="w-12 p-0 rounded-xl shrink-0 border-slate-200 shadow-sm bg-slate-50/50 hover:bg-slate-100"
+                    class="w-12 p-0"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">+</Button>
                 </div>
 
                 <template v-if="product.type === 'quota'">
-                  <Button class="w-full rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
-                    @click="handleOpenPix(product)">
+                  <Button @click="handleOpenPix(product)">
                     Presentear com PIX
                   </Button>
                 </template>
                 <template v-else-if="product.type === 'physical'">
                   <Button v-if="product.links && product.links.length > 0" variant="outline"
-                    class="w-full rounded-xl border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                     @click="handleOpenLinks(product)">
                     Comprar na Loja
                   </Button>
-                  <Button v-if="product.base_price"
-                    class="w-full rounded-xl font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out"
-                    @click="handleOpenPix(product)">
-                    Presentear via PIX
+                  <Button v-if="product.price" @click="handleOpenPix(product)">
+                    Presentear com PIX
                   </Button>
                 </template>
-              </div>
-
-              <div v-else
-                class="text-center p-5 mt-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col gap-4">
-                <p class="text-slate-500 font-light text-sm">Faça login com sua conta Google para presentear.</p>
-                <GoogleAuthButton @click="emit('require-auth')" :fill="true" :themeColor="tenant?.primary_color"
-                  class="mx-auto w-full" />
               </div>
             </template>
 
             <template v-if="mode === 'admin'">
               <div class="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-                <Button variant="outline" class="flex-1 text-slate-600 hover:text-slate-900"
-                  @click="emit('edit', product)">
+                <Button variant="outline" class="flex-1"
+                  @click="emit('edit', product)" :disabled="product?.claimed_quantity > 0">
                   <Edit2 class="w-4 h-4 mr-2" /> Editar
                 </Button>
                 <Button variant="outline"
                   class="w-12 text-red-500 hover:text-red-600 hover:bg-red-50 p-0 flex items-center justify-center shrink-0"
-                  @click="emit('delete', product)" :disabled="(product.claimed_quantity || 0) > 0">
+                  @click="emit('delete', product)" :disabled="product?.claimed_quantity > 0">
                   <Trash2 class="w-4 h-4" />
                 </Button>
               </div>
@@ -270,44 +266,43 @@ const updateItemsPerPage = (event: Event) => {
         </div>
       </div>
 
-      <Pagination v-slot="{ page, items }" :total="filteredProducts.length" :sibling-count="1" show-edges
-        :default-page="1" v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
-        <PaginationContent class="gap-2 flex items-center">
-          <Button size="icon" variant="outline"
-            class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer"
+      <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges :default-page="1"
+        v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
+        <PaginationContent v-slot="{ items }" class="gap-2 flex items-center">
+          <PaginationFirst
+            class="w-10 h-10 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50"
             :disabled="currentPage === 1" @click="currentPage = 1">
             <ChevronsLeft class="w-5 h-5" />
-          </Button>
-
-          <Button size="icon" variant="outline"
-            class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer"
+          </PaginationFirst>
+          <PaginationPrevious
+            class="w-10 h-10 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50"
             :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)">
             <ChevronLeft class="w-5 h-5" />
-          </Button>
+          </PaginationPrevious>
 
-          <template v-for="(item, index) in items" :key="index">
-            <div v-if="item.type === 'ellipsis'" class="w-10 h-10 flex items-center justify-center text-slate-400">...
-            </div>
-            <button v-else class="w-10 h-10 rounded-xl font-medium transition-all"
-              :class="item.value === page ? 'bg-primary text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600'"
-              @click="currentPage = item.value">
+          <template v-for="(item, index) in items">
+            <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
+              :is-active="item.value === page" @click="currentPage = item.value"
+              class="w-10 h-10 p-0 rounded-xl font-medium transition-all cursor-pointer flex items-center justify-center"
+              :class="item.value === page ? 'bg-primary text-white shadow-md border-transparent hover:bg-primary/90' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
               {{ item.value }}
-            </button>
+            </PaginationItem>
+            <PaginationEllipsis v-else :key="item.type" :index="index"
+              class="w-10 h-10 p-0 flex items-center justify-center text-slate-400" />
           </template>
 
-          <Button size="icon" variant="outline"
-            class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer"
+          <PaginationNext
+            class="w-10 h-10 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50"
             :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
             @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)">
             <ChevronRight class="w-5 h-5" />
-          </Button>
-
-          <Button size="icon" variant="outline"
-            class="w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer"
+          </PaginationNext>
+          <PaginationLast
+            class="w-10 h-10 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50"
             :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
             @click="currentPage = Math.ceil(filteredProducts.length / itemsPerPage)">
             <ChevronsRight class="w-5 h-5" />
-          </Button>
+          </PaginationLast>
         </PaginationContent>
       </Pagination>
     </div>

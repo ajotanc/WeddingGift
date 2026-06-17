@@ -14,8 +14,9 @@ export async function generatePixPayload(
 	key: string,
 	name: string,
 	value: string,
-	city = "SALVADOR",
+	message: string,
 	transactionId = "***",
+	city = "SALVADOR",
 ): Promise<{ payload: string; base64: string }> {
 	if (!key || !name) return { payload: "", base64: "" };
 
@@ -25,6 +26,7 @@ export async function generatePixPayload(
 		name,
 		city,
 		transactionId,
+		message,
 		value: parseMoney(value),
 	});
 

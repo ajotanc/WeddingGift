@@ -11,13 +11,15 @@ import {
 import type { IGuest } from "./guest.service";
 import type { IProduct } from "./product.service";
 
+export type MethodType = "pix" | "link";
+
 export interface IPurchase extends Models.Row {
 	tenant: string;
-	guest: IGuest; // Relacionamento com a tabela guests
-	product: IProduct; // Relacionamento com a tabela products
+	guest: IGuest;
+	product: IProduct;
 	quantity: number;
 	price_paid: string;
-	method: "pix" | "link";
+	method: MethodType;
 }
 
 export const PurchaseService = {
@@ -35,7 +37,7 @@ export const PurchaseService = {
 		}
 	},
 
-	async create(data: IPurchase, customId?: string): Promise<IPurchase> {
+	async create(data: Omit<IPurchase, keyof Models.Row>, customId?: string): Promise<IPurchase> {
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PURCHASES,

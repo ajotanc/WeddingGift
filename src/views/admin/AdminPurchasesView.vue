@@ -3,6 +3,7 @@ import PageHeader from "@/components/reusable/PageHeader.vue";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney, parseMoney } from "@/lib/money";
 import dayjs from "dayjs";
+import { Gift, Package } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
 const { tenant, purchases } = useTenant();

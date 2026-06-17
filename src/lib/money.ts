@@ -59,10 +59,10 @@ export function formatMoney(
 }
 
 export function getProductPrice(
-	product: { type?: string; base_price?: string; desired_quantity?: number },
+	product: { type?: string; price?: string; desired_quantity?: number },
 	multiplyBy = 1,
 ): number {
-	const base = parseMoney(product.base_price) || 0;
+	const base = parseMoney(product.price) || 0;
 	if (product.type === "quota") {
 		const qty = product.desired_quantity || 1;
 		return (base / qty) * multiplyBy;

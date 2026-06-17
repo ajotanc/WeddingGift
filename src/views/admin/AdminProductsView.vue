@@ -93,7 +93,7 @@ const productSchema = z
 const physicalValidationSchema = toTypedSchema(
 	productSchema.and(
 		z.object({
-			basePrice: z.coerce
+			price: z.coerce
 				.number()
 				.min(0.01, "O valor deve ser maior que zero."),
 			desiredQuantity: z.coerce
@@ -107,7 +107,7 @@ const physicalValidationSchema = toTypedSchema(
 const quotaValidationSchema = toTypedSchema(
 	productSchema.and(
 		z.object({
-			basePrice: z.coerce
+			price: z.coerce
 				.number()
 				.min(0.01, "A meta total deve ser maior que zero."),
 			desiredQuantity: z.coerce
@@ -120,7 +120,7 @@ const quotaValidationSchema = toTypedSchema(
 
 type ProductFormValues = {
 	name: string;
-	basePrice: number;
+	price: number;
 	desiredQuantity: number;
 	categorySelect?: string;
 	categoryCustom?: string;
@@ -139,7 +139,7 @@ const {
 	validationSchema: physicalValidationSchema,
 	initialValues: {
 		name: "",
-		basePrice: 0,
+		price: 0,
 		desiredQuantity: 1,
 		categorySelect: "",
 		categoryCustom: "",
@@ -147,7 +147,7 @@ const {
 });
 
 const [pName] = definePhysicalField("name");
-const [pBasePrice] = definePhysicalField("basePrice");
+const [pPrice] = definePhysicalField("price");
 const [pDesiredQuantity] = definePhysicalField("desiredQuantity");
 const [pCategorySelect] = definePhysicalField("categorySelect");
 const [pCategoryCustom] = definePhysicalField("categoryCustom");
@@ -200,7 +200,7 @@ const editPhysical = (p: IProduct) => {
 
 	setPhysicalValues({
 		name: p.name,
-		basePrice: Number(p.base_price) || 0,
+		price: Number(p.price) || 0,
 		desiredQuantity: p.desired_quantity || 1,
 		categorySelect: isPredefined ? p.category || "" : p.category ? "Outro" : "",
 		categoryCustom: !isPredefined && p.category ? p.category : "",
@@ -319,7 +319,7 @@ const productSubmit = handlePhysicalSubmit(async (values) => {
 		tenant: tenant.value.$id,
 		type: "physical" as ProductType,
 		name: values.name,
-		base_price: String(values.basePrice),
+		price: String(values.price),
 		desired_quantity: values.desiredQuantity,
 		claimed_quantity: 0,
 		links: pLinks.value,
@@ -364,7 +364,7 @@ const {
 	validationSchema: quotaValidationSchema,
 	initialValues: {
 		name: "",
-		basePrice: 0,
+		price: 0,
 		desiredQuantity: 1,
 		categorySelect: "",
 		categoryCustom: "",
@@ -372,7 +372,7 @@ const {
 });
 
 const [qName] = defineQuotaField("name");
-const [qBasePrice] = defineQuotaField("basePrice");
+const [qPrice] = defineQuotaField("price");
 const [qDesiredQuantity] = defineQuotaField("desiredQuantity");
 const [qCategorySelect] = defineQuotaField("categorySelect");
 const [qCategoryCustom] = defineQuotaField("categoryCustom");
@@ -422,7 +422,7 @@ const editQuota = (p: IProduct) => {
 
 	setQuotaValues({
 		name: p.name,
-		basePrice: Number(p.base_price) || 0,
+		price: Number(p.price) || 0,
 		desiredQuantity: p.desired_quantity || 1,
 		categorySelect: isPredefined ? p.category || "" : p.category ? "Outro" : "",
 		categoryCustom: !isPredefined && p.category ? p.category : "",
@@ -446,7 +446,7 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 		tenant: tenant.value.$id,
 		type: "quota" as ProductType,
 		name: values.name,
-		base_price: String(values.basePrice),
+		price: String(values.price),
 		desired_quantity: values.desiredQuantity,
 		claimed_quantity: 0,
 		category: finalCategory,
@@ -493,8 +493,9 @@ const deleteProduct = async (product: IProduct) => {
 	<div class="space-y-12">
 		<!-- Header -->
 		<PageHeader title="Lista de Presentes" description="Gerencie produtos físicos e cotas financeiras.">
-			<Button @click="openNewQuota" variant="default" class="shadow-sm">Nova Cota (PIX)</Button>
-			<Button @click="openNewPhysical" variant="outline" class="shadow-sm bg-white">Novo Produto</Button>
+			<Button @click="openNewQuota">Nova Cota (PIX)</Button>
+			<Button @click="openNewPhysical" variant="outline">Novo
+				Produto</Button>
 		</PageHeader>
 
 		<!-- Products Gallery -->
@@ -505,7 +506,7 @@ const deleteProduct = async (product: IProduct) => {
 		<!-- Physical Modal -->
 		<Modal v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'"
 			class="max-w-2xl">
-			<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
+			<div class="space-y-5 max-h-[60vh] overflow-y-auto py-4">
 				<FormGroup label="Nome do Produto" :error="physicalErrors.name">
 					<Input v-model="pName" placeholder="Ex: Jogo de Panelas Tramontina" />
 				</FormGroup>
@@ -520,8 +521,8 @@ const deleteProduct = async (product: IProduct) => {
 				</FormGroup>
 
 				<div class="grid grid-cols-2 gap-4">
-					<FormGroup label="Preço Unitário Estimado" :error="physicalErrors.basePrice">
-						<Input v-model.number="pBasePrice" type="number" step="0.01" placeholder="Ex: 150.00" />
+					<FormGroup label="Preço Unitário Estimado" :error="physicalErrors.price">
+						<Input v-model.number="pPrice" type="number" step="0.01" placeholder="Ex: 150.00" />
 					</FormGroup>
 					<FormGroup label="Quantidade" :error="physicalErrors.desiredQuantity">
 						<Input v-model.number="pDesiredQuantity" type="number" min="1" />
@@ -539,23 +540,23 @@ const deleteProduct = async (product: IProduct) => {
 					<div v-else
 						class="relative bg-slate-50 rounded-2xl p-4 aspect-video flex items-center justify-center border border-slate-100">
 						<img :src="pImageBase64" class="max-h-full object-contain" />
-						<button type="button" @click.stop="removeImage"
+						<button @click.stop="removeImage"
 							class="absolute top-2 right-2 bg-white shadow rounded-full p-2 text-slate-500 hover:text-red-500">
 							<X class="w-4 h-4" stroke-width="2.5" />
 						</button>
 					</div>
 				</FormGroup>
 				<FormGroup label="Links Externos (Lojas)">
-					<div v-if="pLinks.length > 0" class="space-y-2 mb-4">
+					<div v-if="pLinks.length > 0" class="space-y-2 mb-2">
 						<div v-for="(link, idx) in pLinks" :key="idx"
-							class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
-							<div class="w-10 h-10 rounded bg-slate-200 flex items-center justify-center text-slate-400">
-								<ExternalLink class="w-5 h-5" />
+							class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+							<div class="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-400">
+								<ExternalLink class="w-4 h-4" />
 							</div>
 							<div class="flex-1 min-w-0">
 								<p class="text-sm font-medium text-slate-900 truncate">{{ link.store }}</p>
 							</div>
-							<Button type="button" variant="ghost" size="sm" class="text-red-500 hover:text-red-600 hover:bg-red-50"
+							<Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600 hover:bg-red-50"
 								@click="removeLink(idx)">
 								<X class="w-4 h-4" />
 							</Button>
@@ -571,7 +572,7 @@ const deleteProduct = async (product: IProduct) => {
 								<p class="text-xs font-medium text-slate-900 truncate" :title="res.title">{{ res.title }}</p>
 								<p class="text-[10px] text-slate-500">{{ res.source }}</p>
 							</div>
-							<Button type="button" size="sm" variant="outline" class="h-7 text-xs px-2" @click="addLinkToProduct(res)">
+							<Button size="sm" variant="outline" class="h-7 text-xs px-2" @click="addLinkToProduct(res)">
 								<Plus class="w-3 h-3 mr-1" /> Add
 							</Button>
 						</div>
@@ -582,22 +583,18 @@ const deleteProduct = async (product: IProduct) => {
 					</div>
 				</FormGroup>
 			</div>
-			<div class="pt-4 mt-2 border-t border-slate-100 flex gap-3">
-				<Button type="button" variant="outline" class="flex-1 bg-slate-50 text-slate-700" @click="searchExternalLinks"
-					:disabled="isSearchingLinks">
-					<Search v-if="!isSearchingLinks" class="w-4 h-4 mr-2" />
-					<span v-else
-						class="w-4 h-4 mr-2 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin"></span>
+			<div class="pt-4 border-t border-slate-100 flex gap-3">
+				<Button variant="outline" class="flex-1" @click="searchExternalLinks" :disabled="isSearchingLinks">
 					{{ isSearchingLinks ? 'Buscando...' : 'Buscar Links (Google)' }}
 				</Button>
-				<Button class="flex-1" @click="productSubmit">Salvar Produto</Button>
+				<Button class="flex-1" @click="productSubmit">Salvar</Button>
 			</div>
 		</Modal>
 
 		<!-- Quota Modal -->
 		<Modal v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'"
 			class="max-w-2xl">
-			<div class="space-y-5 max-h-[60vh] overflow-y-auto px-1 pb-4">
+			<div class="space-y-5 max-h-[60vh] overflow-y-auto py-4">
 				<FormGroup label="Nome da Experiência" :error="quotaErrors.name">
 					<Input v-model="qName" placeholder="Ex: Jantar Romântico" />
 				</FormGroup>
@@ -612,18 +609,18 @@ const deleteProduct = async (product: IProduct) => {
 				</FormGroup>
 
 				<div class="grid grid-cols-2 gap-4">
-					<FormGroup label="Valor da Cota (R$)" :error="quotaErrors.basePrice">
-						<Input v-model.number="qBasePrice" type="number" step="0.01" placeholder="Ex: 400.00" />
+					<FormGroup label="Valor da Cota (R$)" :error="quotaErrors.price">
+						<Input v-model.number="qPrice" type="number" step="0.01" placeholder="Ex: 400.00" />
 					</FormGroup>
 					<FormGroup label="Quantidade de Cotas" :error="quotaErrors.desiredQuantity">
 						<Input v-model.number="qDesiredQuantity" type="number" placeholder="Ex: 5" />
 					</FormGroup>
 				</div>
 
-				<div v-if="(Number(quotaValues.basePrice) || 0) > 0 && (Number(quotaValues.desiredQuantity) || 0) > 0"
+				<div v-if="(Number(quotaValues.price) || 0) > 0 && (Number(quotaValues.desiredQuantity) || 0) > 0"
 					class="bg-primary/5 text-primary text-sm font-medium p-3 rounded-xl border border-primary/10 flex justify-between items-center">
 					<span>Valor da Cota Individual:</span>
-					<span class="text-base font-bold">{{ formatMoney((Number(quotaValues.basePrice) || 0) /
+					<span class="text-base font-bold">{{ formatMoney((Number(quotaValues.price) || 0) /
 						(Number(quotaValues.desiredQuantity) || 1)) }}</span>
 				</div>
 
@@ -639,15 +636,15 @@ const deleteProduct = async (product: IProduct) => {
 					<div v-else
 						class="relative bg-slate-50 rounded-2xl p-4 aspect-video flex items-center justify-center border border-slate-100">
 						<img :src="qImageBase64" class="max-h-full object-contain" />
-						<button type="button" @click.stop="removeQuotaImage"
+						<button @click.stop="removeQuotaImage"
 							class="absolute top-2 right-2 bg-white shadow rounded-full p-2 text-slate-500 hover:text-red-500">
 							<X class="w-4 h-4" stroke-width="2.5" />
 						</button>
 					</div>
 				</FormGroup>
 			</div>
-			<div class="pt-4 mt-2 border-t border-slate-100">
-				<Button class="w-full" @click="quotaSubmit">Salvar Cota</Button>
+			<div class="pt-4 border-t border-slate-100 flex gap-3">
+				<Button class="flex-1" @click="quotaSubmit">Salvar</Button>
 			</div>
 		</Modal>
 	</div>

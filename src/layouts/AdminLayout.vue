@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTenant } from "@/composables/useTenant";
 import { useAuthStore } from "@/stores/auth";
-import { Gift, LayoutDashboard, LogOut, Settings, Users } from "lucide-vue-next";
+import { Box, Gift, LayoutDashboard, LogOut, Settings, Users } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
@@ -16,7 +16,8 @@ const handleLogout = async () => {
 
 const navItems = [
   { name: "Dashboard", path: "dashboard", icon: LayoutDashboard },
-  { name: "Presentes & Cotas", path: "products", icon: Gift },
+  { name: "Presentes & Cotas", path: "products", icon: Box },
+  { name: "Presentes Recebidos", path: "purchases", icon: Gift },
   { name: "Convidados & Recados", path: "guests", icon: Users },
   { name: "Configurações", path: "config", icon: Settings },
 ];

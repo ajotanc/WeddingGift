@@ -27,7 +27,7 @@ const buttonStyle = computed(() => {
 </script>
 
 <template>
-  <component :is="props.user ? 'div' : 'button'" @click="!props.user ? $emit('click') : undefined"
+  <button @click="$emit('click')"
     class="flex items-center gap-3 bg-white/80 backdrop-blur border border-slate-200 p-2 rounded-full shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
     :style="props.user ? undefined : buttonStyle">
     <template v-if="props.user">
@@ -77,5 +77,5 @@ const buttonStyle = computed(() => {
 
       <span class="text-sm pr-2">Entrar com Google</span>
     </template>
-  </component>
+  </button>
 </template>

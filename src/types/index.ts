@@ -38,7 +38,7 @@ export interface Product {
 	claimedQuantity?: number;
 	totalValue?: number; // Used for quotas
 	fixedQuotaValue?: number; // Used for quotas
-	basePrice?: number; // Used for physical
+	price?: number; // Used for physical
 	links?: StoreOffer[]; // Used for physical
 	imageUrl?: string;
 	category?: string;

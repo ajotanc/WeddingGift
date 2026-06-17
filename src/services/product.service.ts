@@ -15,10 +15,9 @@ export interface IProduct extends Models.Row {
 	tenant: string;
 	type: ProductType;
 	name: string;
-	base_price?: string;
+	price: string;
 	desired_quantity: number;
 	claimed_quantity: number;
-	pix_payment?: number;
 	image_url?: string;
 	category?: string;
 	links?: IProductLink[];
@@ -73,7 +72,7 @@ export const ProductService = {
 		};
 
 		const links = payload.links || [];
-		delete payload.links;
+		payload.links = undefined;
 
 		const row = await tables.createRow({
 			databaseId: DATABASE_ID,
@@ -109,7 +108,7 @@ export const ProductService = {
 	): Promise<IProduct> {
 		let imageUrl = data.image_url;
 		if (file) {
-			imageUrl = await StorageService.uploadFile(id, file, `product`);
+			imageUrl = await StorageService.uploadFile(id, file, 'product');
 		}
 
 		const payload: Partial<Omit<IProduct, keyof Models.Row>> = {
@@ -118,7 +117,7 @@ export const ProductService = {
 		if (imageUrl) payload.image_url = imageUrl;
 
 		const links = payload.links;
-		delete payload.links;
+		payload.links = undefined;
 
 		const row = await tables.updateRow({
 			databaseId: DATABASE_ID,
@@ -196,8 +195,8 @@ export const ProductService = {
 		});
 	},
 
-	async updatePublic(rowId: string, data: Partial<IProduct>): Promise<void> {
-		await tables.updateRow({
+	async updatePublic(rowId: string, data: Partial<IProduct>): Promise<IProduct> {
+		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId,
