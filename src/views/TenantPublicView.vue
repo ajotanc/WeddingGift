@@ -35,7 +35,7 @@ import { toast } from "vue-sonner";
 dayjs.locale("pt-br");
 
 const carouselPlugins = [Autoplay({
-  delay: 3000,
+  delay: 4000,
   stopOnInteraction: false,
   stopOnMouseEnter: true,
 })];
@@ -268,7 +268,6 @@ const toggleLike = async (msg: IMessage) => {
       <div v-else-if="tenant">
 
         <!-- Header Hero -->
-        <!-- Header Hero -->
         <header :style="{ backgroundColor: tenant.background_color || 'transparent' }"
           class="relative py-32 px-6 text-center overflow-hidden">
 
@@ -289,11 +288,16 @@ const toggleLike = async (msg: IMessage) => {
               :themeColor="tenant.primary_color" />
           </div>
 
-          <div class="relative max-w-4xl mx-auto z-10">
-            <div class="w-16 h-px bg-primary/40 mx-auto mb-10"></div>
-            <h1 class="text-5xl md:text-7xl font-serif text-slate-900 mb-8 tracking-tight">{{ tenant.couple_name }}</h1>
-            <p class="text-sm md:text-base text-slate-500 font-light tracking-[0.2em] uppercase">Lista de Presentes &
-              RSVP</p>
+          <div class="relative flex flex-col items-center justify-center max-w-4xl mx-auto z-10">
+            <img v-if="tenant.logo_url" :src="tenant.logo_url" :alt="tenant.couple_name"
+              class="w-40 h-40 object-contain mb-4">
+
+            <h1 class="text-3xl font-serif text-slate-900 mb-4 tracking-tight"
+              :class="tenant.logo_url ? 'md:text-6xl' : 'md:text-7xl'">{{ tenant.couple_name }}</h1>
+
+            <p class="text-sm md:text-base text-slate-500 font-light max-w-[500px] leading-tight text-center">{{
+              tenant?.quote || "Lista de Presentes & RSVP" }}</p>
+
             <!-- Event Date & Time Display -->
             <div v-if="tenant.event_date" class="mt-4 text-slate-600 font-medium text-lg">
               {{ dayjs(tenant.event_date).format('DD/MM/YYYY') }} às {{ tenant.event_time }}
@@ -424,7 +428,7 @@ const toggleLike = async (msg: IMessage) => {
                       <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
                         class="w-6 h-6 rounded-full" />
                       <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ authStore.guest?.name
-                      }}</strong></span>
+                          }}</strong></span>
                     </div>
                     <Button @click="submitMessage" :disabled="!messageContent"
                       class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
@@ -562,7 +566,7 @@ const toggleLike = async (msg: IMessage) => {
         <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
           class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
           <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
-            }}</span>
+          }}</span>
         </a>
       </div>
     </Modal>

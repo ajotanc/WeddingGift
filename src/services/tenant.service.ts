@@ -21,6 +21,7 @@ export interface ITenant extends Models.Row {
 	primary_color: string;
 	background_color: string;
 	background_image?: string | null;
+	logo_url?: string | null;
 	guest_limit?: number | null;
 	show_countdown?: boolean;
 	products?: IProduct[];

@@ -14,7 +14,7 @@ export const StorageService = {
 		try {
 			const compressedBlob = await imageCompression(file, options);
 
-			const fileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+			const fileName = `${file.name.replace(/\.[^/.]+$/, "")}.webp`;
 			const finalFile = new File([compressedBlob], fileName, {
 				type: "image/webp",
 				lastModified: Date.now(),

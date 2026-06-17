@@ -56,6 +56,7 @@ const zodSchema = z.object({
 			},
 			{ message: "URL inválida" },
 		),
+	logo_url: z.string().optional(),
 	background_color: z
 		.string()
 		.regex(/^#([0-9A-Fa-f]{3}){1,2}$/, { message: "Cor inválida" })
@@ -81,6 +82,7 @@ const { handleSubmit, errors, setValues, defineField } =
 			show_countdown: true,
 			primary_color: "#ec4899",
 			background_color: "#ffffff",
+			logo_url: "",
 		},
 	});
 
@@ -97,6 +99,7 @@ const [guest_limit] = defineField("guest_limit");
 const [show_countdown] = defineField("show_countdown");
 const [primary_color] = defineField("primary_color");
 const [background_image] = defineField("background_image");
+const [logo_url] = defineField("logo_url");
 const [background_color] = defineField("background_color");
 
 const isSaving = ref(false);
@@ -117,6 +120,7 @@ const loadSettings = () => {
 			show_countdown: tenant.value.show_countdown ?? true,
 			primary_color: tenant.value.primary_color || "#ec4899",
 			background_image: tenant.value.background_image || "",
+			logo_url: tenant.value.logo_url || "",
 			background_color: tenant.value.background_color || "#ffffff",
 		});
 	}
@@ -174,6 +178,30 @@ const onFileSelect = async (e: Event) => {
 				description: "Falha ao enviar a imagem.",
 				variant: "destructive",
 			});
+		}
+	}
+};
+
+const onLogoSelect = async (e: Event) => {
+	const target = e.target as HTMLInputElement;
+	const file = target.files?.[0];
+
+	if (file && authStore.user) {
+		try {
+			toast.info("Aviso", { description: "Enviando logomarca..." });
+
+			const url = await StorageService.uploadFile(
+				authStore.user.$id,
+				file,
+				"logo",
+			);
+
+			logo_url.value = url;
+
+			toast.success("Sucesso", { description: "Logomarca enviada com sucesso!" });
+		} catch (err) {
+			console.error(err);
+			toast.error("Erro", { description: "Falha ao enviar a logomarca." });
 		}
 	}
 };
@@ -344,17 +372,30 @@ const saveSettings = handleSubmit(async (values) => {
 					<Input type="color" v-model="background_color" class="w-8 h-8 rounded cursor-pointer p-0" />
 				</FormGroup>
 
-				<FormGroup label="Imagem de Fundo" class="md:col-span-2" :error="errors.background_image">
+				<FormGroup label="Logomarca" :error="errors.logo_url">
 					<div class="flex flex-col gap-4">
-						<Input v-model="background_image" placeholder="URL da imagem (Ex: https://example.com/bg.jpg)"
-							class="bg-slate-50/50" />
+						<Input v-model="logo_url" placeholder="URL da logomarca" class="bg-slate-50/50" />
 						<div class="flex items-center gap-4">
-							<span class="text-sm text-slate-500 font-medium">Ou faça o upload:</span>
+							<span class="text-sm text-slate-500 font-medium whitespace-nowrap">Ou upload:</span>
+							<Input type="file" @change="onLogoSelect" accept="image/*"
+								class="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+						</div>
+						<div v-if="logo_url" class="mt-2 p-2 border border-slate-200 rounded-xl inline-block w-fit">
+							<img :src="logo_url" class="w-32 h-32 object-contain" />
+						</div>
+					</div>
+				</FormGroup>
+
+				<FormGroup label="Imagem de Fundo" :error="errors.background_image">
+					<div class="flex flex-col gap-4">
+						<Input v-model="background_image" placeholder="URL da imagem" class="bg-slate-50/50" />
+						<div class="flex items-center gap-4">
+							<span class="text-sm text-slate-500 font-medium whitespace-nowrap">Ou upload:</span>
 							<Input type="file" @change="onFileSelect" accept="image/*"
 								class="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
 						</div>
 						<img v-if="background_image" :src="background_image"
-							class="w-full max-w-sm rounded-xl border border-slate-200 mt-2 object-cover aspect-video" />
+							class="w-full rounded-xl border border-slate-200 mt-2 object-cover aspect-video" />
 					</div>
 				</FormGroup>
 			</div>
