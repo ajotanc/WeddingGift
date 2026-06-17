@@ -21,7 +21,8 @@ export const GuestService = {
 			if (!res) return {} as IGuest;
 			return res;
 		} catch (error) {
-			if (error instanceof AppwriteException && error.code === 404) return {} as IGuest;
+			if (error instanceof AppwriteException && error.code === 404)
+				return {} as IGuest;
 			throw error;
 		}
 	},

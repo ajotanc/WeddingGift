@@ -4,6 +4,8 @@ import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { VitePWA } from "vite-plugin-pwa";
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
 
 export default defineConfig({
 	plugins: [
@@ -28,6 +30,19 @@ export default defineConfig({
 					},
 				],
 			},
+		}),
+		AutoImport({
+			imports: [
+				'vue',
+				'vue-router',
+			],
+			dts: 'src/auto-imports.d.ts',
+		}),
+		Components({
+			dirs: ['src/components', 'src/components/ui'],
+			extensions: ['vue'],
+			deep: true,
+			dts: 'src/components.d.ts',
 		}),
 	],
 	resolve: {

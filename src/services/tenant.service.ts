@@ -3,8 +3,8 @@ import { TABLE_TENANTS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 import type { IMessage } from "./message.service";
 import type { IProduct } from "./product.service";
+import type { IPurchase } from "./purchase.service";
 import type { IRsvp } from "./rsvp.service";
-import { IPurchase } from "./purchase.service";
 
 export interface ITenant extends Models.Row {
 	slug: string;
@@ -29,7 +29,7 @@ export interface ITenant extends Models.Row {
 }
 
 export const TenantService = {
-	async getBySlug(slug: string): Promise<ITenant> {
+	async getBySlug(slug: string): Promise<ITenant | null> {
 		const res = await tables.listRows<ITenant>({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
@@ -46,8 +46,8 @@ export const TenantService = {
 				]),
 			],
 		});
-		if (res.rows.length === 0) return {} as ITenant;
-
+		
+		if (res.rows.length === 0) return null;
 		return res.rows[0];
 	},
 

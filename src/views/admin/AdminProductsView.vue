@@ -2,6 +2,7 @@
 import { useConfirm } from "@/components/ui/confirm-dialog/useConfirm";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { useTenant } from "@/composables/useTenant";
+import { formatMoney } from "@/lib/money";
 import {
 	type IProduct,
 	type IProductLink,
@@ -339,7 +340,6 @@ const productSubmit = handlePhysicalSubmit(async (values) => {
 	}
 
 	toast({
-		variant: "success",
 		title: "Sucesso",
 		description: "Produto salvo com sucesso!",
 	});
@@ -464,7 +464,6 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 	}
 
 	toast({
-		variant: "success",
 		title: "Sucesso",
 		description: "Cota salva com sucesso!",
 	});
@@ -486,7 +485,6 @@ const deleteProduct = async (product: IProduct) => {
 		products.value = products.value.filter((p) => p.$id !== product.$id);
 
 		toast({
-			variant: "success",
 			title: "Sucesso",
 			description: "Item excluído com sucesso!",
 		});
@@ -504,7 +502,8 @@ const deleteProduct = async (product: IProduct) => {
 
 		<!-- Products Gallery -->
 		<ProductGallery :products="products" :tenant="tenant!" mode="admin"
-			@edit="p => p.type === 'quota' ? editQuota(p) : editPhysical(p)" @delete="deleteProduct" />
+			@edit="(p: IProduct) => p.type === 'quota' ? editQuota(p) : editPhysical(p)"
+			@delete="deleteProduct" />
 
 		<!-- Modals -->
 		<!-- Physical Modal -->

@@ -7,6 +7,7 @@ import type { IGuest } from "@/services/guest.service";
 import { MessageService } from "@/services/message.service";
 import { formatPhone } from "@brazilian-utils/brazilian-utils";
 import dayjs from "dayjs";
+import { Copy, Download, MessageCircle, Sparkles, Trash2, Users } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import * as XLSX from "xlsx";
 
@@ -15,42 +16,41 @@ const { confirm } = useConfirm();
 const { tenant, rsvps, messages } = useTenant();
 
 const rsvpStats = computed(() => {
-	const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
-	const declined = rsvps.value.filter((r) => r.status === "declined");
+  const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
+  const declined = rsvps.value.filter((r) => r.status === "declined");
 
-	return {
-		adults: confirmed.reduce((acc, r) => acc + (r.total_adults || 0), 0),
-		children: confirmed.reduce((acc, r) => acc + (r.total_children || 0), 0),
-		declinedCount: declined.length,
-	};
+  return {
+    adults: confirmed.reduce((acc, r) => acc + (r.total_adults || 0), 0),
+    children: confirmed.reduce((acc, r) => acc + (r.total_children || 0), 0),
+    declinedCount: declined.length,
+  };
 });
 
 const populatedMessages = computed(() => {
-	return messages.value.map((msg) => ({
-		...msg,
-		guest: msg.guest as IGuest,
-	}));
+  return messages.value.map((msg) => ({
+    ...msg,
+    guest: msg.guest as IGuest,
+  }));
 });
 
 const deleteMsg = async (id: string) => {
-	const isConfirmed = await confirm({
-		title: "Excluir Recado",
-		description:
-			"Tem certeza de que deseja excluir este recado? Esta ação não pode ser desfeita.",
-		confirmText: "Sim",
-		cancelText: "Não",
-	});
+  const isConfirmed = await confirm({
+    title: "Excluir Recado",
+    description:
+      "Tem certeza de que deseja excluir este recado? Esta ação não pode ser desfeita.",
+    confirmText: "Sim",
+    cancelText: "Não",
+  });
 
-	if (isConfirmed) {
-		await MessageService.delete(id);
-		messages.value = messages.value.filter((m) => m.$id !== id);
+  if (isConfirmed) {
+    await MessageService.delete(id);
+    messages.value = messages.value.filter((m) => m.$id !== id);
 
-		toast({
-			variant: "success",
-			title: "Sucesso",
-			description: "Mensagem excluída!",
-		});
-	}
+    toast({
+      title: "Sucesso",
+      description: "Mensagem excluída!",
+    });
+  }
 };
 
 // Gemini AI
@@ -61,91 +61,88 @@ const generatingThanks = ref(false);
 const guestPhone = ref<string | undefined>(undefined);
 
 const generateThanks = async (guest: IGuest) => {
-	showThanksModal.value = true;
-	generatingThanks.value = true;
-	aiThanks.value = "";
+  showThanksModal.value = true;
+  generatingThanks.value = true;
+  aiThanks.value = "";
 
-	guestPhone.value = guest.phone;
+  guestPhone.value = guest.phone;
 
-	try {
-		aiThanks.value = await generateThankYouMessage(
-			guest.name,
-			tenant.value?.couple_name || "nós",
-		);
-	} catch (err) {
-		console.error("Erro ao gerar agradecimento:", err);
-		aiThanks.value =
-			"Houve um erro ao gerar a mensagem. Tente novamente mais tarde.";
-	} finally {
-		generatingThanks.value = false;
-	}
+  try {
+    aiThanks.value = await generateThankYouMessage(
+      guest.name,
+      tenant.value?.couple_name || "nós",
+    );
+  } catch (err) {
+    console.error("Erro ao gerar agradecimento:", err);
+    aiThanks.value =
+      "Houve um erro ao gerar a mensagem. Tente novamente mais tarde.";
+  } finally {
+    generatingThanks.value = false;
+  }
 };
 
 const copyThanks = () => {
-	navigator.clipboard.writeText(aiThanks.value);
-	toast({
-		variant: "success",
-		title: "Sucesso",
-		description: "Texto copiado!",
-	});
+  navigator.clipboard.writeText(aiThanks.value);
+  toast({
+    title: "Sucesso",
+    description: "Texto copiado!",
+  });
 
-	guestPhone.value = undefined;
+  guestPhone.value = undefined;
 };
 
 const openWhatsApp = () => {
-	const url = `https://api.whatsapp.com/send/?phone=${guestPhone.value}&text=${encodeURIComponent(aiThanks.value)}`;
-	window.open(url, "_blank");
+  const url = `https://api.whatsapp.com/send/?phone=${guestPhone.value}&text=${encodeURIComponent(aiThanks.value)}`;
+  window.open(url, "_blank");
 
-	guestPhone.value = undefined;
+  guestPhone.value = undefined;
 };
 
 const copyRSVPList = () => {
-	const text = rsvps.value
-		.map(
-			(r) =>
-				`${r.guest.name} (${r.status === "confirmed" ? "Confirmado" : "Não irá"}) - Adultos: ${r.total_adults}, Crianças: ${r.total_children}`,
-		)
-		.join("\n");
-	navigator.clipboard.writeText(text);
-	toast({
-		variant: "success",
-		title: "Sucesso",
-		description: "Lista copiada para a área de transferência!",
-	});
+  const text = rsvps.value
+    .map(
+      (r) =>
+        `${r.guest.name} (${r.status === "confirmed" ? "Confirmado" : "Não irá"}) - Adultos: ${r.total_adults}, Crianças: ${r.total_children}`,
+    )
+    .join("\n");
+  navigator.clipboard.writeText(text);
+  toast({
+    title: "Sucesso",
+    description: "Lista copiada para a área de transferência!",
+  });
 };
 
 const exportToExcel = () => {
-	const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
+  const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
 
-	if (confirmed.length === 0) {
-		toast({
-			title: "Exportação Vazia",
-			description: "Nenhum convidado confirmado para exportar.",
-			variant: "destructive",
-		});
-		return;
-	}
+  if (confirmed.length === 0) {
+    toast({
+      title: "Exportação Vazia",
+      description: "Nenhum convidado confirmado para exportar.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-	const dataToExport = confirmed.map((r) => ({
-		Nome: r.guest.name,
-		Telefone: formatPhone(r.guest.phone || "", { mask: "auto" }),
-		Email: r.guest.email || "Não informado",
-		Adultos: r.total_adults || 0,
-		Crianças: r.total_children || 0,
-	}));
+  const dataToExport = confirmed.map((r) => ({
+    Nome: r.guest.name,
+    Telefone: formatPhone(r.guest.phone || "", { mask: "auto" }),
+    Email: r.guest.email || "Não informado",
+    Adultos: r.total_adults || 0,
+    Crianças: r.total_children || 0,
+  }));
 
-	const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-	const workbook = XLSX.utils.book_new();
-	const timestamp = dayjs().unix();
-	XLSX.utils.book_append_sheet(workbook, worksheet, "Confirmados");
+  const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+  const workbook = XLSX.utils.book_new();
+  const timestamp = dayjs().unix();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Confirmados");
 
-	XLSX.writeFile(workbook, `CONVIDADOS_CONFIRMADOS_${timestamp}.xlsx`);
+  XLSX.writeFile(workbook, `CONVIDADOS_CONFIRMADOS_${timestamp}.xlsx`);
 
-	toast({
-		variant: "success",
-		title: "Sucesso",
-		description: "Planilha exportada com sucesso!",
-	});
+  toast({
+    title: "Sucesso",
+    description: "Planilha exportada com sucesso!",
+  });
 };
 </script>
 
@@ -190,7 +187,8 @@ const exportToExcel = () => {
       <div class="bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
         <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
           <h3 class="font-medium text-slate-900">Lista de Respostas</h3>
-          <button @click="exportToExcel" class="text-primary hover:bg-primary/5 transition-colors p-2 rounded-full" title="Exportar Planilha">
+          <button @click="exportToExcel" class="text-primary hover:bg-primary/5 transition-colors p-2 rounded-full"
+            title="Exportar Planilha">
             <Download class="w-4 h-4" />
           </button>
         </div>

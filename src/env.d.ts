@@ -11,3 +11,6 @@ declare module "*.vue" {
 	>;
 	export default component;
 }
+
+// ADICIONE ESTA LINHA NO FINAL DO ARQUIVO:
+declare module 'qrcode-vue';

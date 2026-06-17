@@ -34,4 +34,3 @@ export const PUBLIC_PERMISSIONS = [
 	Permission.update(Role.users()),
 	Permission.delete(Role.users()),
 ];
-

@@ -1,24 +1,21 @@
 import { account } from "@/lib/appwrite";
-import { GuestService, IGuest } from "@/services/guest.service";
-import {
-	type ITenant,
-	TenantService
-} from "@/services/tenant.service";
+import { GuestService, type IGuest } from "@/services/guest.service";
+import { type ITenant, TenantService } from "@/services/tenant.service";
 import { type Models, OAuthProvider } from "appwrite";
 import { defineStore } from "pinia";
 
 interface AuthState {
 	user: Models.User<Models.Preferences> | null;
-	tenant: ITenant;
-	guest: IGuest;
+	tenant: ITenant | null; // Alterado para aceitar null
+	guest: IGuest | null; // Alterado para aceitar null
 	loading: boolean;
 }
 
 export const useAuthStore = defineStore("auth", {
 	state: (): AuthState => ({
 		user: null,
-		tenant: {} as ITenant,
-		guest: {} as IGuest,
+		tenant: null, // Começa estritamente como null
+		guest: null, // Começa estritamente como null
 		loading: true,
 	}),
 	actions: {
@@ -27,6 +24,7 @@ export const useAuthStore = defineStore("auth", {
 			try {
 				const sessionUser = await account.get();
 				this.user = sessionUser;
+
 				if (sessionUser) {
 					try {
 						const session = await account.getSession({ sessionId: "current" });
@@ -46,7 +44,7 @@ export const useAuthStore = defineStore("auth", {
 									prefs: {
 										...sessionUser.prefs,
 										photoURL: data.picture,
-									}
+									},
 								});
 
 								this.user.prefs = {
@@ -65,20 +63,26 @@ export const useAuthStore = defineStore("auth", {
 						const data = JSON.parse(pending);
 						await TenantService.create(data, sessionUser.$id);
 						localStorage.removeItem("pending_tenant");
-
-						window.location.href = `/${data.slug}/admin`;
+						const t = await TenantService.get(sessionUser.$id);
+						this.tenant = t;
+						this.guest = await GuestService.get(sessionUser.$id);
 						return;
 					}
 
-					const t = await TenantService.get(sessionUser.$id);
-					this.tenant = t;
-
-					this.guest = await GuestService.get(sessionUser.$id);
+					try {
+						const t = await TenantService.get(sessionUser.$id);
+						this.tenant = t;
+						this.guest = await GuestService.get(sessionUser.$id);
+					} catch (e) {
+						this.tenant = null;
+						this.guest = null;
+					}
 				}
 			} catch (err) {
+				// Certifica que o estado fica nulo caso não haja sessão ativa
 				this.user = null;
-				this.tenant = {} as ITenant;
-				this.guest = {} as IGuest;
+				this.tenant = null;
+				this.guest = null;
 			} finally {
 				this.loading = false;
 			}
@@ -92,10 +96,14 @@ export const useAuthStore = defineStore("auth", {
 			});
 		},
 		async logout() {
-			await account.deleteSession({ sessionId: "current" });
+			try {
+				await account.deleteSession({ sessionId: "current" });
+			} catch (e) {
+				console.error(e);
+			}
 			this.user = null;
-			this.tenant = {} as ITenant;
-			this.guest = {} as IGuest
+			this.tenant = null;
+			this.guest = null;
 		},
 		async registerTenant(data: ITenant) {
 			if (!this.user) return;

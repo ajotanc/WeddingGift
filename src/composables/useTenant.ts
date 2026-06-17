@@ -1,45 +1,54 @@
-import { IMessage } from "@/services/message.service";
-import { IProduct } from "@/services/product.service";
-import { IPurchase, PurchaseService } from "@/services/purchase.service";
-import { IRsvp } from "@/services/rsvp.service";
-import { type ITenant, TenantService } from "@/services/tenant.service";
+import type { IMessage } from "@/services/message.service";
+import type { IProduct } from "@/services/product.service";
+import type { IPurchase } from "@/services/purchase.service";
+import { PurchaseService } from "@/services/purchase.service";
+import type { IRsvp } from "@/services/rsvp.service";
+import { TenantService, type ITenant } from "@/services/tenant.service";
 import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 export function useTenant() {
 	const route = useRoute();
-	const tenant = ref<ITenant>({} as ITenant);
+	
+	// 1. Mudado para aceitar null em vez de um objeto vazio enganoso
+	const tenant = ref<ITenant | null>(null);
 	const products = ref<IProduct[]>([]);
 	const messages = ref<IMessage[]>([]);
 	const rsvps = ref<IRsvp[]>([]);
 	const purchases = ref<IPurchase[]>([]);
 
-	const loading = ref(true);
+	// Começa como false para evitar travamentos falsos na Home
+	const loading = ref(false);
 	const error = ref<string | null>(null);
 
 	const fetchTenant = async (slug: string) => {
+		// Proteção 1: Se já estiver carregando ou o slug for inválido, não faz nada
+		if (loading.value || !slug || slug.trim() === "") return;
+
 		loading.value = true;
 		error.value = null;
 		try {
 			const result = await TenantService.getBySlug(slug);
 
-			products.value = result?.products || [];
-			messages.value = result.messages || [];
-			rsvps.value = result.rsvps || [];
-			purchases.value = await PurchaseService.listByTenant(result.$id);
-
 			if (result) {
+				products.value = result?.products || [];
+				messages.value = result.messages || [];
+				rsvps.value = result?.rsvps || [];
+				purchases.value = await PurchaseService.listByTenant(result.$id);
+				
 				tenant.value = result;
+				
 				if (tenant.value.primary_color) {
 					applyTheme(tenant.value.primary_color);
 				}
 			} else {
-				error.value = "Tenant not found";
-				tenant.value = {} as ITenant;
+				error.value = "Casamento não encontrado";
+				tenant.value = null;
 			}
 		} catch (err) {
 			console.error("Error fetching tenant:", err);
-			error.value = "Failed to load tenant details";
+			error.value = "Falha ao carregar detalhes do casamento";
+			tenant.value = null;
 		} finally {
 			loading.value = false;
 		}
@@ -62,14 +71,28 @@ export function useTenant() {
 			} else {
 				fetchTenant(currentSlug);
 			}
+		} else {
+			loading.value = false;
 		}
 	});
 
+	// Proteção 2: O watch agora está blindado contra loops assíncronos
 	watch(
 		() => route.params.slug,
 		(newSlug) => {
-			if (newSlug && tenant.value?.slug !== newSlug) {
-				fetchTenant(newSlug as string);
+			if (newSlug) {
+				// Só faz o fetch se o slug da URL for REALMENTE diferente do tenant atual carregado
+				if (!tenant.value || tenant.value.slug !== newSlug) {
+					fetchTenant(newSlug as string);
+				}
+			} else {
+				// Se mudou para uma página sem slug (ex: Home /), limpa os estados de forma segura
+				tenant.value = null;
+				products.value = [];
+				messages.value = [];
+				rsvps.value = [];
+				purchases.value = [];
+				loading.value = false;
 			}
 		},
 	);

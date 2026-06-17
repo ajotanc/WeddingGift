@@ -2,20 +2,21 @@
 import { buttonVariants, type ButtonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { reactiveOmit } from "@vueuse/core";
-import type { PaginationNextProps } from "reka-ui";
+// CORRIGIDO: Importando o componente físico PaginationNext
+import { PaginationNext, type PaginationNextProps } from "reka-ui";
 import { useForwardProps } from "reka-ui";
 import type { HTMLAttributes } from "vue";
 
 const props = withDefaults(
-	defineProps<
-		PaginationNextProps & {
-			size?: ButtonVariants["size"];
-			class?: HTMLAttributes["class"];
-		}
-	>(),
-	{
-		size: "default",
-	},
+  defineProps<
+    PaginationNextProps & {
+      size?: ButtonVariants["size"];
+      class?: HTMLAttributes["class"];
+    }
+  >(),
+  {
+    size: "default",
+  },
 );
 
 const delegatedProps = reactiveOmit(props, "class", "size");
@@ -23,11 +24,8 @@ const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <PaginationNext
-    data-slot="pagination-next"
-    :class="cn(buttonVariants({ variant: 'ghost', size }), 'gap-1 px-2.5 sm:pr-2.5', props.class)"
-    v-bind="forwarded"
-  >
+  <PaginationNext data-slot="pagination-next"
+    :class="cn(buttonVariants({ variant: 'ghost', size }), 'gap-1 px-2.5 sm:pr-2.5', props.class)" v-bind="forwarded">
     <slot>
       <span class="hidden sm:block">Próximo</span>
       <ChevronRightIcon />

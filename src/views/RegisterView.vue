@@ -106,8 +106,8 @@ const registerTenant = async () => {
           <div>
             <Label class="block mb-1">Cor do Casamento</Label>
             <div class="flex items-center gap-4">
-              <input type="color" v-model="form.primaryColor" class="w-10 h-10 p-1 rounded cursor-pointer" />
-              <span class="text-sm font-mono text-slate-600">{{ form.primaryColor }}</span>
+              <input type="color" v-model="form.primary_color" class="w-10 h-10 p-1 rounded cursor-pointer" />
+              <span class="text-sm font-mono text-slate-600">{{ form.primary_color }}</span>
             </div>
           </div>
 

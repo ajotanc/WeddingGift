@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTenant } from "@/composables/useTenant";
-import { parseMoney } from "@/lib/money";
+import { formatMoney, parseMoney } from "@/lib/money";
+import dayjs from "dayjs";
 import { computed, ref } from "vue";
 
 const { tenant, purchases } = useTenant();

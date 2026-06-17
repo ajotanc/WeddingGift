@@ -14,6 +14,13 @@ const router = createRouter({
 			component: () => import("@/views/RegisterView.vue"),
 		},
 		{
+			path: "/login",
+			name: "login",
+			component: () => import("@/views/LoginView.vue"),
+		},
+		{
+			// Movemos para baixo e adicionamos uma trava via Regex (opcional mas recomendado)
+			// para garantir que não capture caminhos fixos
 			path: "/:slug",
 			name: "tenant-public",
 			component: () => import("@/views/TenantPublicView.vue"),
@@ -50,11 +57,6 @@ const router = createRouter({
 				},
 			],
 		},
-		{
-			path: "/login",
-			name: "login",
-			component: () => import("@/views/LoginView.vue"),
-		},
 	],
 });
 
@@ -62,13 +64,19 @@ import { useAuthStore } from "@/stores/auth";
 
 router.beforeEach((to, from, next) => {
 	const authStore = useAuthStore();
+
+	// 1. Se tentar entrar no painel Admin sem estar logado -> vai pro login
 	if (to.path.includes("/admin") && !authStore.user) {
-		next({ name: "login" });
-	} else if (to.name === "login" && authStore.user && authStore.tenant) {
-		next({ path: `/${authStore.tenant.slug}/admin/dashboard` });
-	} else {
-		next();
+		return next({ name: "login" });
 	}
+
+	// 2. Se já estiver logado e na tela de login -> manda para o dashboard dele
+	if (to.name === "login" && authStore.user && authStore.tenant?.slug) {
+		return next({ path: `/${authStore.tenant.slug}/admin/dashboard` });
+	}
+
+	// Permite a navegação para qualquer outra rota pública (como a Home ou TenantPublicView)
+	next();
 });
 
 export default router;

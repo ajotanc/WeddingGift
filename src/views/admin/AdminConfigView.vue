@@ -149,7 +149,6 @@ const onFileSelect = async (e: Event) => {
 			background_image.value = url;
 
 			toast({
-				variant: "success",
 				title: "Sucesso",
 				description: "Imagem enviada com sucesso!",
 				class: "bg-emerald-500 text-white border-none",
@@ -305,10 +304,10 @@ const saveSettings = handleSubmit(async (values) => {
 				<FormGroup label="Exibir Contagem Regressiva">
 					<label class="relative inline-flex items-center cursor-pointer mt-2">
 						<input type="checkbox" v-model="show_countdown" class="sr-only peer">
-							<div
-								class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-							</div>
-							<span class="ml-3 text-sm font-medium text-slate-700">Ativar contagem na página pública</span>
+						<div
+							class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
+						</div>
+						<span class="ml-3 text-sm font-medium text-slate-700">Ativar contagem na página pública</span>
 					</label>
 				</FormGroup>
 

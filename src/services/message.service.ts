@@ -33,7 +33,10 @@ export const MessageService = {
 		return res.rows;
 	},
 
-	async create(data: Omit<IMessage, keyof Models.Row>, customId?: string): Promise<IMessage> {
+	async create(
+		data: Omit<IMessage, keyof Models.Row>,
+		customId?: string,
+	): Promise<IMessage> {
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_MESSAGES,

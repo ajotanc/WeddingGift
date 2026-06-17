@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from "@/lib/utils";
+
 interface Props {
 	modelValue?: string | number;
 	class?: string;

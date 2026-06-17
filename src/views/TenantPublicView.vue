@@ -1,9 +1,18 @@
 <script setup lang="ts">
+// 1. Importações dos componentes de UI (Shadcn) que estão faltando
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog } from "@/components/ui/dialog";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+
+// 2. Importações de componentes específicos do seu projeto
+import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
+import CountdownTimer from "@/components/ui/CountdownTimer.vue";
+import LeafletMap from "@/components/ui/LeafletMap.vue";
+
 import { useTenant } from "@/composables/useTenant";
 import { generatePixPayload } from "@/lib/utils";
-import {
-  MessageService,
-} from "@/services/message.service";
+import { MessageService } from "@/services/message.service";
 import { RsvpService } from "@/services/rsvp.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -13,13 +22,17 @@ import * as z from "zod";
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
-import { useToast } from "@/components/ui/toast/use-toast";
-import { type IProduct } from "@/services/product.service";
-import Autoplay from 'embla-carousel-autoplay'
 import ProductGallery from "@/components/ui/ProductGallery.vue";
+import QrcodeVue from "qrcode-vue";
+import { useToast } from "@/components/ui/toast/use-toast";
+import type { IGuest } from "@/services/guest.service";
+import type { IProduct } from "@/services/product.service";
+import Autoplay from "embla-carousel-autoplay";
+import FormGroup from "@/components/ui/FormGroup.vue";
 
 dayjs.locale("pt-br");
-const autoplayPlugin = Autoplay({ delay: 3000, stopOnInteraction: true })
+
+const carouselPlugins = [Autoplay({ delay: 3000, stopOnInteraction: true })];
 
 const { toast } = useToast();
 const { tenant, products, messages, loading, error } = useTenant();
@@ -41,7 +54,6 @@ const requireAuth = async (): Promise<boolean> => {
 const logout = async () => {
   await authStore.logout();
 };
-
 
 const selectedCategory = ref("all");
 const currentPage = ref(1);
@@ -71,7 +83,7 @@ const pixPayload = computed(() => {
   if (!tenant.value || !selectedProduct.value) return "";
   const baseValue =
     selectedProduct.value.type === "quota"
-      ? (quotaQuantities.value[selectedProduct.value.$id] || 1)
+      ? quotaQuantities.value[selectedProduct.value.$id] || 1
       : Number(selectedProduct.value.base_price) || 0;
 
   return generatePixPayload(
@@ -155,7 +167,7 @@ const submitRsvp = handleSubmit(async (values) => {
       total_adults: values.totalAdults,
       total_children: values.totalChildren,
       status: values.status,
-      guest: authStore.guest
+      guest: authStore.guest as IGuest,
     });
 
     guestName.value = "";
@@ -189,7 +201,7 @@ const submitMessage = async () => {
     const newMsg = await MessageService.create({
       tenant: tenant.value.$id,
       content: messageContent.value,
-      guest: authStore.guest,
+      guest: authStore.guest as IGuest,
     });
 
     // Add instantly to UI array without fetching
@@ -298,8 +310,7 @@ const deleteMessage = async (msgId: string) => {
                 coração.</p>
             </div>
 
-            <ProductGallery :products="products" :tenant="tenant" mode="public" :current-user="currentUser"
-              @open-pix="openPixModal" @open-links="openLinksModal" @require-auth="requireAuth" />
+            <ProductGallery :products="products" :tenant="tenant" mode="public" :currentUser="currentUser" />
 
           </section>
 
@@ -341,17 +352,19 @@ const deleteMessage = async (msgId: string) => {
                     </FormGroup>
                   </div>
                   <FormGroup label="Você irá ao evento?">
-                    <Select v-model="status">
-                      <SelectTrigger class="w-full h-12 bg-slate-50/50 border-slate-200 rounded-xl text-base">
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent class="bg-white">
-                        <SelectGroup>
-                          <SelectItem value="confirmed">Sim, estarei lá!</SelectItem>
-                          <SelectItem value="declined">Não poderei ir</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                    <div class="relative w-full">
+                      <select v-model="status"
+                        class="w-full h-12 px-4 bg-slate-50/50 border border-slate-200 rounded-xl text-base font-light text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer">
+                        <option value="confirmed">Sim, estarei lá!</option>
+                        <option value="declined">Não poderei ir</option>
+                      </select>
+
+                      <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                   </FormGroup>
                 </div>
                 <Button type="submit"
@@ -387,7 +400,7 @@ const deleteMessage = async (msgId: string) => {
                       <img v-if="(currentUser?.prefs as any)?.photoURL" :src="(currentUser.prefs as any).photoURL"
                         alt="Foto" class="w-6 h-6 rounded-full" />
                       <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ currentUser.name
-                      }}</strong></span>
+                          }}</strong></span>
                     </div>
                     <Button @click="submitMessage" :disabled="!messageContent"
                       class="w-full rounded-xl py-6 font-medium shadow-sm hover:opacity-90 transition-all duration-300 ease-in-out">Publicar</Button>
@@ -397,7 +410,7 @@ const deleteMessage = async (msgId: string) => {
 
               <!-- Messages Carousel -->
               <Carousel v-if="messages.length > 0" class="w-full relative cursor-grab active:cursor-grabbing pb-10"
-                :opts="{ align: 'center', dragFree: true, loop: true }" :plugins="[autoplayPlugin]">
+                :opts="{ align: 'center', dragFree: true, loop: true }" :plugins="carouselPlugins">
                 <CarouselContent class="py-2">
                   <CarouselItem v-for="(msg, index) in messages" :key="msg.$id"
                     class="basis-full md:basis-[672px] min-w-0 max-w-full">
@@ -455,6 +468,15 @@ const deleteMessage = async (msgId: string) => {
 
         </div>
       </div>
+      <div v-else class="text-center p-20 space-y-4">
+        <h2 class="text-2xl font-serif text-slate-800">Página não encontrada</h2>
+        <p class="text-slate-500 max-w-md mx-auto">
+          O link de casamento que você tentou acessar não existe ou ainda não foi configurado pelos noivos.
+        </p>
+        <router-link to="/" class="inline-block text-primary font-medium hover:underline pt-2">
+          Voltar para o início
+        </router-link>
+      </div>
     </div>
 
     <!-- PIX Modal -->
@@ -490,7 +512,7 @@ const deleteMessage = async (msgId: string) => {
         <a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
           class="block w-full text-center p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
           <span class="font-medium text-slate-700 group-hover:text-primary transition-colors">Visitar Loja {{ i + 1
-            }}</span>
+          }}</span>
         </a>
       </div>
     </Dialog>

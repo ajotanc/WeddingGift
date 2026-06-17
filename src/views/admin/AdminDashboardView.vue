@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { useTenant } from "@/composables/useTenant";
+import { MessageSquare, Users, Wallet } from "lucide-vue-next";
 import { computed } from "vue";
 
-const { tenant, products, purchases, rsvps, messages } = useTenant();
+const { purchases, rsvps, messages } = useTenant();
 
 const totalRaised = computed(() => {
-	return purchases.value.reduce((acc, p) => acc + (p.price_paid || 0), 0);
+	return purchases.value.reduce(
+		(acc, p) => acc + (Number(p.price_paid) || 0),
+		0,
+	);
 });
 
 const confirmedGuests = computed(() => {

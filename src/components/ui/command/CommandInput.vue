@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { cn } from "@/lib/utils";
 import { reactiveOmit } from "@vueuse/core";
 import type { ListboxFilterProps } from "reka-ui";
 import { useForwardProps } from "reka-ui";
 import type { HTMLAttributes } from "vue";
 import { useCommand } from ".";
-import { cn } from "@/lib/utils";
 
 defineOptions({
 	inheritAttrs: false,
