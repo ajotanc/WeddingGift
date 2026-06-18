@@ -1,33 +1,35 @@
 <script setup lang="ts">
-// 1. Importações dos componentes de UI (Shadcn) que estão faltando
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
+import ImageGallery from "@/components/ui/ImageGallery.vue";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+// 1. Importações dos componentes de UI (Shadcn) que estão faltando
+import { Button } from "@/components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { GalleryService } from "@/services/gallery.service";
 import type { IGalleryImage } from "@/services/gallery.service";
-import { useConfirm } from "@/components/ui/confirm/useConfirm";
+import { type IWeatherData, WeatherService } from "@/services/weather.service";
 
+import GuestProfileModal from "@/components/GuestProfileModal.vue";
+import Modal from "@/components/reusable/Modal.vue";
+import CountdownTimer from "@/components/ui/CountdownTimer.vue";
 // 2. Importações de componentes específicos do seu projeto
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
-import CountdownTimer from "@/components/ui/CountdownTimer.vue";
 import LeafletMap from "@/components/ui/LeafletMap.vue";
-import Modal from "@/components/reusable/Modal.vue";
-import GuestProfileModal from "@/components/GuestProfileModal.vue";
 
 import { useTenant } from "@/composables/useTenant";
-import { generatePixPayload, sortBy } from "@/lib/utils";
 import { generateThankYouMessage } from "@/lib/ai";
+import { generatePixPayload, sortBy } from "@/lib/utils";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { RsvpService } from "@/services/rsvp.service";
@@ -39,12 +41,12 @@ import * as z from "zod";
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
-import ProductGallery from "@/components/ui/ProductGallery.vue";
-import QrcodeSvg from "qrcode.vue";
-import type { IGuest } from "@/services/guest.service";
-import { ProductService, type IProduct } from "@/services/product.service";
-import Autoplay from "embla-carousel-autoplay";
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import ProductGallery from "@/components/ui/ProductGallery.vue";
+import type { IGuest } from "@/services/guest.service";
+import { type IProduct, ProductService } from "@/services/product.service";
+import Autoplay from "embla-carousel-autoplay";
+import QrcodeSvg from "qrcode.vue";
 import { toast } from "vue-sonner";
 
 dayjs.locale("pt-br");
@@ -106,21 +108,28 @@ const selectedProduct = ref<IProduct | null>(null);
 
 const quotaQuantities = ref<Record<string, number>>({});
 
-import { getProductPrice, formatMoney } from "@/lib/money";
+import { formatMoney, getProductPrice } from "@/lib/money";
 import {
-  Gift,
-  QrCode,
-  Heart,
-  Calendar,
-  Clock,
-  MapPin,
-  Music,
-  Utensils,
-  GlassWater,
   Cake,
   Camera,
+  Clock,
+  Cloud,
+  CloudDrizzle,
+  CloudLightning,
+  CloudRain,
+  CloudSun,
+  Gift,
+  GlassWater,
+  Heart,
+  MapPin,
+  Minus,
+  Music,
+  Snowflake,
   Sparkles,
+  Sun,
+  Utensils,
 } from "lucide-vue-next";
+import type { Component } from "vue";
 
 const pixPayload = ref({ payload: "", base64: "" });
 
@@ -399,6 +408,65 @@ const getTimelineItems = computed(() => {
   }));
 });
 
+const homePrivateImages = computed(() => {
+  return gallery.value.filter((img) => !img.guest && !img.is_public);
+});
+
+const isWithin7DaysOfEvent = computed(() => {
+  if (!tenant.value?.event_date) return false;
+  const eventDate = dayjs(tenant.value.event_date).startOf("day");
+  const today = dayjs().startOf("day");
+  const diffDays = eventDate.diff(today, "day");
+  return diffDays <= 7;
+});
+
+const weatherData = ref<IWeatherData | null>(null);
+const weatherLoading = ref(false);
+const weatherError = ref(false);
+const isWeatherExpanded = ref(false);
+
+const loadWeather = async () => {
+  if (
+    !tenant.value?.event_latitude ||
+    !tenant.value?.event_longitude ||
+    !tenant.value?.event_date
+  ) {
+    return;
+  }
+
+  weatherLoading.value = true;
+  weatherError.value = false;
+
+  try {
+    const res = await WeatherService.getForecast(
+      tenant.value.event_latitude,
+      tenant.value.event_longitude,
+      tenant.value.event_date,
+    );
+    weatherData.value = res;
+  } catch (e) {
+    console.error("Error loading weather forecast:", e);
+    weatherError.value = true;
+  } finally {
+    weatherLoading.value = false;
+  }
+};
+
+const getWeatherIcon = (iconName: string): Component => {
+  const icons: Record<string, Component> = { sun: Sun, 'cloud-sun': CloudSun, cloud: Cloud, 'cloud-rain': CloudRain, 'cloud-drizzle': CloudDrizzle, 'cloud-lightning': CloudLightning, snowflake: Snowflake };
+  return icons[iconName] || Cloud;
+};
+
+watch(
+  tenant,
+  (newTenant) => {
+    if (newTenant) {
+      loadWeather();
+    }
+  },
+  { immediate: true },
+);
+
 const activeLightboxImage = ref<string | null>(null);
 
 const openLightbox = (url: string) => {
@@ -482,7 +550,7 @@ const closeLightbox = () => {
               </p>
             </div>
 
-            <div class="relative border-l-2 ml-4 md:ml-20 space-y-12 py-4"
+            <div class="relative border-l-2 ml-4 md:ml-0 space-y-12 py-4"
               :style="{ borderColor: tenant.primary_color + '33' }">
               <div v-for="item in getTimelineItems" :key="item.title" class="relative pl-6 md:pl-10">
                 <!-- Icon Marker -->
@@ -519,7 +587,7 @@ const closeLightbox = () => {
           </section>
 
           <!-- Gallery -->
-          <section v-if="tenant.show_gallery && gallery && gallery.length > 0" class="space-y-12">
+          <section v-if="tenant.show_gallery" class="space-y-12">
             <div class="text-center mb-12">
               <h2 class="text-3xl font-serif text-slate-900 mb-4">Galeria de Fotos</h2>
               <p class="text-slate-500 font-light max-w-xl mx-auto text-base">
@@ -527,38 +595,81 @@ const closeLightbox = () => {
               </p>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              <div v-for="img in gallery" :key="img.$id"
-                class="group relative aspect-square rounded-3xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm cursor-pointer"
-                @click="openLightbox(img.image_url)">
-                <!-- Image -->
-                <img :src="img.image_url"
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy" />
+            <div v-if="homePrivateImages.length > 0">
+              <ImageGallery :images="homePrivateImages" :carousel="true" :autoplay="true"
+                :currentGuestId="authStore.guest?.$id || ''" @like="toggleGalleryLike" />
+            </div>
+            <div v-else
+              class="text-center text-slate-400 py-12 bg-white/40 border border-dashed rounded-3xl text-sm font-light">
+              Nenhuma foto em exibição na página inicial.
+            </div>
 
-                <!-- Hover Overlay -->
-                <div
-                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm z-10">
-                  <div
-                    class="flex items-center gap-6 text-white scale-90 group-hover:scale-100 transition-transform duration-300">
-                    <button type="button" @click.stop="toggleGalleryLike(img)"
-                      class="flex items-center gap-2 active:scale-90 px-4 py-2 rounded-full backdrop-blur-md border border-white/20 transition-all cursor-pointer">
-                      <Heart class="w-5 h-5 transition-colors"
-                        :class="img.likes?.includes(authStore.guest?.$id || '') ? 'fill-red-500 text-red-500' : 'text-white'" />
-                      <span class="font-semibold text-sm">{{ img.likes?.length || 0 }}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <!-- Guest Gallery Redirect Banner -->
+            <div v-if="isWithin7DaysOfEvent"
+              class="p-8 rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.01)] text-center flex flex-col items-center justify-center gap-4 mx-auto">
+              <Camera class="w-8 h-8 text-primary animate-pulse" />
+              <h3 class="text-xl font-serif text-slate-900 font-medium">Galeria dos Convidados</h3>
+              <p class="text-slate-500 font-light text-sm max-w-md">
+                Queremos muito ver o dia sob os seus olhos! Clique abaixo para ver as fotos do evento e compartilhar os
+                cliques que você tirou do nosso grande dia.
+              </p>
+              <router-link :to="`/${tenant.slug}/gallery`">
+                <Button class="rounded-xl flex items-center gap-2">
+                  <Camera class="w-4 h-4" />
+                  Ver & Compartilhar Fotos
+                </Button>
+              </router-link>
             </div>
           </section>
 
           <!-- Event Location Map -->
           <section v-if="tenant.event_location" class="text-center">
             <h2 class="text-3xl font-serif text-slate-900 mb-6">Local do Evento</h2>
-            <div class="bg-white p-2 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80">
-              <LeafletMap :address="tenant.event_location" />
+
+            <div
+              class="relative bg-white p-2 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
+
+              <LeafletMap :address="tenant.event_location" class="z-0" />
+
+              <div v-if="tenant.event_latitude && tenant.event_longitude && tenant.event_date"
+                class="absolute bottom-5 left-5 right-5 md:left-5 md:right-auto w-95 md:w-full max-w-xs z-10 flex flex-col items-start">
+
+                <div v-if="isWeatherExpanded"
+                  class="bg-white/95 backdrop-blur border border-slate-100/80 p-4 md:p-5 rounded-2xl shadow-xl flex items-center justify-between gap-4 w-full cursor-pointer"
+                  @click="isWeatherExpanded = false">
+
+                  <div class="flex items-center gap-4 w-full">
+                    <div v-if="weatherLoading" class="text-sm text-slate-500 w-full text-center">Carregando...</div>
+
+                    <div v-else-if="weatherData" class="flex justify-between items-center w-full">
+                      <div class="flex items-center gap-3">
+                        <component :is="getWeatherIcon(weatherData.icon)" class="w-7 h-7 text-primary" />
+                        <div class="space-y-0.5">
+                          <h4 class="font-serif text-slate-800 text-sm text-left font-bold uppercase leading-none">Previsão de
+                            Amor</h4>
+                          <p class="text-xs text-left text-slate-500 font-light capitalize">{{ weatherData.description }}</p>
+                        </div>
+                      </div>
+
+                      <div class="text-right shrink-0 tabular-nums">
+                        <div class="text-lg font-bold text-primary">{{ Math.round(weatherData.maxTemp) }}°C</div>
+                        <div class="text-xs text-slate-400">Mín: {{ Math.round(weatherData.minTemp) }}°C</div>
+                      </div>
+                    </div>
+
+                    <div v-else-if="!weatherError" class="text-xs text-slate-500 font-light text-left">
+                      A previsão do tempo ficará disponível cerca de 14 dias antes do casamento.
+                    </div>
+                  </div>
+                </div>
+
+                <button v-else @click="isWeatherExpanded = true"
+                  class="bg-white/90 backdrop-blur border border-slate-100 p-3 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center justify-center">
+                  <CloudSun class="w-6 h-6 text-primary" />
+                </button>
+              </div>
             </div>
+
             <p class="text-slate-500 font-medium mt-4">{{ tenant.event_location }}</p>
           </section>
 
@@ -936,7 +1047,7 @@ const closeLightbox = () => {
           "Com carinho, obrigado por fazer parte da nossa história!"
         </p>
         <div class="flex items-center justify-center md:justify-end gap-1.5 text-xs text-slate-400 font-light mt-1">
-          <span>{{dayjs().format("YYYY")}} &copy;</span>
+          <span>{{ dayjs().format("YYYY") }} &copy;</span>
           <span>Desenvolvido com</span>
           <Heart class="w-3.5 h-3.5 fill-red-400 text-red-400 inline" />
           <span>por <a class="font-bold" href="https://instagram.com/ajotanc" target="_blank">AJOTA</a></span>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { toast } from "vue-sonner";
 import { useAuthStore } from "@/stores/auth";
 import { ref } from "vue";
+import { toast } from "vue-sonner";
 const authStore = useAuthStore();
 const loading = ref(false);
 

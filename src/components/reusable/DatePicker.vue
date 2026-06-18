@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { CalendarDate } from "@internationalized/date";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { CalendarIcon } from "lucide-vue-next";
+import { CalendarDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { CalendarIcon } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
 
 dayjs.extend(customParseFormat);

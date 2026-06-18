@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { cn } from "@/lib/utils";
+import { reactiveOmit, useVModel } from "@vueuse/core";
+import { ChevronDownIcon } from "lucide-vue-next";
 import type { AcceptableValue } from "reka-ui";
 import type { HTMLAttributes } from "vue";
-import { ChevronDownIcon } from "lucide-vue-next";
-import { reactiveOmit, useVModel } from "@vueuse/core";
-import { cn } from "@/lib/utils";
 
 defineOptions({
 	inheritAttrs: false,
@@ -14,9 +14,8 @@ const props = defineProps<{
 	class?: HTMLAttributes["class"];
 }>();
 
-const emit = defineEmits<{
-	(e: "update:modelValue", payload: AcceptableValue): void;
-}>();
+const emit =
+	defineEmits<(e: "update:modelValue", payload: AcceptableValue) => void>();
 
 const modelValue = useVModel(props, "modelValue", emit, {
 	passive: true,

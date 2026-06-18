@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import { Input } from "@/components/ui/input";
 import { MapPin, Search } from "lucide-vue-next";
+import { ref } from "vue";
 
 // Props – optional placeholder
 const props = defineProps<{ placeholder?: string }>();
@@ -73,43 +73,36 @@ const selectSuggestion = (item: {
 
 // Close dropdown when clicking outside
 const onBlur = () => {
-	setTimeout(() => (showList.value = false), 200);
+	setTimeout(() => {
+		showList.value = false;
+	}, 200);
 };
 </script>
 
 <template>
-  <div class="relative w-full" @blur="onBlur">
-    <div class="relative">
-      <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-      <Input
-        v-model="query"
-        :placeholder="props.placeholder ?? 'Encontrar endereço…'"
-        class="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-700"
-        @input="onInput"
-        autocomplete="off"
-      />
-    </div>
-    <ul
-      v-if="showList && results.length"
-      class="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg max-h-60 overflow-auto"
-    >
-      <li
-        v-for="item in results"
-        :key="item.lat + '-' + item.lon"
-        class="flex items-center px-4 py-2 cursor-pointer hover:bg-slate-100"
-        @click="selectSuggestion(item)"
-      >
-        <MapPin class="w-4 h-4 mr-2 text-primary" />
-        <span class="text-sm text-slate-700" v-html="item.display_name"></span>
-      </li>
-    </ul>
-    <div v-if="loading" class="absolute inset-y-0 right-3 flex items-center">
-      <svg class="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-      </svg>
-    </div>
-  </div>
+	<div class="relative w-full" @blur="onBlur">
+		<div class="relative">
+			<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+			<Input v-model="query" :placeholder="props.placeholder ?? 'Encontrar endereço…'"
+				class="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-700"
+				@input="onInput" autocomplete="off" />
+		</div>
+		<ul v-if="showList && results.length"
+			class="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg max-h-60 overflow-auto">
+			<li v-for="item in results" :key="item.lat + '-' + item.lon"
+				class="flex items-center px-4 py-2 cursor-pointer hover:bg-slate-100" @click="selectSuggestion(item)">
+				<MapPin class="w-4 h-4 mr-2 text-primary" />
+				<span class="text-sm text-slate-700" v-html="item.display_name"></span>
+			</li>
+		</ul>
+		<div v-if="loading" class="absolute inset-y-0 right-3 flex items-center">
+			<svg class="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+				viewBox="0 0 24 24">
+				<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+				<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+			</svg>
+		</div>
+	</div>
 </template>
 
 <style scoped>

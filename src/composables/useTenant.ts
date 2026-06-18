@@ -1,15 +1,18 @@
+import { sortBy } from "@/lib/utils";
+import { FaqService, type IFaq } from "@/services/faq.service";
+import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
 import type { IMessage } from "@/services/message.service";
 import type { IProduct } from "@/services/product.service";
 import type { IPurchase } from "@/services/purchase.service";
 import { PurchaseService } from "@/services/purchase.service";
 import type { IRsvp } from "@/services/rsvp.service";
-import { TenantService, type ITenant } from "@/services/tenant.service";
-import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
-import { FaqService, type IFaq } from "@/services/faq.service";
-import { ScheduleService, type IScheduleItem } from "@/services/schedule.service";
+import {
+	type IScheduleItem,
+	ScheduleService,
+} from "@/services/schedule.service";
+import { type ITenant, TenantService } from "@/services/tenant.service";
 import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { sortBy } from "@/lib/utils";
 
 export function useTenant() {
 	const route = useRoute();
@@ -45,7 +48,7 @@ export function useTenant() {
 				gallery.value = result?.gallery || [];
 				faqs.value = sortBy(result?.faqs || [], "order");
 				schedules.value = sortBy(result?.schedules || [], "hour");
-				
+
 				tenant.value = result;
 
 				if (tenant.value.primary_color) {

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import Modal from "@/components/reusable/Modal.vue";
+import PageHeader from "@/components/reusable/PageHeader.vue";
+import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { useTenant } from "@/composables/useTenant";
 import { generateThankYouMessage } from "@/lib/ai";
@@ -15,11 +18,8 @@ import {
 	Users,
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import * as XLSX from "xlsx";
-import PageHeader from "@/components/reusable/PageHeader.vue";
-import { Button } from "@/components/ui/button";
-import Modal from "@/components/reusable/Modal.vue";
 import { toast } from "vue-sonner";
+import * as XLSX from "xlsx";
 
 const { confirm } = useConfirm();
 const { tenant, rsvps, messages } = useTenant();

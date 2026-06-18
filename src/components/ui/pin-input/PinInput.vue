@@ -1,9 +1,9 @@
 <script setup lang="ts" generic="Type extends 'text' | 'number' = 'text'">
-import type { PinInputRootEmits, PinInputRootProps } from "reka-ui";
-import type { HTMLAttributes } from "vue";
-import { reactiveOmit } from "@vueuse/core";
-import { PinInputRoot, useForwardPropsEmits } from "reka-ui";
 import { cn } from "@/lib/utils";
+import { reactiveOmit } from "@vueuse/core";
+import type { PinInputRootEmits, PinInputRootProps } from "reka-ui";
+import { PinInputRoot, useForwardPropsEmits } from "reka-ui";
+import type { HTMLAttributes } from "vue";
 
 const props = withDefaults(
 	defineProps<PinInputRootProps<Type> & { class?: HTMLAttributes["class"] }>(),

@@ -8,6 +8,8 @@ const EMAILJS_TEMPLATE_GIFT =
 	import.meta.env.VITE_EMAILJS_TEMPLATE_GIFT || "template_gift";
 const EMAILJS_TEMPLATE_RSVP =
 	import.meta.env.VITE_EMAILJS_TEMPLATE_RSVP || "template_rsvp";
+const EMAILJS_TEMPLATE_FEEDBACK =
+	import.meta.env.VITE_EMAILJS_TEMPLATE_FEEDBACK || "template_feedback";
 const EMAILJS_PUBLIC_KEY =
 	import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
 
@@ -85,6 +87,33 @@ export const EmailService = {
 			return response;
 		} catch (error) {
 			console.error("FAILED...", error);
+			throw error;
+		}
+	},
+
+	async sendFeedback(params: {
+		name: string;
+		email: string;
+		type: string;
+		message: string;
+	}) {
+		try {
+			const response = await emailjs.send(
+				EMAILJS_SERVICE_ID,
+				EMAILJS_TEMPLATE_FEEDBACK,
+				{
+					from_name: params.name,
+					from_email: params.email,
+					feedback_type: params.type,
+					message: params.message,
+					system: "WeddingGift SaaS",
+				},
+				EMAILJS_PUBLIC_KEY,
+			);
+			console.log("FEEDBACK SUCCESS!", response.status, response.text);
+			return response;
+		} catch (error) {
+			console.error("FEEDBACK FAILED...", error);
 			throw error;
 		}
 	},

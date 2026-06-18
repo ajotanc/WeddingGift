@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import { cn } from "@/lib/utils";
+import { reactiveOmit } from "@vueuse/core";
+import { Check } from "lucide-vue-next";
 import type {
 	DropdownMenuCheckboxItemEmits,
 	DropdownMenuCheckboxItemProps,
 } from "reka-ui";
-import type { HTMLAttributes } from "vue";
-import { Check } from "lucide-vue-next";
-import { reactiveOmit } from "@vueuse/core";
 import {
 	DropdownMenuCheckboxItem,
 	DropdownMenuItemIndicator,
 	useForwardPropsEmits,
 } from "reka-ui";
-import { cn } from "@/lib/utils";
+import type { HTMLAttributes } from "vue";
 
 const props = defineProps<
 	DropdownMenuCheckboxItemProps & { class?: HTMLAttributes["class"] }

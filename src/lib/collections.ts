@@ -10,4 +10,3 @@ export const TABLE_PURCHASES = "purchases";
 export const TABLE_GALLERY = "gallery";
 export const TABLE_FAQS = "faqs";
 export const TABLE_SCHEDULE = "schedules";
-

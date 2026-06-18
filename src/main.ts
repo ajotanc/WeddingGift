@@ -1,8 +1,8 @@
+import { QuillEditor } from "@vueup/vue-quill";
 import { vMaska } from "maska/vue";
 import { createPinia } from "pinia";
 import money from "v-money3";
 import { createApp } from "vue";
-import { QuillEditor } from "@vueup/vue-quill";
 
 import App from "./App.vue";
 import router from "./router";

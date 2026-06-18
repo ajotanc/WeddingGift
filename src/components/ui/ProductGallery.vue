@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { formatMoney, getProductPrice } from "@/lib/money";
 import type { IProduct } from "@/services/product.service";
 import type { ITenant } from "@/services/tenant.service";
-import { formatMoney, getProductPrice } from "@/lib/money";
+import { computed, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
@@ -10,18 +10,19 @@ import {
 	ChevronRight,
 	ChevronsLeft,
 	ChevronsRight,
-	Heart,
-	Edit2,
-	Trash2,
 	ChevronsUpDown,
+	Edit2,
+	Heart,
 	Package,
 	QrCode,
+	Trash2,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { Card } from "@/components/ui/card";
 import {
 	Pagination,
 	PaginationContent,
@@ -32,7 +33,6 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Card } from "@/components/ui/card";
 
 import Combobox from "../reusable/Combobox.vue";
 

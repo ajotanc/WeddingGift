@@ -2,16 +2,16 @@
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import { Progress } from "@/components/ui/progress";
 import { useTenant } from "@/composables/useTenant";
+import { formatMoney } from "@/lib/money";
 import {
-	Wallet,
-	Target,
-	ShoppingBag,
 	Gift,
-	Users,
 	MessageSquare,
+	ShoppingBag,
+	Target,
+	Users,
+	Wallet,
 } from "lucide-vue-next";
 import { computed } from "vue";
-import { formatMoney } from "@/lib/money";
 
 const { purchases, rsvps, messages, products } = useTenant();
 

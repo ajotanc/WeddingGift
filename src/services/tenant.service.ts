@@ -1,12 +1,12 @@
 import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
 import { TABLE_TENANTS } from "@/lib/collections";
 import { ID, type Models, Query } from "appwrite";
+import type { IFaq } from "./faq.service";
+import type { IGalleryImage } from "./gallery.service";
 import type { IMessage } from "./message.service";
 import type { IProduct } from "./product.service";
 import type { IPurchase } from "./purchase.service";
 import type { IRsvp } from "./rsvp.service";
-import type { IGalleryImage } from "./gallery.service";
-import type { IFaq } from "./faq.service";
 import type { IScheduleItem } from "./schedule.service";
 
 export interface ITenant extends Models.Row {
@@ -18,6 +18,8 @@ export interface ITenant extends Models.Row {
 	event_date: string | null;
 	event_time?: string | null;
 	event_location: string | null;
+	event_latitude?: number | null;
+	event_longitude?: number | null;
 	couple_history?: string;
 	quote?: string;
 	status: "active" | "pending";
@@ -55,6 +57,7 @@ export const TenantService = {
 					"rsvps.*",
 					"rsvps.guest.*",
 					"gallery.*",
+					"gallery.guest.*",
 					"faqs.*",
 					"schedules.*",
 				]),

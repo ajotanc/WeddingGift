@@ -19,6 +19,11 @@ const router = createRouter({
 			component: () => import("@/views/LoginView.vue"),
 		},
 		{
+			path: "/:slug/gallery",
+			name: "guest-gallery",
+			component: () => import("@/views/GuestGalleryView.vue"),
+		},
+		{
 			// Movemos para baixo e adicionamos uma trava via Regex (opcional mas recomendado)
 			// para garantir que não capture caminhos fixos
 			path: "/:slug",

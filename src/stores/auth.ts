@@ -66,14 +66,13 @@ export const useAuthStore = defineStore("auth", {
 						const t = await TenantService.get(sessionUser.$id);
 						this.tenant = t;
 						const g = await GuestService.get(sessionUser.$id);
-						this.guest =
-							g && g.$id
-								? g
-								: ({
-										$id: sessionUser.$id,
-										email: sessionUser.email,
-										name: sessionUser.name,
-									} as IGuest);
+						this.guest = g?.$id
+							? g
+							: ({
+									$id: sessionUser.$id,
+									email: sessionUser.email,
+									name: sessionUser.name,
+								} as IGuest);
 						return;
 					}
 
@@ -86,14 +85,13 @@ export const useAuthStore = defineStore("auth", {
 
 					try {
 						const g = await GuestService.get(sessionUser.$id);
-						this.guest =
-							g && g.$id
-								? g
-								: ({
-										$id: sessionUser.$id,
-										email: sessionUser.email,
-										name: sessionUser.name,
-									} as IGuest);
+						this.guest = g?.$id
+							? g
+							: ({
+									$id: sessionUser.$id,
+									email: sessionUser.email,
+									name: sessionUser.name,
+								} as IGuest);
 					} catch (e) {
 						this.guest = {
 							$id: sessionUser.$id,

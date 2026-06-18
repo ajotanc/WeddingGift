@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { Button } from "@/components/ui/button";
 import {
-	UploadCloud,
-	X,
-	FileText,
-	FileSpreadsheet,
 	File,
+	FileSpreadsheet,
+	FileText,
 	Image as ImageIcon,
 	Loader2,
 	Search,
+	UploadCloud,
+	X,
 } from "lucide-vue-next";
-import { Button } from "@/components/ui/button";
+import { computed, ref, watch } from "vue";
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const isZoomed = ref(false);
@@ -22,6 +22,7 @@ const props = defineProps<{
 	fileName?: string;
 	uploading?: boolean;
 	autoUpload?: boolean;
+	multiple?: boolean;
 }>();
 
 const emit = defineEmits([
@@ -69,25 +70,51 @@ const helperText = computed(() => {
 	return `${types} / ${props.maxSizeMb ? `${props.maxSizeMb}MB` : ""}`;
 });
 
-const handleFiles = (file: File | undefined) => {
-	if (!file) return;
-	if (props.maxSizeMb && file.size > props.maxSizeMb * 1024 * 1024) {
-		alert(`Arquivo muito grande! Máximo: ${props.maxSizeMb}MB`);
-		return;
-	}
+const handleFiles = (files: FileList | null | undefined) => {
+	if (!files || files.length === 0) return;
 
-	if (props.autoUpload) {
-		emit("auto-upload", file);
+	if (props.multiple) {
+		const filesArray: File[] = [];
+		for (let i = 0; i < files.length; i++) {
+			const file = files[i];
+			if (props.maxSizeMb && file.size > props.maxSizeMb * 1024 * 1024) {
+				alert(
+					`Arquivo "${file.name}" muito grande! Máximo: ${props.maxSizeMb}MB`,
+				);
+				continue;
+			}
+			filesArray.push(file);
+		}
+		if (filesArray.length === 0) return;
+
+		if (props.autoUpload) {
+			emit("auto-upload", filesArray);
+		} else {
+			const firstFile = filesArray[0];
+			emit("update:modelValue", URL.createObjectURL(firstFile));
+			emit("update:fileName", firstFile.name);
+			emit("file-selected", firstFile);
+		}
 	} else {
-		emit("update:modelValue", URL.createObjectURL(file));
-		emit("update:fileName", file.name);
-		emit("file-selected", file);
+		const file = files[0];
+		if (props.maxSizeMb && file.size > props.maxSizeMb * 1024 * 1024) {
+			alert(`Arquivo muito grande! Máximo: ${props.maxSizeMb}MB`);
+			return;
+		}
+
+		if (props.autoUpload) {
+			emit("auto-upload", file);
+		} else {
+			emit("update:modelValue", URL.createObjectURL(file));
+			emit("update:fileName", file.name);
+			emit("file-selected", file);
+		}
 	}
 };
 
 const handleUpload = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0];
-	handleFiles(file);
+	const target = event.target as HTMLInputElement;
+	handleFiles(target.files);
 };
 
 const removeFile = () => {
@@ -127,13 +154,15 @@ const closeZoomOverlay = (event: MouseEvent) => {
     </div>
 
     <div v-if="!modelValue" @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false"
-      @drop.prevent="handleFiles($event.dataTransfer?.files?.[0])" @click="fileInput?.click()"
+      @drop.prevent="handleFiles($event.dataTransfer?.files)" @click="fileInput?.click()"
       class="border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300"
       :class="isDragging ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary/50 hover:bg-slate-50'">
       <UploadCloud class="w-8 h-8 text-slate-400 mb-2" stroke-width="1.5" />
-      <p class="text-sm font-medium text-slate-600">Clique ou arraste o arquivo</p>
+      <p class="text-sm font-medium text-slate-600">
+        {{ props.multiple ? 'Clique ou arraste as fotos' : 'Clique ou arraste o arquivo' }}
+      </p>
       <p class="text-[11px] text-slate-400 mt-1 uppercase tracking-wider">{{ helperText }}</p>
-      <input type="file" ref="fileInput" :accept="accept" class="hidden" @change="handleUpload" />
+      <input type="file" ref="fileInput" :accept="accept" :multiple="multiple" class="hidden" @change="handleUpload" />
     </div>
 
     <div v-else class="relative rounded-2xl border border-slate-200 p-3 bg-white shadow-sm flex items-center gap-4">

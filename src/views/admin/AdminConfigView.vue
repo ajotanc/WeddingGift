@@ -1,37 +1,63 @@
 <script setup lang="ts">
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { useTenant } from "@/composables/useTenant";
 import { TenantService } from "@/services/tenant.service";
 import { useAuthStore } from "@/stores/auth";
 import { ref, watch } from "vue";
-import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import { StorageService } from "@/services/storage.service";
-import { toTypedSchema } from "@vee-validate/zod";
-import { useForm } from "vee-validate";
-import * as z from "zod";
+import DatePicker from "@/components/reusable/DatePicker.vue";
 import FileUpload from "@/components/reusable/FileUpload.vue";
-import PageHeader from "@/components/reusable/PageHeader.vue";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import PageHeader from "@/components/reusable/PageHeader.vue";
+import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	InputGroup,
 	InputGroupInput,
 	InputGroupText,
 } from "@/components/ui/input-group";
-import { Loader2, Plus, Trash2, HelpCircle, Image as ImageIcon, GripVertical, Settings, Calendar, Clock, Utensils, Music, GlassWater, Heart, Cake, Camera, Sparkles, MapPin, Gift } from "lucide-vue-next";
-import DatePicker from "@/components/reusable/DatePicker.vue";
-import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
-import { Button } from "@/components/ui/button";
-import { toast } from "vue-sonner";
-import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
-import { FaqService } from "@/services/faq.service";
-import { ScheduleService } from "@/services/schedule.service";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { sortBy } from "@/lib/utils";
-import { storage, BUCKET_ID } from "@/lib/appwrite";
+import { FaqService } from "@/services/faq.service";
+import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
+import { ScheduleService } from "@/services/schedule.service";
+import { StorageService } from "@/services/storage.service";
+import { toTypedSchema } from "@vee-validate/zod";
+import {
+	Cake,
+	Calendar,
+	Camera,
+	Clock,
+	Gift,
+	GlassWater,
+	GripVertical,
+	Heart,
+	HelpCircle,
+	Image as ImageIcon,
+	Loader2,
+	MapPin,
+	Music,
+	Plus,
+	Settings,
+	Sparkles,
+	Trash2,
+	Utensils,
+} from "lucide-vue-next";
+import { useForm } from "vee-validate";
+import { toast } from "vue-sonner";
+import * as z from "zod";
 
 const { tenant, gallery, faqs, schedules } = useTenant();
 const authStore = useAuthStore();
@@ -53,6 +79,8 @@ const zodSchema = z.object({
 	event_date: z.string().nullable().optional(),
 	event_time: z.string().nullable().optional(),
 	event_location: z.string().nullable().optional(),
+	event_latitude: z.number().nullable().optional(),
+	event_longitude: z.number().nullable().optional(),
 	guest_limit: z.number().int().positive().nullable().optional(),
 	show_countdown: z.boolean().optional(),
 	show_gallery: z.boolean().optional(),
@@ -98,6 +126,9 @@ const { handleSubmit, errors, setValues, defineField } =
 			quote: "",
 			event_date: null,
 			event_time: null,
+			event_location: "",
+			event_latitude: null,
+			event_longitude: null,
 			show_countdown: true,
 			show_gallery: false,
 			show_faq: false,
@@ -117,6 +148,8 @@ const [quote] = defineField("quote");
 const [event_date] = defineField("event_date");
 const [event_time] = defineField("event_time");
 const [event_location] = defineField("event_location");
+const [event_latitude] = defineField("event_latitude");
+const [event_longitude] = defineField("event_longitude");
 const [guest_limit] = defineField("guest_limit");
 const [show_countdown] = defineField("show_countdown");
 const [show_gallery] = defineField("show_gallery");
@@ -131,6 +164,26 @@ const isSaving = ref(false);
 
 const isUploadingBackground = ref(false);
 const isUploadingLogo = ref(false);
+
+// Configurações do upload e separação da galeria
+import ImageGallery from "@/components/ui/ImageGallery.vue";
+import { computed } from "vue";
+
+const uploadIsPublic = ref(false);
+const handleChangeUpload = computed({
+	get: () => uploadIsPublic.value ? "true" : "false",
+	set: (val) => {
+		uploadIsPublic.value = val === "true";
+	},
+});
+
+const homePrivateImages = computed(() => {
+	return gallery.value.filter((img) => !img.guest && !img.is_public);
+});
+
+const generalGalleryImages = computed(() => {
+	return gallery.value.filter((img) => img.is_public || img.guest);
+});
 
 const onBackgroundUpload = async (file: File) => {
 	if (authStore.user) {
@@ -178,11 +231,15 @@ const onLogoUpload = async (file: File) => {
 
 const isUploadingGalleryImage = ref(false);
 
-const onGalleryImageUpload = async (file: File) => {
+const onGalleryImageUpload = async (files: File | File[]) => {
 	if (!tenant.value || !authStore.user) return;
-	if (gallery.value.length >= 20) {
+	const tenantId = tenant.value.$id;
+
+	const filesArray = Array.isArray(files) ? files : [files];
+
+	if (gallery.value.length + filesArray.length > 20) {
 		toast.error("Limite atingido", {
-			description: "Você pode enviar no máximo 20 imagens.",
+			description: `Você pode enviar no máximo 20 imagens. Espaço restante: ${20 - gallery.value.length}.`,
 		});
 		return;
 	}
@@ -190,21 +247,26 @@ const onGalleryImageUpload = async (file: File) => {
 	isUploadingGalleryImage.value = true;
 
 	try {
-		toast.info("Enviando imagem para a galeria...");
+		toast.info(`Enviando ${filesArray.length} imagem(ns) para a galeria...`);
 
-		const newImage = await GalleryService.create(
-			{
-				tenant: tenant.value.$id,
-				image_url: "",
-			},
-			file,
-		);
+		const promises = filesArray.map(async (file) => {
+			const newImage = await GalleryService.create(
+				{
+					tenant: tenantId,
+					image_url: "",
+					is_public: uploadIsPublic.value,
+				},
+				file,
+			);
+			return newImage;
+		});
 
-		gallery.value.push(newImage);
-		toast.success("Imagem adicionada à galeria!");
+		const newImages = await Promise.all(promises);
+		gallery.value.push(...newImages);
+		toast.success("Imagens adicionadas com sucesso!");
 	} catch (err) {
 		console.error(err);
-		toast.error("Falha ao enviar a imagem.");
+		toast.error("Falha ao enviar uma ou mais imagens.");
 	} finally {
 		isUploadingGalleryImage.value = false;
 	}
@@ -284,7 +346,12 @@ const scheduleIcon = ref("clock");
 const isAddingSchedule = ref(false);
 
 const addCustomSchedule = async () => {
-	if (!tenant.value || !scheduleTitle.value.trim() || !scheduleHour.value.trim()) return;
+	if (
+		!tenant.value ||
+		!scheduleTitle.value.trim() ||
+		!scheduleHour.value.trim()
+	)
+		return;
 
 	isAddingSchedule.value = true;
 	try {
@@ -327,7 +394,7 @@ const deleteSchedule = (id: string) => {
 				console.error(err);
 				toast.error("Falha ao excluir o evento.");
 			}
-		}
+		},
 	});
 };
 
@@ -339,12 +406,14 @@ const predefinedSchedules = [
 	},
 	{
 		title: "Recepção e Coquetel",
-		description: "Momento para cumprimentar os noivos, tirar fotos e descontrair.",
+		description:
+			"Momento para cumprimentar os noivos, tirar fotos e descontrair.",
 		icon: "cheers",
 	},
 	{
 		title: "Jantar de Comemoração",
-		description: "Um buffet preparado com muito carinho para celebrarmos juntos.",
+		description:
+			"Um buffet preparado com muito carinho para celebrarmos juntos.",
 		icon: "utensils",
 	},
 	{
@@ -354,14 +423,20 @@ const predefinedSchedules = [
 	},
 ];
 
-const selectPredefinedSchedule = (predef: { title: string; description: string; icon: string }) => {
+const selectPredefinedSchedule = (predef: {
+	title: string;
+	description: string;
+	icon: string;
+}) => {
 	scheduleTitle.value = predef.title;
 	scheduleDescription.value = predef.description;
 	scheduleIcon.value = predef.icon;
 	if (tenant.value?.event_time && !scheduleHour.value) {
 		scheduleHour.value = tenant.value.event_time;
 	}
-	toast.info("Sugestão selecionada! Você pode ajustar os detalhes antes de salvar.");
+	toast.info(
+		"Sugestão selecionada! Você pode ajustar os detalhes antes de salvar.",
+	);
 };
 
 const draggedIndex = ref<number | null>(null);
@@ -474,6 +549,8 @@ const loadSettings = () => {
 			event_date: tenant.value.event_date || null,
 			event_time: tenant.value.event_time || null,
 			event_location: tenant.value.event_location || "",
+			event_latitude: tenant.value.event_latitude || null,
+			event_longitude: tenant.value.event_longitude || null,
 			guest_limit: tenant.value.guest_limit ?? 0,
 			show_countdown: tenant.value.show_countdown ?? true,
 			primary_color: tenant.value.primary_color || "#ec4899",
@@ -504,67 +581,16 @@ watch([groom_name, bride_name], ([groom, bride]) => {
 	}
 });
 
-function onLocationSelect(payload: { address: string }) {
+function onLocationSelect(payload: {
+	address: string;
+	latitude: number;
+	longitude: number;
+}) {
+	console.log(payload);
 	event_location.value = payload.address;
+	event_latitude.value = payload.latitude;
+	event_longitude.value = payload.longitude;
 }
-
-const onFileSelect = async (e: Event) => {
-	const target = e.target as HTMLInputElement;
-	const file = target.files?.[0];
-
-	if (file && authStore.user) {
-		try {
-			toast({ title: "Aviso", description: "Otimizando e enviando imagem..." });
-
-			const url = await StorageService.uploadFile(
-				authStore.user.$id,
-				file,
-				"background",
-			);
-
-			background_image.value = url;
-
-			toast({
-				title: "Sucesso",
-				description: "Imagem enviada com sucesso!",
-				class: "bg-emerald-500 text-white border-none",
-			});
-		} catch (err) {
-			console.error(err);
-			toast({
-				title: "Erro",
-				description: "Falha ao enviar a imagem.",
-				variant: "destructive",
-			});
-		}
-	}
-};
-
-const onLogoSelect = async (e: Event) => {
-	const target = e.target as HTMLInputElement;
-	const file = target.files?.[0];
-
-	if (file && authStore.user) {
-		try {
-			toast.info("Aviso", { description: "Enviando logomarca..." });
-
-			const url = await StorageService.uploadFile(
-				authStore.user.$id,
-				file,
-				"logo",
-			);
-
-			logo_url.value = url;
-
-			toast.success("Sucesso", {
-				description: "Logomarca enviada com sucesso!",
-			});
-		} catch (err) {
-			console.error(err);
-			toast.error("Erro", { description: "Falha ao enviar a logomarca." });
-		}
-	}
-};
 
 const slugStatus = ref<"idle" | "checking" | "available" | "unavailable">(
 	"idle",
@@ -644,40 +670,29 @@ const saveSettings = handleSubmit(async (values) => {
 		<PageHeader title="Configurações" description="Personalize o seu site de casamento." />
 
 		<Tabs v-model="activeTab" class="w-full">
-			<div class="flex items-center gap-1.5 mb-8 w-full overflow-x-auto pb-2 flex-nowrap hide-scrollbar md:w-fit md:pb-0">
-				<button 
-					type="button"
-					@click="activeTab = 'geral'" 
+			<div
+				class="flex items-center gap-1.5 mb-8 w-full overflow-x-auto pb-2 flex-nowrap hide-scrollbar md:w-fit md:pb-0">
+				<button type="button" @click="activeTab = 'geral'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'geral' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'"
-				>
+					:class="activeTab === 'geral' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<Settings class="w-4 h-4" />
 					Geral
 				</button>
-				<button 
-					type="button"
-					@click="activeTab = 'galeria'" 
+				<button type="button" @click="activeTab = 'galeria'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'galeria' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'"
-				>
+					:class="activeTab === 'galeria' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<ImageIcon class="w-4 h-4" />
 					Galeria de Fotos
 				</button>
-				<button 
-					type="button"
-					@click="activeTab = 'faq'" 
+				<button type="button" @click="activeTab = 'faq'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'faq' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'"
-				>
+					:class="activeTab === 'faq' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<HelpCircle class="w-4 h-4" />
 					FAQ (Dúvidas)
 				</button>
-				<button 
-					type="button"
-					@click="activeTab = 'cronograma'" 
+				<button type="button" @click="activeTab = 'cronograma'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'cronograma' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'"
-				>
+					:class="activeTab === 'cronograma' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<Calendar class="w-4 h-4" />
 					Cronograma
 				</button>
@@ -690,7 +705,8 @@ const saveSettings = handleSubmit(async (values) => {
 					<div class="flex items-center justify-between border-b border-slate-100 pb-4">
 						<div>
 							<h3 class="text-lg font-semibold text-slate-800">Informações Gerais</h3>
-							<p class="text-xs text-slate-500">Personalize as informações básicas e a identidade visual do site do casamento.</p>
+							<p class="text-xs text-slate-500">Personalize as informações básicas e a identidade visual do site do
+								casamento.</p>
 						</div>
 					</div>
 
@@ -793,37 +809,39 @@ const saveSettings = handleSubmit(async (values) => {
 							</div>
 						</FormGroup>
 
-					<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-						<FormGroup label="Limite de Convidados" :error="errors.guest_limit">
-							<Input type="number" v-model.number="guest_limit" min="0" class="bg-slate-50/50" />
-						</FormGroup>
+						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+							<FormGroup label="Limite de Convidados" :error="errors.guest_limit">
+								<Input type="number" v-model.number="guest_limit" min="0" class="bg-slate-50/50" />
+							</FormGroup>
 
-						<FormGroup label="Cor Principal">
-							<div class="flex items-center gap-4 h-10">
-								<Input type="color" v-model="primary_color" class="w-8 h-8 rounded cursor-pointer p-0 border-0 bg-transparent" />
-								<span class="text-sm font-medium text-slate-600">{{ primary_color }}</span>
-							</div>
-						</FormGroup>
+							<FormGroup label="Cor Principal">
+								<div class="flex items-center gap-4 h-10">
+									<Input type="color" v-model="primary_color"
+										class="w-8 h-8 rounded cursor-pointer p-0 border-0 bg-transparent" />
+									<span class="text-sm font-medium text-slate-600">{{ primary_color }}</span>
+								</div>
+							</FormGroup>
 
-						<FormGroup label="Cor de Fundo" :error="errors.background_color">
-							<div class="flex items-center gap-4 h-10">
-								<Input type="color" v-model="background_color" class="w-8 h-8 rounded cursor-pointer p-0 border-0 bg-transparent" />
-								<span class="text-sm font-medium text-slate-600">{{ background_color }}</span>
-							</div>
-						</FormGroup>
-					</div>
+							<FormGroup label="Cor de Fundo" :error="errors.background_color">
+								<div class="flex items-center gap-4 h-10">
+									<Input type="color" v-model="background_color"
+										class="w-8 h-8 rounded cursor-pointer p-0 border-0 bg-transparent" />
+									<span class="text-sm font-medium text-slate-600">{{ background_color }}</span>
+								</div>
+							</FormGroup>
+						</div>
 
-					<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-						<FormGroup label="Logomarca" :error="errors.logo_url">
-							<FileUpload v-model="logo_url" :auto-upload="true" :uploading="isUploadingLogo"
-								@auto-upload="onLogoUpload" :maxSizeMb="1" accept="image/*" />
-						</FormGroup>
+						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+							<FormGroup label="Logomarca" :error="errors.logo_url">
+								<FileUpload v-model="logo_url" :auto-upload="true" :uploading="isUploadingLogo"
+									@auto-upload="onLogoUpload" :maxSizeMb="1" accept="image/*" />
+							</FormGroup>
 
-						<FormGroup label="Imagem de Fundo" :error="errors.background_image">
-							<FileUpload v-model="background_image" :auto-upload="true" :uploading="isUploadingBackground"
-								@auto-upload="onBackgroundUpload" :maxSizeMb="2" accept="image/*" />
-						</FormGroup>
-					</div>
+							<FormGroup label="Imagem de Fundo" :error="errors.background_image">
+								<FileUpload v-model="background_image" :auto-upload="true" :uploading="isUploadingBackground"
+									@auto-upload="onBackgroundUpload" :maxSizeMb="2" accept="image/*" />
+							</FormGroup>
+						</div>
 					</div>
 
 					<div class="pt-6 border-t border-slate-100 flex justify-end">
@@ -841,35 +859,65 @@ const saveSettings = handleSubmit(async (values) => {
 					<div class="flex items-center justify-between border-b border-slate-100 pb-4">
 						<div>
 							<h3 class="text-lg font-semibold text-slate-800">Galeria de Fotos</h3>
-							<p class="text-xs text-slate-500">Compartilhe os melhores momentos do casal (máximo de 20 fotos).</p>
+							<p class="text-xs text-slate-500">Compartilhe e gerencie as fotos do casamento.</p>
 						</div>
 					</div>
 
-					<div v-if="show_gallery" class="space-y-6 pt-2">
+					<div v-if="show_gallery" class="space-y-8 pt-2">
 						<FormGroup label="Adicionar Foto">
-							<div class="w-full">
-								<FileUpload :model-value="null" :auto-upload="true" :uploading="isUploadingGalleryImage"
-									@auto-upload="onGalleryImageUpload" :maxSizeMb="2" accept="image/*" />
+							<div class="flex flex-col gap-4 p-4 border border-slate-100 rounded-2xl bg-slate-50/50">
+								<div class="flex flex-col md:flex-row md:items-center gap-4">
+									<span class="text-sm font-medium text-slate-700">Onde exibir a foto?</span>
+									<RadioGroup v-model="handleChangeUpload" class="flex items-center gap-6">
+										<div class="flex items-center gap-2">
+											<RadioGroupItem id="option-private" value="false" />
+											<Label for="option-private" class="cursor-pointer text-sm font-normal text-slate-600">Página Inicial (Privada)</Label>
+										</div>
+										<div class="flex items-center gap-2">
+											<RadioGroupItem id="option-public" value="true" />
+											<Label for="option-public" class="cursor-pointer text-sm font-normal text-slate-600">Galeria Geral (Pública)</Label>
+										</div>
+									</RadioGroup>
+								</div>
+
+								<FileUpload :model-value="null" :auto-upload="true" :multiple="true"
+									:uploading="isUploadingGalleryImage" @auto-upload="onGalleryImageUpload" :maxSizeMb="2"
+									accept="image/*" />
 							</div>
 						</FormGroup>
 
-						<div v-if="gallery.length > 0" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-4">
-							<div v-for="img in gallery" :key="img.$id"
-								class="group relative aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm">
-								<img :src="img.image_url" class="w-full h-full object-cover" />
-								<div
-									class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
-									<button type="button" @click="deleteGalleryImage(img)"
-										class="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 p-2.5 rounded-full shadow transition-all transform hover:scale-110 cursor-pointer border-0 outline-none">
-										<Trash2 class="w-5 h-5" />
-									</button>
-								</div>
+						<!-- 1. Fotos da Página Inicial (Privadas) -->
+						<div class="space-y-3 pt-2">
+							<h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+								<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+								Fotos da Página Inicial (Privadas)
+								<span class="text-xs font-normal text-slate-400">({{ homePrivateImages.length }} fotos)</span>
+							</h4>
+							<p class="text-xs text-slate-500">Estas fotos aparecem apenas na tela inicial do evento em formato de
+								carrossel.</p>
+							<ImageGallery v-if="homePrivateImages.length > 0" :images="homePrivateImages" :isAdmin="true"
+								@delete="deleteGalleryImage" />
+							<div v-else
+								class="py-6 text-center text-slate-400 border border-dashed border-slate-100 rounded-2xl bg-slate-50/30 text-sm font-light">
+								Nenhuma foto privada adicionada para a Página Inicial.
 							</div>
 						</div>
-						<div v-else
-							class="py-12 text-center text-slate-400 flex flex-col items-center justify-center border border-dashed border-slate-100 rounded-2xl bg-slate-50/30">
-							<ImageIcon class="w-12 h-12 text-slate-200 mb-2" />
-							<p class="text-sm font-light">Nenhuma foto adicionada à galeria ainda.</p>
+
+						<!-- 2. Fotos da Galeria Geral -->
+						<div class="space-y-3 pt-4">
+							<h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+								<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+								Fotos da Galeria Geral
+								<span class="text-xs font-normal text-slate-400">({{ generalGalleryImages.length }} fotos)</span>
+							</h4>
+							<p class="text-xs text-slate-500">Estas fotos aparecem na galeria geral pública de convidados (inclui
+								fotos públicas enviadas pelos noivos e fotos enviadas por convidados).</p>
+							<ImageGallery v-if="generalGalleryImages.length > 0" :images="generalGalleryImages" :isAdmin="true"
+								@delete="deleteGalleryImage" />
+							<div v-else
+								class="py-6 text-center text-slate-400 border border-dashed border-slate-100 rounded-2xl bg-slate-50/30 text-sm font-light">
+								Nenhuma foto adicionada para a Galeria Geral.
+							</div>
 						</div>
 					</div>
 					<div v-else class="py-12 text-center text-slate-400 border border-slate-100 rounded-2xl bg-slate-50/30">
@@ -896,21 +944,16 @@ const saveSettings = handleSubmit(async (values) => {
 							<div>
 								<h4 class="text-sm font-semibold text-slate-700 mb-3">Perguntas Cadastradas</h4>
 								<div v-if="faqs.length > 0" class="space-y-3">
-									<div v-for="(faq, index) in faqs" :key="faq.$id"
-										draggable="true"
-										@dragstart="onDragStart(index, $event)"
-										@dragover="onDragOver(index, $event)"
-										@dragleave="onDragLeave(index)"
-										@dragend="onDragEnd"
-										@drop="onDrop(index)"
+									<div v-for="(faq, index) in faqs" :key="faq.$id" draggable="true"
+										@dragstart="onDragStart(index, $event)" @dragover="onDragOver(index, $event)"
+										@dragleave="onDragLeave(index)" @dragend="onDragEnd" @drop="onDrop(index)"
 										class="p-4 rounded-2xl border flex items-start gap-4 shadow-sm cursor-grab active:cursor-grabbing hover:bg-slate-50 transition-all duration-200"
 										:class="[
 											draggedIndex === index ? 'opacity-40 border-slate-200 bg-slate-50/50' : '',
-											dragOverIndex === index && draggedIndex !== index 
-												? 'border-dashed border-primary bg-primary/5 scale-[1.01] shadow-md' 
+											dragOverIndex === index && draggedIndex !== index
+												? 'border-dashed border-primary bg-primary/5 scale-[1.01] shadow-md'
 												: 'border-slate-100 bg-slate-50/50'
-										]"
-									>
+										]">
 										<GripVertical class="w-4 h-4 text-slate-400 mt-1 shrink-0 cursor-grab" />
 										<div class="flex-1 min-w-0">
 											<p class="font-medium text-slate-900 text-sm">{{ faq.question }}</p>
@@ -988,7 +1031,8 @@ const saveSettings = handleSubmit(async (values) => {
 									<div v-for="item in schedules" :key="item.$id"
 										class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-start gap-4 shadow-sm hover:bg-slate-50 transition-all duration-200">
 										<!-- Icon Badge -->
-										<div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+										<div
+											class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
 											<Clock v-if="item.icon === 'clock'" class="w-4 h-4" />
 											<GlassWater v-else-if="item.icon === 'cheers'" class="w-4 h-4" />
 											<Utensils v-else-if="item.icon === 'utensils'" class="w-4 h-4" />
@@ -1002,7 +1046,8 @@ const saveSettings = handleSubmit(async (values) => {
 										</div>
 										<div class="flex-1 min-w-0">
 											<div class="flex items-center gap-2">
-												<span class="inline-block px-2 py-0.5 bg-primary/10 text-primary font-semibold text-xs rounded-full">
+												<span
+													class="inline-block px-2 py-0.5 bg-primary/10 text-primary font-semibold text-xs rounded-full">
 													{{ item.hour }}
 												</span>
 												<p class="font-medium text-slate-900 text-sm">{{ item.title }}</p>
@@ -1054,7 +1099,8 @@ const saveSettings = handleSubmit(async (values) => {
 
 							<FormGroup label="Ícone">
 								<Select v-model="scheduleIcon">
-									<SelectTrigger class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-10">
+									<SelectTrigger
+										class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-10">
 										<SelectValue placeholder="Selecione um ícone" />
 									</SelectTrigger>
 									<SelectContent>
@@ -1080,7 +1126,8 @@ const saveSettings = handleSubmit(async (values) => {
 						</div>
 					</div>
 					<div v-else class="py-12 text-center text-slate-400 border border-slate-100 rounded-2xl bg-slate-50/30">
-						<p class="text-sm font-light">O cronograma do evento está desativado. Ative no interruptor na aba "Geral" para começar a adicionar eventos.</p>
+						<p class="text-sm font-light">O cronograma do evento está desativado. Ative no interruptor na aba "Geral"
+							para começar a adicionar eventos.</p>
 					</div>
 				</div>
 			</TabsContent>

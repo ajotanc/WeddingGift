@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { Check, ChevronsUpDown } from "lucide-vue-next";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -14,7 +8,13 @@ import {
 	CommandItem,
 	CommandList,
 } from "@/components/ui/command";
-import { Button } from "@/components/ui/button";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-vue-next";
+import { computed, ref } from "vue";
 
 interface Option {
 	label: string;

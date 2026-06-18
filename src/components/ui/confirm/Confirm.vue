@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import {
 	Dialog,
 	DialogContent,
-	DialogHeader,
-	DialogTitle,
 	DialogDescription,
 	DialogFooter,
+	DialogHeader,
+	DialogTitle,
 } from "@/components/ui/dialog";
-import { useConfirm } from "@/components/ui/confirm/useConfirm";
 
 const { state, onConfirm, onCancel } = useConfirm();
 </script>

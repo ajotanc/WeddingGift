@@ -7,10 +7,10 @@ import type { IPurchase } from "@/services/purchase.service";
 import { useAuthStore } from "@/stores/auth";
 import { ref, watch } from "vue";
 
-import Modal from "@/components/reusable/Modal.vue";
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import Modal from "@/components/reusable/Modal.vue";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Gift, Loader2 } from "lucide-vue-next";
+import { Gift, Loader2, User } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 const props = defineProps<{

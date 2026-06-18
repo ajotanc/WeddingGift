@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import Combobox from "@/components/reusable/Combobox.vue";
-import FormGroup from "@/components/reusable/FormGroup.vue";
 import FileUpload from "@/components/reusable/FileUpload.vue";
+import FormGroup from "@/components/reusable/FormGroup.vue";
 import Modal from "@/components/reusable/Modal.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
+import ProductGallery from "@/components/ui/ProductGallery.vue";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { Input } from "@/components/ui/input";
-import ProductGallery from "@/components/ui/ProductGallery.vue";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney } from "@/lib/money";
 import {

@@ -24,7 +24,9 @@ export const ScheduleService = {
 		return res.rows;
 	},
 
-	async create(data: Omit<IScheduleItem, keyof Models.Row>): Promise<IScheduleItem> {
+	async create(
+		data: Omit<IScheduleItem, keyof Models.Row>,
+	): Promise<IScheduleItem> {
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_SCHEDULE,
@@ -42,7 +44,10 @@ export const ScheduleService = {
 		});
 	},
 
-	async update(id: string, data: Partial<IScheduleItem>): Promise<IScheduleItem> {
+	async update(
+		id: string,
+		data: Partial<IScheduleItem>,
+	): Promise<IScheduleItem> {
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_SCHEDULE,
