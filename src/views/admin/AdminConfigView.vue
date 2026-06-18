@@ -17,6 +17,8 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
 	Select,
 	SelectContent,
@@ -27,8 +29,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { sortBy } from "@/lib/utils";
 import { FaqService } from "@/services/faq.service";
 import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
@@ -49,7 +49,6 @@ import {
 	Loader2,
 	MapPin,
 	Music,
-	Plus,
 	Settings,
 	Sparkles,
 	Trash2,
@@ -171,7 +170,7 @@ import { computed } from "vue";
 
 const uploadIsPublic = ref(false);
 const handleChangeUpload = computed({
-	get: () => uploadIsPublic.value ? "true" : "false",
+	get: () => (uploadIsPublic.value ? "true" : "false"),
 	set: (val) => {
 		uploadIsPublic.value = val === "true";
 	},
@@ -291,26 +290,39 @@ const deleteGalleryImage = (image: IGalleryImage) => {
 	});
 };
 
-const faqQuestion = ref("");
-const faqAnswer = ref("");
+const faqSchema = toTypedSchema(
+	z.object({
+		faqQuestion: z.string().min(5, "A pergunta deve ter pelo menos 5 caracteres"),
+		faqAnswer: z.string().min(10, "A resposta deve ter pelo menos 10 caracteres"),
+	})
+);
+
+const { handleSubmit: handleFaqSubmit, errors: faqErrors, defineField: defineFaqField, resetForm: resetFaqForm } = useForm({
+	validationSchema: faqSchema,
+	initialValues: {
+		faqQuestion: "",
+		faqAnswer: "",
+	},
+});
+
+const [faqQuestion] = defineFaqField("faqQuestion");
+const [faqAnswer] = defineFaqField("faqAnswer");
 const isAddingFaq = ref(false);
 
-const addCustomFaq = async () => {
-	if (!tenant.value || !faqQuestion.value.trim() || !faqAnswer.value.trim())
-		return;
+const addCustomFaq = handleFaqSubmit(async (values) => {
+	if (!tenant.value) return;
 
 	isAddingFaq.value = true;
 	try {
 		const newFaq = await FaqService.create({
 			tenant: tenant.value.$id,
-			question: faqQuestion.value,
-			answer: faqAnswer.value,
+			question: values.faqQuestion,
+			answer: values.faqAnswer,
 			order: faqs.value.length,
 		});
 
 		faqs.value.push(newFaq);
-		faqQuestion.value = "";
-		faqAnswer.value = "";
+		resetFaqForm();
 		toast.success("Pergunta frequente adicionada!");
 	} catch (err) {
 		console.error(err);
@@ -318,7 +330,7 @@ const addCustomFaq = async () => {
 	} finally {
 		isAddingFaq.value = false;
 	}
-};
+});
 
 const deleteFaq = (id: string) => {
 	confirm({
@@ -339,37 +351,48 @@ const deleteFaq = (id: string) => {
 	});
 };
 
-const scheduleTitle = ref("");
-const scheduleDescription = ref("");
-const scheduleHour = ref("");
-const scheduleIcon = ref("clock");
+const scheduleSchema = toTypedSchema(
+	z.object({
+		scheduleTitle: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
+		scheduleDescription: z.string().optional(),
+		scheduleHour: z.string().regex(/^[0-9]{2}:[0-9]{2}$/, "Horário inválido (deve ser HH:MM)"),
+		scheduleIcon: z.string(),
+	})
+);
+
+const { handleSubmit: handleScheduleSubmit, errors: scheduleErrors, defineField: defineScheduleField, resetForm: resetScheduleForm } = useForm({
+	validationSchema: scheduleSchema,
+	initialValues: {
+		scheduleTitle: "",
+		scheduleDescription: "",
+		scheduleHour: "",
+		scheduleIcon: "clock",
+	},
+});
+
+const [scheduleTitle] = defineScheduleField("scheduleTitle");
+const [scheduleDescription] = defineScheduleField("scheduleDescription");
+const [scheduleHour] = defineScheduleField("scheduleHour");
+const [scheduleIcon] = defineScheduleField("scheduleIcon");
 const isAddingSchedule = ref(false);
 
-const addCustomSchedule = async () => {
-	if (
-		!tenant.value ||
-		!scheduleTitle.value.trim() ||
-		!scheduleHour.value.trim()
-	)
-		return;
+const addCustomSchedule = handleScheduleSubmit(async (values) => {
+	if (!tenant.value) return;
 
 	isAddingSchedule.value = true;
 	try {
 		const newItem = await ScheduleService.create({
 			tenant: tenant.value.$id,
-			title: scheduleTitle.value,
-			description: scheduleDescription.value,
-			hour: scheduleHour.value,
-			icon: scheduleIcon.value,
+			title: values.scheduleTitle,
+			description: values.scheduleDescription || "",
+			hour: values.scheduleHour,
+			icon: values.scheduleIcon,
 		});
 
 		schedules.value.push(newItem);
 		schedules.value = sortBy(schedules.value, "hour");
 
-		scheduleTitle.value = "";
-		scheduleDescription.value = "";
-		scheduleHour.value = "";
-		scheduleIcon.value = "clock";
+		resetScheduleForm();
 		toast.success("Evento adicionado ao cronograma!");
 	} catch (err) {
 		console.error(err);
@@ -377,7 +400,7 @@ const addCustomSchedule = async () => {
 	} finally {
 		isAddingSchedule.value = false;
 	}
-};
+});
 
 const deleteSchedule = (id: string) => {
 	confirm({
@@ -653,11 +676,7 @@ const saveSettings = handleSubmit(async (values) => {
 		}
 	} catch (err) {
 		console.error("Erro ao salvar configurações", err);
-		toast({
-			title: "Erro",
-			description: "Erro ao salvar as configurações.",
-			variant: "destructive",
-		});
+		toast.error("Erro ao salvar as configurações.");
 	} finally {
 		isSaving.value = false;
 	}
@@ -984,25 +1003,24 @@ const saveSettings = handleSubmit(async (values) => {
 						</div>
 
 						<!-- Add FAQ Form -->
-						<div class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
+						<form @submit.prevent="addCustomFaq" class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
 							<h4 class="text-sm font-semibold text-slate-800">Nova Pergunta</h4>
 
-							<FormGroup label="Pergunta">
+							<FormGroup label="Pergunta" :error="faqErrors.faqQuestion">
 								<Input v-model="faqQuestion" placeholder="Ex: Qual o traje recomendado?"
 									class="bg-white border-slate-200 rounded-xl" />
 							</FormGroup>
 
-							<FormGroup label="Resposta">
+							<FormGroup label="Resposta" :error="faqErrors.faqAnswer">
 								<Textarea v-model="faqAnswer" placeholder="Ex: Recomendamos o uso de traje esporte fino..."
 									class="bg-white border-slate-200 rounded-xl h-24 resize-none" />
 							</FormGroup>
 
-							<Button type="button" @click="addCustomFaq"
-								:disabled="isAddingFaq || !faqQuestion.trim() || !faqAnswer.trim()">
+							<Button type="submit" :disabled="isAddingFaq">
 								<Loader2 v-if="isAddingFaq" class="w-4 h-4 animate-spin mr-2" />
 								Adicionar Pergunta
 							</Button>
-						</div>
+						</form>
 					</div>
 					<div v-else class="py-12 text-center text-slate-400 border border-slate-100 rounded-2xl bg-slate-50/30">
 						<p class="text-sm font-light">O FAQ está desativado. Ative no interruptor acima para começar a adicionar
@@ -1079,25 +1097,25 @@ const saveSettings = handleSubmit(async (values) => {
 						</div>
 
 						<!-- Add Schedule Form -->
-						<div class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
+						<form @submit.prevent="addCustomSchedule" class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
 							<h4 class="text-sm font-semibold text-slate-800">Novo Evento</h4>
 
-							<FormGroup label="Título do Evento">
+							<FormGroup label="Título do Evento" :error="scheduleErrors.scheduleTitle">
 								<Input v-model="scheduleTitle" placeholder="Ex: Recepção e Coquetel"
 									class="bg-white border-slate-200 rounded-xl" />
 							</FormGroup>
 
-							<FormGroup label="Horário">
+							<FormGroup label="Horário" :error="scheduleErrors.scheduleHour">
 								<Input v-model="scheduleHour" v-maska data-maska="##:##" placeholder="Ex: 19:30"
 									class="bg-white border-slate-200 rounded-xl" />
 							</FormGroup>
 
-							<FormGroup label="Descrição">
+							<FormGroup label="Descrição" :error="scheduleErrors.scheduleDescription">
 								<Textarea v-model="scheduleDescription" placeholder="Ex: Momento para cumprimentar os noivos..."
 									class="bg-white border-slate-200 rounded-xl h-20 resize-none" />
 							</FormGroup>
 
-							<FormGroup label="Ícone">
+							<FormGroup label="Ícone" :error="scheduleErrors.scheduleIcon">
 								<Select v-model="scheduleIcon">
 									<SelectTrigger
 										class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-10">
@@ -1118,12 +1136,11 @@ const saveSettings = handleSubmit(async (values) => {
 								</Select>
 							</FormGroup>
 
-							<Button type="button" @click="addCustomSchedule"
-								:disabled="isAddingSchedule || !scheduleTitle.trim() || !scheduleHour.trim()">
+							<Button type="submit" :disabled="isAddingSchedule">
 								<Loader2 v-if="isAddingSchedule" class="w-4 h-4 animate-spin mr-2" />
 								Adicionar Evento
 							</Button>
-						</div>
+						</form>
 					</div>
 					<div v-else class="py-12 text-center text-slate-400 border border-slate-100 rounded-2xl bg-slate-50/30">
 						<p class="text-sm font-light">O cronograma do evento está desativado. Ative no interruptor na aba "Geral"

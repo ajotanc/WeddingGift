@@ -7,7 +7,6 @@ import {
 	Gift,
 	MessageSquare,
 	ShoppingBag,
-	Target,
 	Users,
 	Wallet,
 } from "lucide-vue-next";

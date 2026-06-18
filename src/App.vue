@@ -12,75 +12,102 @@ import { useAuthStore } from "@/stores/auth";
 import { MessageSquarePlus } from "lucide-vue-next";
 import { ref, watch } from "vue";
 import { toast } from "vue-sonner";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
 import FormGroup from "./components/reusable/FormGroup.vue";
-import { Select, SelectContent, SelectItem, SelectValue } from "./components/ui/select/index.js";
 import SelectTrigger from "./components/ui/select/SelectTrigger.vue";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectValue,
+} from "./components/ui/select/index.js";
 
 const authStore = useAuthStore();
 const showFeedbackModal = ref(false);
-const name = ref("");
-const email = ref("");
-const type = ref("Sugestão");
-const message = ref("");
 const sending = ref(false);
 
+const feedbackSchema = toTypedSchema(
+	z.object({
+		name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+		email: z.email("E-mail inválido"),
+		type: z.enum(["Sugestão", "Dúvida", "Crítica"]),
+		message: z.string().min(10, "Mensagem deve ter pelo menos 10 caracteres"),
+	})
+);
+
+const { handleSubmit, errors, setValues, defineField, resetForm } = useForm({
+	validationSchema: feedbackSchema,
+	initialValues: {
+		name: "",
+		email: "",
+		type: "Sugestão",
+		message: "",
+	},
+});
+
+const [name] = defineField("name");
+const [email] = defineField("email");
+const [type] = defineField("type");
+const [message] = defineField("message");
+
 watch(
-  () => authStore.user,
-  (user) => {
-    if (user) {
-      name.value = user.name || "";
-      email.value = user.email || "";
-    }
-  },
-  { immediate: true },
+	() => authStore.user,
+	(user) => {
+		if (user) {
+			setValues({
+				name: user.name || "",
+				email: user.email || "",
+			});
+		}
+	},
+	{ immediate: true },
 );
 
 watch(
-  () => authStore.guest,
-  (guest) => {
-    if (guest) {
-      name.value = guest.name || name.value;
-      email.value = guest.email || email.value;
-    }
-  },
-  { immediate: true },
+	() => authStore.guest,
+	(guest) => {
+		if (guest) {
+			setValues({
+				name: guest.name || name.value || "",
+				email: guest.email || email.value || "",
+			});
+		}
+	},
+	{ immediate: true },
 );
 
 const openFeedback = () => {
-  message.value = "";
-  if (authStore.user) {
-    name.value = authStore.user.name || "";
-    email.value = authStore.user.email || "";
-  } else if (authStore.guest) {
-    name.value = authStore.guest.name || "";
-    email.value = authStore.guest.email || "";
-  }
-  showFeedbackModal.value = true;
+	resetForm({
+		values: {
+			name: authStore.user?.name || authStore.guest?.name || "",
+			email: authStore.user?.email || authStore.guest?.email || "",
+			type: "Sugestão",
+			message: "",
+		}
+	});
+	showFeedbackModal.value = true;
 };
 
-const sendFeedback = async () => {
-  if (!name.value.trim() || !email.value.trim() || !message.value.trim()) {
-    toast.error("Por favor, preencha todos os campos.");
-    return;
-  }
-  sending.value = true;
-  try {
-    await EmailService.sendFeedback({
-      name: name.value,
-      email: email.value,
-      type: type.value,
-      message: message.value,
-    });
-    toast.success("Feedback enviado com sucesso! Muito obrigado.");
-    showFeedbackModal.value = false;
-    message.value = "";
-  } catch (error) {
-    console.error(error);
-    toast.error("Erro ao enviar o feedback. Tente novamente mais tarde.");
-  } finally {
-    sending.value = false;
-  }
-};
+const onSubmitFeedback = handleSubmit(async (values) => {
+	sending.value = true;
+	try {
+		await EmailService.sendFeedback({
+			name: values.name,
+			email: values.email,
+			type: values.type,
+			message: values.message,
+		});
+		toast.success("Feedback enviado com sucesso! Muito obrigado.");
+		showFeedbackModal.value = false;
+	} catch (error) {
+		console.error(error);
+		toast.error("Erro ao enviar o feedback. Tente novamente mais tarde.");
+	} finally {
+		sending.value = false;
+	}
+});
 </script>
 
 <template>
@@ -98,15 +125,15 @@ const sendFeedback = async () => {
   <!-- Feedback Modal -->
   <Modal v-model:open="showFeedbackModal" title="Sugestões / Dúvidas / Críticas"
     description="Ajude-nos a melhorar a plataforma enviando o seu feedback.">
-    <form @submit.prevent="sendFeedback" class="space-y-4 pt-4">
-      <FormGroup label="Seu Nome">
+    <form @submit="onSubmitFeedback" class="space-y-4 pt-4">
+      <FormGroup label="Seu Nome" :error="errors.name">
         <Input v-model="name" placeholder="Ex: João" class="bg-slate-50/50" />
       </FormGroup>
-      <FormGroup label="Seu E-mail">
-        <Input v-model="email" type="email" placeholder="joao@example.com" required
+      <FormGroup label="Seu E-mail" :error="errors.email">
+        <Input v-model="email" type="email" placeholder="joao@example.com"
           class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50" />
       </FormGroup>
-      <FormGroup label="Tipo">
+      <FormGroup label="Tipo" :error="errors.type">
         <Select v-model="type">
           <SelectTrigger
             class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-11">
@@ -120,8 +147,8 @@ const sendFeedback = async () => {
         </Select>
       </FormGroup>
 
-      <FormGroup label="Mensagem">
-        <Textarea v-model="message" placeholder="O que você gostaria de nos dizer?" required
+      <FormGroup label="Mensagem" :error="errors.message">
+        <Textarea v-model="message" placeholder="O que você gostaria de nos dizer?"
           class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50 min-h-[100px] resize-none" />
       </FormGroup>
 

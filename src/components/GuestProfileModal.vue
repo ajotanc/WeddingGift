@@ -27,7 +27,6 @@ const profileName = ref("");
 const profilePhone = ref("");
 
 const purchases = ref<IPurchase[]>([]);
-const purchasesLoading = ref(false);
 
 watch(
 	() => props.open,

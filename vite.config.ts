@@ -30,6 +30,28 @@ export default defineConfig({
 			},
 		}),
 	],
+	build: {
+		target: "esnext",
+		chunkSizeWarningLimit: 4000,
+		rollupOptions: {
+			output: {
+				manualChunks(id) {
+					if (id.includes("node_modules")) {
+						if (id.includes("appwrite")) {
+							return "appwrite";
+						}
+						if (id.includes("leaflet")) {
+							return "leaflet";
+						}
+						if (id.includes("xlsx")) {
+							return "xlsx";
+						}
+						return "vendor";
+					}
+				},
+			},
+		},
+	},
 	resolve: {
 		alias: {
 			"@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -43,5 +65,7 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/api-serp/, "/search"),
 			},
 		},
+		host: true,
+		allowedHosts: ['.ngrok-free.app', '.ngrok.io', '.ngrok-free.dev', '.trycloudflare.com']
 	},
 });

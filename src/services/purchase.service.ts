@@ -4,9 +4,7 @@ import {
 	AppwriteException,
 	ID,
 	type Models,
-	Permission,
 	Query,
-	Role,
 } from "appwrite";
 import type { IGuest } from "./guest.service";
 import type { IProduct } from "./product.service";

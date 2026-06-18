@@ -72,7 +72,7 @@ const router = createRouter({
 
 import { useAuthStore } from "@/stores/auth";
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
 	const authStore = useAuthStore();
 
 	// 1. Se tentar entrar no painel Admin sem estar logado -> vai pro login

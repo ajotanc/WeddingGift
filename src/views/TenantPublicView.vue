@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import ImageGallery from "@/components/ui/ImageGallery.vue";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
 } from "@/components/ui/accordion";
 // 1. Importações dos componentes de UI (Shadcn) que estão faltando
 import { Button } from "@/components/ui/button";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
+	Carousel,
+	CarouselContent,
+	CarouselItem,
 } from "@/components/ui/carousel";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { RsvpService } from "@/services/rsvp.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import { useField, useForm } from "vee-validate";
+import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import * as z from "zod";
 
@@ -52,23 +52,23 @@ import { toast } from "vue-sonner";
 dayjs.locale("pt-br");
 
 const carouselPlugins = [
-  Autoplay({
-    delay: 4000,
-    stopOnInteraction: false,
-    stopOnMouseEnter: true,
-  }),
+	Autoplay({
+		delay: 4000,
+		stopOnInteraction: false,
+		stopOnMouseEnter: true,
+	}),
 ];
 
 const {
-  tenant,
-  products,
-  purchases,
-  messages,
-  rsvps,
-  gallery,
-  faqs,
-  loading,
-  error,
+	tenant,
+	products,
+	purchases,
+	messages,
+	rsvps,
+	gallery,
+	faqs,
+	loading,
+	error,
 } = useTenant();
 const authStore = useAuthStore();
 const { confirm } = useConfirm();
@@ -77,28 +77,28 @@ const currentUser = computed(() => authStore.user);
 const showProfileModal = ref(false);
 
 const existingRsvp = computed(() => {
-  if (!authStore.guest) return null;
-  return rsvps.value.find((r) => r.guest.$id === authStore.guest?.$id);
+	if (!authStore.guest) return null;
+	return rsvps.value.find((r) => r.guest.$id === authStore.guest?.$id);
 });
 
 const currentQty = computed(() => {
-  if (!selectedProduct.value) return 1;
-  return quotaQuantities.value[selectedProduct.value.$id] || 1;
+	if (!selectedProduct.value) return 1;
+	return quotaQuantities.value[selectedProduct.value.$id] || 1;
 });
 
 const requireAuth = async (): Promise<boolean> => {
-  if (currentUser.value) return true;
-  try {
-    await authStore.loginWithGoogle(window.location.href, window.location.href);
-    return true;
-  } catch (err) {
-    console.error("Erro na autenticação", err);
-    return false;
-  }
+	if (currentUser.value) return true;
+	try {
+		await authStore.loginWithGoogle(window.location.href, window.location.href);
+		return true;
+	} catch (err) {
+		console.error("Erro na autenticação", err);
+		return false;
+	}
 };
 
 const logout = async () => {
-  await authStore.logout();
+	await authStore.logout();
 };
 
 // Modals State
@@ -110,314 +110,305 @@ const quotaQuantities = ref<Record<string, number>>({});
 
 import { formatMoney, getProductPrice } from "@/lib/money";
 import {
-  Cake,
-  Camera,
-  Clock,
-  Cloud,
-  CloudDrizzle,
-  CloudLightning,
-  CloudRain,
-  CloudSun,
-  Gift,
-  GlassWater,
-  Heart,
-  MapPin,
-  Minus,
-  Music,
-  Snowflake,
-  Sparkles,
-  Sun,
-  Utensils,
+	Cake,
+	Camera,
+	Clock,
+	Cloud,
+	CloudDrizzle,
+	CloudLightning,
+	CloudRain,
+	CloudSun,
+	Gift,
+	GlassWater,
+	Heart,
+	MapPin,
+	Music,
+	Snowflake,
+	Sparkles,
+	Sun,
+	Utensils,
 } from "lucide-vue-next";
 import type { Component } from "vue";
 
 const pixPayload = ref({ payload: "", base64: "" });
 
 watch(
-  [tenant, selectedProduct, quotaQuantities],
-  async () => {
-    if (!tenant.value || !selectedProduct.value) {
-      pixPayload.value = { payload: "", base64: "" };
-      return;
-    }
+	[tenant, selectedProduct, quotaQuantities],
+	async () => {
+		if (!tenant.value || !selectedProduct.value) {
+			pixPayload.value = { payload: "", base64: "" };
+			return;
+		}
 
-    const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
-    const finalPrice = getProductPrice(selectedProduct.value, qty);
-    const message = `${tenant.value.couple_name} • ${selectedProduct.value.name}`;
+		const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
+		const finalPrice = getProductPrice(selectedProduct.value, qty);
+		const message = `${tenant.value.couple_name} • ${selectedProduct.value.name}`;
 
-    pixPayload.value = await generatePixPayload(
-      tenant.value.pix_key,
-      tenant.value.couple_name,
-      String(finalPrice),
-      message,
-      selectedProduct.value.$id,
-    );
-  },
-  { immediate: true, deep: true },
+		pixPayload.value = await generatePixPayload(
+			tenant.value.pix_key,
+			tenant.value.couple_name,
+			String(finalPrice),
+			message,
+			selectedProduct.value.$id,
+		);
+	},
+	{ immediate: true, deep: true },
 );
 
 const openPixModal = async (product: IProduct, quantity = 1) => {
-  if (!currentUser.value) return;
-  selectedProduct.value = product;
-  quotaQuantities.value[product.$id] = quantity;
-  showPixModal.value = true;
+	if (!currentUser.value) return;
+	selectedProduct.value = product;
+	quotaQuantities.value[product.$id] = quantity;
+	showPixModal.value = true;
 };
 
 const openLinksModal = async (product: IProduct, quantity = 1) => {
-  if (!currentUser.value) return;
-  if (product.links && product.links.length > 0) {
-    selectedProduct.value = product;
-    quotaQuantities.value[product.$id] = quantity;
-    showLinksModal.value = true;
-  }
+	if (!currentUser.value) return;
+	if (product.links && product.links.length > 0) {
+		selectedProduct.value = product;
+		quotaQuantities.value[product.$id] = quantity;
+		showLinksModal.value = true;
+	}
 };
 
 const copyPix = () => {
-  navigator.clipboard.writeText(pixPayload.value.payload);
-  toast.success("Chave PIX copiada!");
+	navigator.clipboard.writeText(pixPayload.value.payload);
+	toast.success("Chave PIX copiada!");
 };
 
 const confirmingPurchase = ref(false);
 
 const confirmPurchase = async (method: MethodType) => {
-  if (!tenant.value || !selectedProduct.value || !authStore.guest) return;
+	if (!tenant.value || !selectedProduct.value || !authStore.guest) return;
 
-  confirmingPurchase.value = true;
-  const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
-  const finalPrice = getProductPrice(selectedProduct.value, qty);
+	confirmingPurchase.value = true;
+	const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
+	const finalPrice = getProductPrice(selectedProduct.value, qty);
 
-  try {
-    const updatedProduct = await ProductService.updatePublic(
-      selectedProduct.value.$id,
-      {
-        claimed_quantity: selectedProduct.value.claimed_quantity + qty,
-      },
-    );
+	try {
+		const updatedProduct = await ProductService.updatePublic(
+			selectedProduct.value.$id,
+			{
+				claimed_quantity: selectedProduct.value.claimed_quantity + qty,
+			},
+		);
 
-    const productIndex = products.value.findIndex(
-      (p) => p.$id === updatedProduct.$id,
-    );
+		const productIndex = products.value.findIndex(
+			(p) => p.$id === updatedProduct.$id,
+		);
 
-    if (productIndex !== -1) {
-      products.value[productIndex] = updatedProduct;
-    }
+		if (productIndex !== -1) {
+			products.value[productIndex] = updatedProduct;
+		}
 
-    const newGift = await PurchaseService.create({
-      tenant: tenant.value.$id,
-      guest: authStore.guest,
-      product: updatedProduct,
-      quantity: qty,
-      price_paid: String(finalPrice),
-      method,
-    });
+		const newGift = await PurchaseService.create({
+			tenant: tenant.value.$id,
+			guest: authStore.guest,
+			product: updatedProduct,
+			quantity: qty,
+			price_paid: String(finalPrice),
+			method,
+		});
 
-    purchases.value.push(newGift);
+		purchases.value.push(newGift);
 
-    toast.success("Presente confirmado! Muito obrigado pelo carinho.");
-  } catch (error) {
-    console.error(error);
-    toast.error("Erro ao confirmar presente. Tente novamente.");
-  } finally {
-    confirmingPurchase.value = false;
-    showPixModal.value = false;
-    showLinksModal.value = false;
-  }
+		toast.success("Presente confirmado! Muito obrigado pelo carinho.");
+	} catch (error) {
+		console.error(error);
+		toast.error("Erro ao confirmar presente. Tente novamente.");
+	} finally {
+		confirmingPurchase.value = false;
+		showPixModal.value = false;
+		showLinksModal.value = false;
+	}
 };
 
 // RSVP Validation Schema
 const rsvpSchema = toTypedSchema(
-  z.object({
-    totalAdults: z.number().min(1, "No mínimo 1 adulto"),
-    totalChildren: z.number().min(0),
-    status: z.enum(["confirmed", "declined"]),
-  }),
+	z.object({
+		totalAdults: z.number().min(1, "No mínimo 1 adulto"),
+		totalChildren: z.number().min(0),
+		status: z.enum(["confirmed", "declined"]),
+	}),
 );
 
-const { handleSubmit, errors } = useForm({
-  validationSchema: rsvpSchema,
-  initialValues: {
-    totalAdults: 1,
-    totalChildren: 0,
-    status: "confirmed",
-  },
+const { handleSubmit, errors, defineField } = useForm({
+	validationSchema: rsvpSchema,
+	initialValues: {
+		totalAdults: 1,
+		totalChildren: 0,
+		status: "confirmed",
+	},
 });
 
-const { value: totalAdults } = useField<number>("totalAdults");
-const { value: totalChildren } = useField<number>("totalChildren");
-const { value: status } = useField<"confirmed" | "declined">("status");
+const [totalAdults] = defineField("totalAdults");
+const [totalChildren] = defineField("totalChildren");
+const [status] = defineField("status");
 
 watch(
-  () => authStore.guest,
-  (guest) => {
-    if (guest && !guest.phone) {
-      showProfileModal.value = true;
-    }
-  },
-  { immediate: true },
+	() => authStore.guest,
+	(guest) => {
+		if (guest && !guest.phone) {
+			showProfileModal.value = true;
+		}
+	},
+	{ immediate: true },
 );
 
 const rsvpLoading = ref(false);
 const isEditingRsvp = ref(false);
 
 const submitRsvp = handleSubmit(async (values) => {
-  if (!tenant.value || !authStore.guest) return;
-  rsvpLoading.value = true;
-  try {
-    let thankYouMessage = "";
-    if (values.status === "confirmed") {
-      thankYouMessage = await generateThankYouMessage(
-        authStore.guest.name || "Convidado",
-        tenant.value.couple_name,
-      );
-    }
+	if (!tenant.value || !authStore.guest) return;
+	rsvpLoading.value = true;
+	try {
+		let thankYouMessage = "";
+		if (values.status === "confirmed") {
+			thankYouMessage = await generateThankYouMessage(
+				authStore.guest.name || "Convidado",
+				tenant.value.couple_name,
+			);
+		}
 
-    const payload = {
-      tenant: tenant.value.$id,
-      total_adults: values.totalAdults,
-      total_children: values.totalChildren,
-      status: values.status,
-      guest: authStore.guest as IGuest,
-      message: thankYouMessage,
-    };
+		const payload = {
+			tenant: tenant.value.$id,
+			total_adults: values.totalAdults,
+			total_children: values.totalChildren,
+			status: values.status,
+			guest: authStore.guest as IGuest,
+			message: thankYouMessage,
+		};
 
-    if (existingRsvp.value) {
-      await RsvpService.update(existingRsvp.value.$id, payload);
-      Object.assign(existingRsvp.value, payload);
-    } else {
-      const created = await RsvpService.create(payload);
-      rsvps.value.push(created);
-    }
+		if (existingRsvp.value) {
+			await RsvpService.update(existingRsvp.value.$id, payload);
+			Object.assign(existingRsvp.value, payload);
+		} else {
+			const created = await RsvpService.create(payload);
+			rsvps.value.push(created);
+		}
 
-    isEditingRsvp.value = false;
-    toast.success("Sucesso", {
-      description: "Sua resposta foi enviada com sucesso! Obrigado.",
-    });
-  } catch (err) {
-    toast.error("Erro", {
-      description: "Houve um erro ao enviar sua resposta. Tente novamente.",
-    });
-  } finally {
-    rsvpLoading.value = false;
-  }
+		isEditingRsvp.value = false;
+		toast.success("Sucesso", {
+			description: "Sua resposta foi enviada com sucesso! Obrigado.",
+		});
+	} catch (err) {
+		toast.error("Erro", {
+			description: "Houve um erro ao enviar sua resposta. Tente novamente.",
+		});
+	} finally {
+		rsvpLoading.value = false;
+	}
 });
 
 // Emotional Messages
 const messageContent = ref("");
 const submitMessage = async () => {
-  if (!tenant.value || !messageContent.value.trim() || !currentUser.value)
-    return;
+	if (!tenant.value || !messageContent.value.trim() || !currentUser.value)
+		return;
 
-  try {
-    const newMsg = await MessageService.create({
-      tenant: tenant.value.$id,
-      content: messageContent.value,
-      guest: authStore.guest as IGuest,
-    });
+	try {
+		const newMsg = await MessageService.create({
+			tenant: tenant.value.$id,
+			content: messageContent.value,
+			guest: authStore.guest as IGuest,
+		});
 
-    // Add instantly to UI array without fetching
-    messages.value.unshift(newMsg);
+		// Add instantly to UI array without fetching
+		messages.value.unshift(newMsg);
 
-    messageContent.value = "";
-    toast({ title: "Sucesso", description: "Sua mensagem foi enviada!" });
-  } catch (err) {
-    toast({
-      title: "Erro",
-      description: "Erro ao enviar mensagem.",
-      variant: "destructive",
-    });
-  }
+		messageContent.value = "";
+		toast.success("Sua mensagem foi enviada!");
+	} catch (err) {
+		toast.error("Erro ao enviar mensagem.");
+	}
 };
 
 const deleteMessage = (msgId: string) => {
-  confirm({
-    title: "Apagar Mensagem",
-    description: "Tem certeza de que deseja apagar esta mensagem do mural?",
-    confirmText: "Sim, apagar",
-    cancelText: "Não",
-    confirm: async () => {
-      try {
-        await MessageService.delete(msgId);
-        messages.value = messages.value.filter((m) => m.$id !== msgId);
-        toast.success("Mensagem apagada com sucesso.");
-      } catch (err) {
-        toast.error("Erro ao apagar mensagem.");
-      }
-    },
-  });
+	confirm({
+		title: "Apagar Mensagem",
+		description: "Tem certeza de que deseja apagar esta mensagem do mural?",
+		confirmText: "Sim, apagar",
+		cancelText: "Não",
+		confirm: async () => {
+			try {
+				await MessageService.delete(msgId);
+				messages.value = messages.value.filter((m) => m.$id !== msgId);
+				toast.success("Mensagem apagada com sucesso.");
+			} catch (err) {
+				toast.error("Erro ao apagar mensagem.");
+			}
+		},
+	});
 };
 
 const toggleLike = async (msg: IMessage) => {
-  const guestId = authStore.guest?.$id;
-  if (!guestId) return;
+	const guestId = authStore.guest?.$id;
+	if (!guestId) return;
 
-  const originalLikes = [...(msg.likes || [])];
-  const isLiked = msg.likes?.includes(guestId);
+	const originalLikes = [...(msg.likes || [])];
+	const isLiked = msg.likes?.includes(guestId);
 
-  if (isLiked) {
-    msg.likes = msg.likes?.filter((id) => id !== guestId);
-  } else {
-    msg.likes = [...(msg.likes || []), guestId];
-  }
+	if (isLiked) {
+		msg.likes = msg.likes?.filter((id) => id !== guestId);
+	} else {
+		msg.likes = [...(msg.likes || []), guestId];
+	}
 
-  try {
-    msg.likes?.length && (await MessageService.likes(msg.$id, msg.likes));
-  } catch (err) {
-    msg.likes = originalLikes;
+	try {
+		msg.likes?.length && (await MessageService.likes(msg.$id, msg.likes));
+	} catch (err) {
+		msg.likes = originalLikes;
 
-    toast({
-      title: "Erro",
-      description: "Falha ao curtir.",
-      variant: "destructive",
-    });
-  }
+		toast.error("Falha ao curtir.");
+	}
 };
 
 const toggleGalleryLike = async (img: IGalleryImage) => {
-  const guestId = authStore.guest?.$id;
-  if (!guestId) {
-    toast.error("Erro", {
-      description: "Você precisa estar identificado para curtir as fotos.",
-    });
-    return;
-  }
+	const guestId = authStore.guest?.$id;
+	if (!guestId) {
+		toast.error("Erro", {
+			description: "Você precisa estar identificado para curtir as fotos.",
+		});
+		return;
+	}
 
-  const originalLikes = [...(img.likes || [])];
-  const isLiked = img.likes?.includes(guestId);
+	const originalLikes = [...(img.likes || [])];
+	const isLiked = img.likes?.includes(guestId);
 
-  if (isLiked) {
-    img.likes = img.likes?.filter((id) => id !== guestId);
-  } else {
-    img.likes = [...(img.likes || []), guestId];
-  }
+	if (isLiked) {
+		img.likes = img.likes?.filter((id) => id !== guestId);
+	} else {
+		img.likes = [...(img.likes || []), guestId];
+	}
 
-  try {
-    await GalleryService.updateLikes(img.$id, img.likes || []);
-  } catch (err) {
-    img.likes = originalLikes;
-    toast.error("Erro", { description: "Falha ao atualizar curtida." });
-  }
+	try {
+		await GalleryService.updateLikes(img.$id, img.likes || []);
+	} catch (err) {
+		img.likes = originalLikes;
+		toast.error("Erro", { description: "Falha ao atualizar curtida." });
+	}
 };
 
 const getTimelineItems = computed(() => {
-  if (!tenant.value?.schedules) return [];
-  return sortBy(tenant.value.schedules, "hour").map((item) => ({
-    time: item.hour,
-    title: item.title,
-    description: item.description,
-    icon: item.icon,
-  }));
+	if (!tenant.value?.schedules) return [];
+	return sortBy(tenant.value.schedules, "hour").map((item) => ({
+		time: item.hour,
+		title: item.title,
+		description: item.description,
+		icon: item.icon,
+	}));
 });
 
 const homePrivateImages = computed(() => {
-  return gallery.value.filter((img) => !img.guest && !img.is_public);
+	return gallery.value.filter((img) => !img.guest && !img.is_public);
 });
 
 const isWithin7DaysOfEvent = computed(() => {
-  if (!tenant.value?.event_date) return false;
-  const eventDate = dayjs(tenant.value.event_date).startOf("day");
-  const today = dayjs().startOf("day");
-  const diffDays = eventDate.diff(today, "day");
-  return diffDays <= 7;
+	if (!tenant.value?.event_date) return false;
+	const eventDate = dayjs(tenant.value.event_date).startOf("day");
+	const today = dayjs().startOf("day");
+	const diffDays = eventDate.diff(today, "day");
+	return diffDays <= 7;
 });
 
 const weatherData = ref<IWeatherData | null>(null);
@@ -426,55 +417,59 @@ const weatherError = ref(false);
 const isWeatherExpanded = ref(false);
 
 const loadWeather = async () => {
-  if (
-    !tenant.value?.event_latitude ||
-    !tenant.value?.event_longitude ||
-    !tenant.value?.event_date
-  ) {
-    return;
-  }
+	if (
+		!tenant.value?.event_latitude ||
+		!tenant.value?.event_longitude ||
+		!tenant.value?.event_date
+	) {
+		return;
+	}
 
-  weatherLoading.value = true;
-  weatherError.value = false;
+	weatherLoading.value = true;
+	weatherError.value = false;
 
-  try {
-    const res = await WeatherService.getForecast(
-      tenant.value.event_latitude,
-      tenant.value.event_longitude,
-      tenant.value.event_date,
-    );
-    weatherData.value = res;
-  } catch (e) {
-    console.error("Error loading weather forecast:", e);
-    weatherError.value = true;
-  } finally {
-    weatherLoading.value = false;
-  }
+	try {
+		const res = await WeatherService.getForecast(
+			tenant.value.event_latitude,
+			tenant.value.event_longitude,
+			tenant.value.event_date,
+		);
+		weatherData.value = res;
+	} catch (e) {
+		console.error("Error loading weather forecast:", e);
+		weatherError.value = true;
+	} finally {
+		weatherLoading.value = false;
+	}
 };
 
 const getWeatherIcon = (iconName: string): Component => {
-  const icons: Record<string, Component> = { sun: Sun, 'cloud-sun': CloudSun, cloud: Cloud, 'cloud-rain': CloudRain, 'cloud-drizzle': CloudDrizzle, 'cloud-lightning': CloudLightning, snowflake: Snowflake };
-  return icons[iconName] || Cloud;
+	const icons: Record<string, Component> = {
+		sun: Sun,
+		"cloud-sun": CloudSun,
+		cloud: Cloud,
+		"cloud-rain": CloudRain,
+		"cloud-drizzle": CloudDrizzle,
+		"cloud-lightning": CloudLightning,
+		snowflake: Snowflake,
+	};
+	return icons[iconName] || Cloud;
 };
 
 watch(
-  tenant,
-  (newTenant) => {
-    if (newTenant) {
-      loadWeather();
-    }
-  },
-  { immediate: true },
+	tenant,
+	(newTenant) => {
+		if (newTenant) {
+			loadWeather();
+		}
+	},
+	{ immediate: true },
 );
 
 const activeLightboxImage = ref<string | null>(null);
 
-const openLightbox = (url: string) => {
-  activeLightboxImage.value = url;
-};
-
 const closeLightbox = () => {
-  activeLightboxImage.value = null;
+	activeLightboxImage.value = null;
 };
 </script>
 
@@ -799,6 +794,7 @@ const closeLightbox = () => {
                   <!-- Convidado em cima -->
                   <div class="flex items-center gap-3">
                     <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
+                      referrerpolicy="no-referrer"
                       class="w-10 h-10 rounded-full border border-slate-100 shadow-sm" />
                     <div v-else
                       class="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center font-bold">
@@ -870,7 +866,8 @@ const closeLightbox = () => {
 
                         <div class="flex items-center gap-4 w-full pt-6 border-t mt-auto"
                           :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">
-                          <img v-if="msg.guest.photo_url" :src="msg.guest.photo_url"
+                           <img v-if="msg.guest.photo_url" :src="msg.guest.photo_url"
+                            referrerpolicy="no-referrer"
                             class="w-12 h-12 shrink-0 rounded-full border-2 shadow-sm"
                             :class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'" />
                           <div v-else

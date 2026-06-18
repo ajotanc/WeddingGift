@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { toggleVariants } from "@/components/ui/toggle";
+// biome-ignore lint/style/useImportType: used as value in template
+import { toggleVariants } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { reactiveOmit } from "@vueuse/core";
 import type { VariantProps } from "class-variance-authority";

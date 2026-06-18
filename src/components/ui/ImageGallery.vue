@@ -10,8 +10,11 @@ import type { UnwrapRefCarouselApi } from "@/components/ui/carousel/interface";
 import type { IGalleryImage } from "@/services/gallery.service";
 import { Heart, Trash2, X } from "lucide-vue-next";
 import { nextTick, ref, watch } from "vue";
+import { useTenant } from "@/composables/useTenant";
 
 import Autoplay from "embla-carousel-autoplay";
+
+const { tenant } = useTenant();
 
 const props = withDefaults(
   defineProps<{
@@ -106,7 +109,7 @@ const canDeleteImage = (img: IGalleryImage) => {
                 <!-- Actions Top -->
                 <div class="flex items-center justify-between w-full">
                   <div class="text-xs text-white/70">
-                    {{ img.guest ? `Por ${img.guest.name}` : 'Noivos' }}
+                    {{ img.guest ? `Por ${img.guest.name}` : tenant?.couple_name }}
                   </div>
                   <button v-if="canDeleteImage(img)" type="button" @click.stop="emit('delete', img)"
                     class="bg-white/20 hover:bg-red-500 hover:text-white text-white p-2 rounded-full backdrop-blur-sm transition-all duration-200 cursor-pointer border-0 outline-none">
@@ -163,10 +166,10 @@ const canDeleteImage = (img: IGalleryImage) => {
           <div class="flex items-center justify-between w-full">
             <div class="text-xs text-white/70">
               <div v-if="img.guest" class="flex items-center gap-2">
-                <img class="w-5 h-5 rounded-full" :src="img.guest.photo_url" :alt="img.guest.name" />
+                <img v-if="img.guest?.photo_url" class="w-5 h-5 rounded-full" :src="img.guest.photo_url" :alt="img.guest.name" />
                 <span>{{ img.guest.name }}</span>
               </div>
-              <span v-else>Noivos</span>
+              <span v-else>{{ tenant?.couple_name }}</span>
             </div>
             <button v-if="canDeleteImage(img)" type="button" @click.stop="emit('delete', img)"
               class="bg-white/20 hover:bg-red-500 hover:text-white text-white p-2 rounded-full backdrop-blur-sm transition-all duration-200 cursor-pointer border-0 outline-none">

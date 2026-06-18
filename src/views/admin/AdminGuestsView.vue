@@ -52,7 +52,7 @@ const deleteMsg = async (id: string) => {
 		confirm: async () => {
 			await MessageService.delete(id);
 			messages.value = messages.value.filter((m) => m.$id !== id);
-			toast({ title: "Sucesso", description: "Recado excluído com sucesso!" });
+			toast.success("Recado excluído com sucesso!");
 		},
 		cancel: () =>
 			toast.warning("Ação cancelada", { description: "Recado não excluído!" }),
@@ -89,10 +89,7 @@ const generateThanks = async (guest: IGuest) => {
 
 const copyThanks = () => {
 	navigator.clipboard.writeText(aiThanks.value);
-	toast({
-		title: "Sucesso",
-		description: "Texto copiado!",
-	});
+	toast.success("Texto copiado!");
 
 	guestPhone.value = undefined;
 };
@@ -104,29 +101,13 @@ const openWhatsApp = () => {
 	guestPhone.value = undefined;
 };
 
-const copyRSVPList = () => {
-	const text = rsvps.value
-		.map(
-			(r) =>
-				`${r.guest.name} (${r.status === "confirmed" ? "Confirmado" : "Não irá"}) - Adultos: ${r.total_adults}, Crianças: ${r.total_children}`,
-		)
-		.join("\n");
-	navigator.clipboard.writeText(text);
-	toast({
-		title: "Sucesso",
-		description: "Lista copiada para a área de transferência!",
-	});
-};
+
 
 const exportToExcel = () => {
 	const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
 
 	if (confirmed.length === 0) {
-		toast({
-			title: "Exportação Vazia",
-			description: "Nenhum convidado confirmado para exportar.",
-			variant: "destructive",
-		});
+		toast.error("Nenhum convidado confirmado para exportar.");
 		return;
 	}
 
@@ -145,10 +126,7 @@ const exportToExcel = () => {
 
 	XLSX.writeFile(workbook, `CONVIDADOS_CONFIRMADOS_${timestamp}.xlsx`);
 
-	toast({
-		title: "Sucesso",
-		description: "Planilha exportada com sucesso!",
-	});
+	toast.success("Planilha exportada com sucesso!");
 };
 </script>
 

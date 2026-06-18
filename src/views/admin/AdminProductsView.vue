@@ -19,7 +19,7 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import type { SerperItem } from "@/types";
 import { toTypedSchema } from "@vee-validate/zod";
-import { ExternalLink, Plus, Search, UploadCloud, X } from "lucide-vue-next";
+import { ExternalLink, Plus, X } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
@@ -97,8 +97,7 @@ const physicalValidationSchema = toTypedSchema(
 			price: z.coerce.number().min(0.01, "O valor deve ser maior que zero."),
 			desiredQuantity: z.coerce
 				.number()
-				.min(1, "A quantidade deve ser maior que zero.")
-				.default(1),
+				.min(1, "A quantidade deve ser maior que zero."),
 		}),
 	),
 );
@@ -111,8 +110,7 @@ const quotaValidationSchema = toTypedSchema(
 				.min(0.01, "A meta total deve ser maior que zero."),
 			desiredQuantity: z.coerce
 				.number()
-				.min(1, "A quantidade deve ser maior que zero.")
-				.default(1),
+				.min(1, "A quantidade deve ser maior que zero."),
 		}),
 	),
 );
@@ -188,9 +186,7 @@ const editPhysical = (p: IProduct) => {
 
 const searchExternalLinks = async () => {
 	if (!pName.value) {
-		toast.info("Aviso", {
-			description: "Preencha o nome do produto para buscar os links.",
-		});
+		toast.info("Preencha o nome do produto para buscar os links.");
 		return;
 	}
 	isSearchingLinks.value = true;
@@ -249,19 +245,11 @@ const searchExternalLinks = async () => {
 				};
 			});
 		} else {
-			toast({
-				title: "Aviso",
-				description: "Nenhum link encontrado para este produto.",
-				variant: "default",
-			});
+			toast.info("Nenhum link encontrado para este produto.");
 		}
 	} catch (err) {
 		console.error(err);
-		toast({
-			title: "Erro",
-			description: "Falha ao buscar links. Verifique a conexão.",
-			variant: "destructive",
-		});
+		toast.error("Falha ao buscar links. Verifique a conexão.");
 	} finally {
 		isSearchingLinks.value = false;
 	}
@@ -275,7 +263,7 @@ const addLinkToProduct = (item: SerperItem) => {
 	searchResults.value = searchResults.value.filter(
 		(res) => res.link !== item.link,
 	);
-	toast({ title: "Adicionado", description: "Link adicionado ao produto!" });
+	toast.success("Link adicionado ao produto!");
 };
 
 const removeLink = (index: number) => {
@@ -317,10 +305,7 @@ const productSubmit = handlePhysicalSubmit(async (values) => {
 		products.value.push(newProduct);
 	}
 
-	toast({
-		title: "Sucesso",
-		description: "Produto salvo com sucesso!",
-	});
+	toast.success("Produto salvo com sucesso!");
 
 	showPhysicalModal.value = false;
 });
@@ -355,33 +340,7 @@ const [qCategoryCustom] = defineQuotaField("categoryCustom");
 const qImageBase64 = ref("");
 const qImageFile = ref<File | null>(null);
 
-const handleQuotaFileUpload = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0];
-	if (file) {
-		qImageFile.value = file;
-		qImageBase64.value = URL.createObjectURL(file);
-	}
-};
 
-const handleQuotaDrop = (event: DragEvent) => {
-	const file = event.dataTransfer?.files?.[0];
-	if (file) {
-		qImageFile.value = file;
-		qImageBase64.value = URL.createObjectURL(file);
-	}
-};
-
-const triggerQuotaFileInput = () => {
-	const fileInput = document.getElementById(
-		"quota-file-upload",
-	) as HTMLInputElement;
-	if (fileInput) fileInput.click();
-};
-
-const removeQuotaImage = () => {
-	qImageBase64.value = "";
-	qImageFile.value = null;
-};
 
 const openNewQuota = () => {
 	editProductId.value = null;
@@ -431,6 +390,7 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 		editProductId.value,
 		payload,
 		qImageFile.value,
+		// biome-ignore lint/style/useNamingConvention: database schema uses camelCase/snakeCase combination
 	);
 
 	const quotaIndex = products.value.findIndex((p) => p.$id === newQuota.$id);
@@ -441,10 +401,7 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 		products.value.push(newQuota);
 	}
 
-	toast({
-		title: "Sucesso",
-		description: "Cota salva com sucesso!",
-	});
+	toast.success("Cota salva com sucesso!");
 
 	showQuotaModal.value = false;
 });
@@ -588,22 +545,7 @@ const deleteProduct = async (product: IProduct) => {
 				</div>
 
 				<FormGroup label="Imagem Inspiracional">
-					<div v-if="!qImageBase64" @dragover.prevent @dragenter.prevent @drop.prevent="handleQuotaDrop"
-						@click="triggerQuotaFileInput"
-						class="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary/50 hover:bg-slate-50 transition-colors">
-						<UploadCloud class="w-8 h-8 text-slate-400 mb-2" stroke-width="1.5" />
-						<p class="text-sm text-slate-600 font-medium">Clique ou arraste até aqui</p>
-						<input type="file" id="quota-file-upload" accept="image/*" @change="handleQuotaFileUpload"
-							class="hidden" />
-					</div>
-					<div v-else
-						class="relative bg-slate-50 rounded-2xl p-4 aspect-video flex items-center justify-center border border-slate-100">
-						<img :src="qImageBase64" class="max-h-full object-contain" />
-						<button @click.stop="removeQuotaImage"
-							class="absolute top-2 right-2 bg-white shadow rounded-full p-2 text-slate-500 hover:text-red-500">
-							<X class="w-4 h-4" stroke-width="2.5" />
-						</button>
-					</div>
+					<FileUpload v-model="qImageBase64" @file-selected="(file) => qImageFile = file" :maxSizeMb="1" accept="image/*" />
 				</FormGroup>
 			</div>
 			<div class="pt-4 border-t border-slate-100 flex gap-3">

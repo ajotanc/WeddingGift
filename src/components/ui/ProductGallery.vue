@@ -13,8 +13,6 @@ import {
 	ChevronsUpDown,
 	Edit2,
 	Heart,
-	Package,
-	QrCode,
 	Trash2,
 } from "lucide-vue-next";
 

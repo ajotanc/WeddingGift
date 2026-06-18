@@ -1,6 +1,6 @@
 import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
 import { TABLE_GALLERY } from "@/lib/collections";
-import { AppwriteException, ID, type Models, Query } from "appwrite";
+import { ID, type Models, Query } from "appwrite";
 import type { IGuest } from "./guest.service";
 import { StorageService } from "./storage.service";
 

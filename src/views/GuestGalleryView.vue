@@ -12,8 +12,7 @@ import { TABLE_GALLERY } from "@/lib/collections";
 import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
 import { GuestService } from "@/services/guest.service";
 import { useAuthStore } from "@/stores/auth";
-import imageCompression from "browser-image-compression";
-import { ArrowLeft, Camera, Loader2, Image, X } from "lucide-vue-next";
+import { ArrowLeft, Camera, Image, Loader2 } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 
 import { toast } from "vue-sonner";
@@ -78,7 +77,7 @@ const subscribeRealtime = async () => {
 							.then((g) => {
 								doc.guest = g;
 							})
-							.catch(() => { });
+							.catch(() => {});
 					}
 				}
 				gallery.value.unshift(doc);
@@ -113,7 +112,9 @@ const checkCameraSupport = async () => {
 			return;
 		}
 		const devices = await navigator.mediaDevices.enumerateDevices();
-		const videoDevices = devices.filter((device) => device.kind === "videoinput");
+		const videoDevices = devices.filter(
+			(device) => device.kind === "videoinput",
+		);
 		hasCamera.value = videoDevices.length > 0;
 	} catch (e) {
 		console.error("Camera detection failed:", e);
@@ -141,7 +142,8 @@ const startCamera = async () => {
 	} catch (e) {
 		console.error("Camera access failed:", e);
 		toast.error("Erro ao acessar câmera", {
-			description: "Por favor, garanta que deu permissão para acessar a câmera no navegador.",
+			description:
+				"Por favor, garanta que deu permissão para acessar a câmera no navegador.",
 		});
 	}
 };
@@ -173,7 +175,8 @@ const caption = ref("");
 const triggerCamera = async () => {
 	if (!hasCamera.value) {
 		toast.error("Câmera indisponível", {
-			description: "Não foi possível detectar uma câmera disponível neste dispositivo.",
+			description:
+				"Não foi possível detectar uma câmera disponível neste dispositivo.",
 		});
 		return;
 	}
@@ -194,13 +197,19 @@ const capturePhoto = () => {
 	const ctx = canvas.getContext("2d");
 	if (ctx) {
 		ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-		canvas.toBlob(async (blob) => {
-			if (blob) {
-				const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
-				stopCamera();
-				await uploadCapturedFile(file);
-			}
-		}, "image/jpeg", 0.9);
+		canvas.toBlob(
+			async (blob) => {
+				if (blob) {
+					const file = new File([blob], "camera-capture.jpg", {
+						type: "image/jpeg",
+					});
+					stopCamera();
+					await uploadCapturedFile(file);
+				}
+			},
+			"image/jpeg",
+			0.9,
+		);
 	}
 };
 
@@ -247,7 +256,9 @@ const handleUpload = async (e: Event) => {
 		const filesArray = Array.from(files);
 
 		// Limit checking
-		const publicImagesCount = gallery.value.filter(img => img.is_public).length;
+		const publicImagesCount = gallery.value.filter(
+			(img) => img.is_public,
+		).length;
 
 		if (publicImagesCount + filesArray.length > 100) {
 			toast.error("Limite atingido", {
@@ -282,7 +293,11 @@ const handleUpload = async (e: Event) => {
 		}
 
 		caption.value = "";
-		toast.success(filesArray.length > 1 ? "Fotos publicadas com sucesso!" : "Foto publicada com sucesso!");
+		toast.success(
+			filesArray.length > 1
+				? "Fotos publicadas com sucesso!"
+				: "Foto publicada com sucesso!",
+		);
 	} catch (err) {
 		console.error("Upload failed:", err);
 		toast.error("Falha ao publicar fotos. Tente novamente.");

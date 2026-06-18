@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import { Gift, Package } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
-const { tenant, purchases } = useTenant();
+const { purchases } = useTenant();
 const loading = ref(false);
 
 const totalAmount = computed(() => {

@@ -139,3 +139,12 @@ Siga estritamente as diretrizes de UI abaixo, mantendo a nomenclatura de todo o 
 - Lista de Gerenciamento: A área de listagem de produtos do admin deve ser limpa. Exiba imagens em tamanho reduzido e estruturado, e os botões de ação ("Editar", "Excluir") devem aparecer de forma suave ou apenas sob interação, evitando poluição visual com botões vermelhos berrantes fixos.
 
 Refatore a estilização e a marcação dos componentes Vue existentes aplicando estas mudanças visuais de alto nível, mantendo o código e a lógica puramente em inglês e a camada de exibição textual em português.
+
+- **Componente RadioGroup do Shadcn**: Quando for necessário utilizar botões de seleção de opção (*radio buttons*), utilize o componente `RadioGroup` e `RadioGroupItem` da biblioteca Shadcn Vue (`@/components/ui/radio-group`) em vez de `<input type="radio">` nativo. Devido às limitações de tipo da biblioteca subjacente, o valor do `v-model` e do `RadioGroupItem` deve ser mapeado para `string` ou `number` (ex: `"true"`/`"false"` ou `1`/`0`), podendo usar propriedades computadas para converter de/para booleano.
+- **Upload de Imagens e Identificação**: No serviço de galeria, os arquivos devem ser associados ao mesmo ID do registro gerado (usando o mesmo ID gerado para a linha do banco na propriedade `rowId` do upload) para evitar erros de arquivo não encontrado (404) na exclusão.
+- **Prevenção contra Bloqueio de Imagens do Google (ORB)**: Ao renderizar imagens de perfil obtidas da autenticação com o Google (`lh3.googleusercontent.com`), adicione sempre o atributo `referrerpolicy="no-referrer"` na tag `<img>` correspondente para evitar que o navegador bloqueie o carregamento por políticas CORS/Opaque Response Blocking.
+- **Carrosséis com Autoplay**: Em componentes com carrossel (`Carousel` do Shadcn) que possuam autoplay, utilize a biblioteca `embla-carousel-autoplay` e garanta que os botões de navegação lateral (setas direcionais) estejam com z-index adequado para não ficarem ocultados atrás dos slides.
+- **Configuração de Build e Chunking**:
+  - Defina `target: "esnext"` nas configurações de build do Vite para habilitar suporte a *top-level await*.
+  - Utilize `rollupOptions.output.manualChunks` para separar dependências pesadas (`appwrite`, `leaflet`, `xlsx`) em pacotes menores para otimização de performance e eliminação de avisos de tamanho de chunk de build.
+  - Aumente o limite de aviso de tamanho de chunk configurando `chunkSizeWarningLimit` para evitar warnings falsos-positivos.

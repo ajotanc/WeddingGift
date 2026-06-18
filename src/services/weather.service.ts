@@ -34,12 +34,12 @@ export const WeatherService = {
 		longitude: number,
 		dateStr: string, // YYYY-MM-DD
 	): Promise<IWeatherData | null> {
-		const today = dayjs().startOf('day');
-		const eventDate = dayjs(dateStr).startOf('day');
+		const today = dayjs().startOf("day");
+		const eventDate = dayjs(dateStr).startOf("day");
 
 		if (!eventDate.isValid()) return null;
 
-		const diffDays = eventDate.diff(today, 'day');
+		const diffDays = eventDate.diff(today, "day");
 
 		// 1. Ajustado para 14 dias (limite real da API)
 		if (diffDays < 0 || diffDays > 14) {

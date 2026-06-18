@@ -1,6 +1,17 @@
-import type { Registry } from "shadcn-vue/schema";
+interface RegistryFile {
+	path: string;
+	type: string;
+}
 
-export const ui: Registry["items"] = [
+interface RegistryItem {
+	name: string;
+	type: string;
+	dependencies?: string[];
+	registryDependencies?: string[];
+	files: RegistryFile[];
+}
+
+export const ui: RegistryItem[] = [
 	{
 		name: "accordion",
 		type: "registry:ui",
