@@ -135,16 +135,28 @@ const updateItemsPerPage = (event: Event) => {
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
       <Card v-for="product in paginatedProducts" :key="product.$id"
-        class="flex flex-col overflow-hidden border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-3xl transition-all hover:-translate-y-1 hover:shadow-md duration-300 bg-white group p-6">
+        class="flex flex-col overflow-hidden border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-3xl transition-all duration-300 bg-white group p-6 hover:-translate-y-1 hover:shadow-md">
 
-        <div v-if="product.type === 'physical' && product?.image_url"
-          class="bg-slate-100/60 p-6 rounded-xl aspect-square flex items-center justify-center">
-          <img :src="product.image_url" alt="Produto"
-            class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
-        </div>
-        <div v-else class="bg-slate-100/60 p-6 rounded-xl aspect-square flex flex-col items-center justify-center">
-          <span class="text-primary/60 font-serif text-3xl mb-2 italic">{{ product.category }}</span>
-          <span class="text-slate-700 text-center font-medium px-4 text-sm">{{ product.name }}</span>
+        <div class="relative rounded-xl overflow-hidden aspect-square bg-slate-100/60 flex items-center justify-center">
+          <div v-if="product.type === 'physical' && product?.image_url"
+            class="p-6 w-full h-full flex items-center justify-center">
+            <img :src="product.image_url" alt="Produto"
+              class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div v-else class="p-6 w-full h-full flex flex-col items-center justify-center">
+            <span class="text-primary/60 font-serif text-3xl mb-2 italic">{{ product.category }}</span>
+            <span class="text-slate-700 text-center font-medium px-4 text-sm">{{ product.name }}</span>
+          </div>
+
+          <!-- Glassmorphic premium overlay for sold out -->
+          <div v-if="isProductSoldOut(product)"
+            class="absolute inset-0 bg-slate-900/5 backdrop-blur-[2px] flex items-center justify-center p-4">
+            <div class="relative overflow-hidden bg-white/95 border border-slate-200/50 px-4 py-2 rounded-xl flex items-center gap-2 shadow-md">
+              <Heart class="w-3.5 h-3.5 fill-current animate-pulse"
+                :style="{ color: tenant?.primary_color || '#10b981' }" />
+              <span class="text-xs font-semibold tracking-wider text-slate-700">Presenteado!</span>
+            </div>
+          </div>
         </div>
 
         <div class="flex flex-col flex-1 pt-3">
@@ -189,9 +201,8 @@ const updateItemsPerPage = (event: Event) => {
             </p>
 
             <div v-if="isProductSoldOut(product)"
-              class="mt-4 w-full h-11 rounded-xl flex items-center justify-center gap-2 bg-rose-50 border border-rose-100/50 text-center transition-all shadow-sm">
-              <span class="text-sm font-semibold text-rose-600 uppercase tracking-widest">Já Reservado</span>
-              <Heart class="w-5 h-5 text-rose-500 fill-rose-100" />
+              class="mt-4 w-full h-11 rounded-xl flex items-center justify-center gap-2 bg-slate-100 border border-slate-200/60 text-center transition-all shadow-sm cursor-not-allowed">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Já garantido</span>
             </div>
 
             <template v-if="mode === 'public' && !isProductSoldOut(product)">
