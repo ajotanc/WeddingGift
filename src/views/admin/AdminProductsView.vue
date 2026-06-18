@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Combobox from "@/components/reusable/Combobox.vue";
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import FileUpload from "@/components/reusable/FileUpload.vue";
 import Modal from "@/components/reusable/Modal.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import { Button } from "@/components/ui/button";
@@ -158,32 +159,6 @@ const pImageFile = ref<File | null>(null);
 
 const isSearchingLinks = ref(false);
 const searchResults = ref<SerperItem[]>([]);
-
-const handleImageUpload = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0];
-	if (file) {
-		pImageFile.value = file;
-		pImageBase64.value = URL.createObjectURL(file);
-	}
-};
-
-const handleDrop = (event: DragEvent) => {
-	const file = event.dataTransfer?.files?.[0];
-	if (file) {
-		pImageFile.value = file;
-		pImageBase64.value = URL.createObjectURL(file);
-	}
-};
-
-const triggerFileInput = () => {
-	const fileInput = document.getElementById("file-upload") as HTMLInputElement;
-	if (fileInput) fileInput.click();
-};
-
-const removeImage = () => {
-	pImageBase64.value = "";
-	pImageFile.value = null;
-};
 
 const openNewPhysical = () => {
 	editProductId.value = null;
@@ -380,7 +355,7 @@ const [qCategoryCustom] = defineQuotaField("categoryCustom");
 const qImageBase64 = ref("");
 const qImageFile = ref<File | null>(null);
 
-const handleQuotaImageUpload = (event: Event) => {
+const handleQuotaFileUpload = (event: Event) => {
 	const file = (event.target as HTMLInputElement).files?.[0];
 	if (file) {
 		qImageFile.value = file;
@@ -530,22 +505,9 @@ const deleteProduct = async (product: IProduct) => {
 				</div>
 
 				<FormGroup label="Imagem do Produto">
-					<div v-if="!pImageBase64" @dragover.prevent @dragenter.prevent @drop.prevent="handleDrop"
-						@click="triggerFileInput"
-						class="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary/50 hover:bg-slate-50 transition-colors">
-						<UploadCloud class="w-8 h-8 text-slate-400 mb-2" stroke-width="1.5" />
-						<p class="text-sm text-slate-600 font-medium">Clique ou arraste até aqui</p>
-						<input type="file" id="file-upload" accept="image/*" @change="handleImageUpload" class="hidden" />
-					</div>
-					<div v-else
-						class="relative bg-slate-50 rounded-2xl p-4 aspect-video flex items-center justify-center border border-slate-100">
-						<img :src="pImageBase64" class="max-h-full object-contain" />
-						<button @click.stop="removeImage"
-							class="absolute top-2 right-2 bg-white shadow rounded-full p-2 text-slate-500 hover:text-red-500">
-							<X class="w-4 h-4" stroke-width="2.5" />
-						</button>
-					</div>
+					<FileUpload v-model="pImageBase64" @file-selected="(file) => pImageFile = file" :maxSizeMb="1" accept="image/*" />
 				</FormGroup>
+
 				<FormGroup label="Links Externos (Lojas)">
 					<div v-if="pLinks.length > 0" class="space-y-2 mb-2">
 						<div v-for="(link, idx) in pLinks" :key="idx"
@@ -630,7 +592,7 @@ const deleteProduct = async (product: IProduct) => {
 						class="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary/50 hover:bg-slate-50 transition-colors">
 						<UploadCloud class="w-8 h-8 text-slate-400 mb-2" stroke-width="1.5" />
 						<p class="text-sm text-slate-600 font-medium">Clique ou arraste até aqui</p>
-						<input type="file" id="quota-file-upload" accept="image/*" @change="handleQuotaImageUpload"
+						<input type="file" id="quota-file-upload" accept="image/*" @change="handleQuotaFileUpload"
 							class="hidden" />
 					</div>
 					<div v-else

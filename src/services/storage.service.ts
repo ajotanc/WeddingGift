@@ -67,4 +67,16 @@ export const StorageService = {
 			console.error("Erro no delete do arquivo:", error);
 		}
 	},
+
+	async autoUpload(
+		rowId: string,
+		file: File,
+		filename?: string,
+	): Promise<string> {
+		// Deleta o arquivo anterior para evitar conflito de ID no Appwrite
+		await this.deleteFile(rowId, filename);
+
+		// Faz o upload do novo arquivo
+		return await this.uploadFile(rowId, file, filename);
+	},
 };

@@ -8,6 +8,7 @@ import { StorageService } from "@/services/storage.service";
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
 import * as z from "zod";
+import FileUpload from "@/components/reusable/FileUpload.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -103,6 +104,51 @@ const [logo_url] = defineField("logo_url");
 const [background_color] = defineField("background_color");
 
 const isSaving = ref(false);
+
+const isUploadingBackground = ref(false);
+const isUploadingLogo = ref(false);
+
+const onBackgroundUpload = async (file: File) => {
+	if (authStore.user) {
+		isUploadingBackground.value = true;
+		try {
+			toast.info("Enviando imagem de fundo...");
+			const url = await StorageService.autoUpload(
+				authStore.user.$id,
+				file,
+				"background",
+			);
+			background_image.value = url;
+			toast.success("Imagem de fundo enviada com sucesso!");
+		} catch (err) {
+			console.error(err);
+			toast.error("Falha ao enviar a imagem.");
+		} finally {
+			isUploadingBackground.value = false;
+		}
+	}
+};
+
+const onLogoUpload = async (file: File) => {
+	if (authStore.user) {
+		isUploadingLogo.value = true;
+		try {
+			toast.info("Enviando logomarca...");
+			const url = await StorageService.autoUpload(
+				authStore.user.$id,
+				file,
+				"logo",
+			);
+			logo_url.value = url;
+			toast.success("Logomarca enviada com sucesso!");
+		} catch (err) {
+			console.error(err);
+			toast.error("Falha ao enviar a logomarca.");
+		} finally {
+			isUploadingLogo.value = false;
+		}
+	}
+};
 
 const loadSettings = () => {
 	if (tenant.value) {
@@ -373,30 +419,25 @@ const saveSettings = handleSubmit(async (values) => {
 				</FormGroup>
 
 				<FormGroup label="Logomarca" :error="errors.logo_url">
-					<div class="flex flex-col gap-4">
-						<Input v-model="logo_url" placeholder="URL da logomarca" class="bg-slate-50/50" />
-						<div class="flex items-center gap-4">
-							<span class="text-sm text-slate-500 font-medium whitespace-nowrap">Ou upload:</span>
-							<Input type="file" @change="onLogoSelect" accept="image/*"
-								class="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-						</div>
-						<div v-if="logo_url" class="mt-2 p-2 border border-slate-200 rounded-xl inline-block w-fit">
-							<img :src="logo_url" class="w-32 h-32 object-contain" />
-						</div>
-					</div>
+					<FileUpload
+						v-model="logo_url"
+						:auto-upload="true"
+						:uploading="isUploadingLogo"
+						@auto-upload="onLogoUpload"
+						:maxSizeMb="1"
+						accept="image/*"
+					/>
 				</FormGroup>
 
 				<FormGroup label="Imagem de Fundo" :error="errors.background_image">
-					<div class="flex flex-col gap-4">
-						<Input v-model="background_image" placeholder="URL da imagem" class="bg-slate-50/50" />
-						<div class="flex items-center gap-4">
-							<span class="text-sm text-slate-500 font-medium whitespace-nowrap">Ou upload:</span>
-							<Input type="file" @change="onFileSelect" accept="image/*"
-								class="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-						</div>
-						<img v-if="background_image" :src="background_image"
-							class="w-full rounded-xl border border-slate-200 mt-2 object-cover aspect-video" />
-					</div>
+					<FileUpload
+						v-model="background_image"
+						:auto-upload="true"
+						:uploading="isUploadingBackground"
+						@auto-upload="onBackgroundUpload"
+						:maxSizeMb="2"
+						accept="image/*"
+					/>
 				</FormGroup>
 			</div>
 

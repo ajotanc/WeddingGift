@@ -2,6 +2,7 @@
 // 1. Importações dos componentes de UI (Shadcn) que estão faltando
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 // 2. Importações de componentes específicos do seu projeto
@@ -376,22 +377,20 @@ const toggleLike = async (msg: IMessage) => {
           </section>
 
           <section v-if="!currentUser"
-            class="text-center py-20 px-6 bg-white/50 backdrop-blur rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mt-12">
-            <div class="max-w-md mx-auto space-y-6">
+            class="text-center p-6 bg-white/50 backdrop-blur rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mt-12">
+            <div class="max-w mx-auto space-y-6">
               <div
                 class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
               </div>
-              <h2 class="text-2xl font-serif text-slate-900">Acesso Restrito</h2>
+              <h2 class="text-2xl font-serif text-slate-900">Queremos muito sua participação!</h2>
               <p class="text-slate-500 font-light leading-relaxed">
-                Faça login para confirmar sua presença, acessar a lista de presentes e deixar uma mensagem para os
-                noivos.
+                Para que possamos preparar tudo com muito carinho, identifique-se de forma rápida e segura. Assim você poderá confirmar sua presença (RSVP), escolher um presente especial de nossa lista e nos enviar uma mensagem de felicitações!
               </p>
               <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color"
-                class="mx-auto w-full max-w-[280px]" />
+                class="mx-auto" />
             </div>
           </section>
 
@@ -496,20 +495,31 @@ const toggleLike = async (msg: IMessage) => {
                 </div>
 
                 <div
-                  class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mb-10 transition-shadow duration-300 hover:shadow-md">
-                  <textarea v-model="messageContent"
-                    class="w-full h-32 p-2 border-none bg-transparent focus:outline-none resize-none text-slate-700 font-sans font-light placeholder:text-slate-400 text-lg"
-                    placeholder="Escreva algo especial aqui..."></textarea>
-                  <div
-                    class="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-slate-50 gap-4">
-                    <div class="flex items-center gap-2">
-                      <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
-                        class="w-6 h-6 rounded-full" />
-                      <span class="text-xs text-slate-400 font-light">Publicando como <strong>{{ authStore.guest?.name
-                          }}</strong></span>
+                  class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mb-10 transition-shadow duration-300 hover:shadow-md flex flex-col gap-4">
+                  
+                  <!-- Convidado em cima -->
+                  <div class="flex items-center gap-3">
+                    <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
+                      class="w-10 h-10 rounded-full border border-slate-100 shadow-sm" />
+                    <div v-else
+                      class="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center font-bold">
+                      {{ authStore.guest?.name?.charAt(0).toUpperCase() || 'C' }}
                     </div>
-                    <Button @click="submitMessage" :disabled="!messageContent" class="w-full">Publicar</Button>
+                    <div class="flex flex-col text-left">
+                      <span class="text-xs text-slate-400 font-light">Escrevendo como</span>
+                      <strong class="text-sm font-semibold text-slate-700 leading-none mt-1">{{ authStore.guest?.name }}</strong>
+                    </div>
                   </div>
+
+                  <!-- Textarea embaixo -->
+                  <Textarea v-model="messageContent"
+                    class="w-full h-32 rounded-2xl bg-slate-50/50 border-slate-200 focus-visible:ring-primary/20 placeholder:text-slate-400 text-base font-light p-4 resize-none"
+                    placeholder="Escreva uma mensagem de carinho para os noivos..." />
+
+                  <!-- Botão embaixo -->
+                  <Button @click="submitMessage" :disabled="!messageContent.trim()" class="w-full h-12 rounded-xl">
+                    Publicar Recado
+                  </Button>
                 </div>
 
                 <!-- Messages Carousel -->
