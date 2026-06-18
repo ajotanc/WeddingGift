@@ -2,7 +2,14 @@
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import { Progress } from "@/components/ui/progress";
 import { useTenant } from "@/composables/useTenant";
-import { Wallet, Target, ShoppingBag, Gift, Users, MessageSquare } from "lucide-vue-next";
+import {
+	Wallet,
+	Target,
+	ShoppingBag,
+	Gift,
+	Users,
+	MessageSquare,
+} from "lucide-vue-next";
 import { computed } from "vue";
 import { formatMoney } from "@/lib/money";
 
@@ -10,39 +17,59 @@ const { purchases, rsvps, messages, products } = useTenant();
 
 // 1. Cotas (PIX)
 const pixQuotaPurchases = computed(() =>
-  purchases.value.filter(p => p.method === 'pix' && p.product?.type === 'quota')
+	purchases.value.filter(
+		(p) => p.method === "pix" && p.product?.type === "quota",
+	),
 );
 const totalRaisedPixQuota = computed(() =>
-  pixQuotaPurchases.value.reduce((acc, p) => acc + (Number(p.price_paid) || 0), 0)
+	pixQuotaPurchases.value.reduce(
+		(acc, p) => acc + (Number(p.price_paid) || 0),
+		0,
+	),
 );
 const totalQuotaGoal = computed(() =>
-  products.value
-    .filter(p => p.type === 'quota')
-    .reduce((acc, p) => acc + (Number(p.price) || 0), 0)
+	products.value
+		.filter((p) => p.type === "quota")
+		.reduce((acc, p) => acc + (Number(p.price) || 0), 0),
 );
 
-const quotaProgress = computed(() => Math.min((totalRaisedPixQuota.value / (totalQuotaGoal.value || 1)) * 100, 100));
+const quotaProgress = computed(() =>
+	Math.min(
+		(totalRaisedPixQuota.value / (totalQuotaGoal.value || 1)) * 100,
+		100,
+	),
+);
 
 // 2. Físicos (PIX)
 const pixPhysicalPurchases = computed(() =>
-  purchases.value.filter(p => p.method === 'pix' && p.product?.type === 'physical')
+	purchases.value.filter(
+		(p) => p.method === "pix" && p.product?.type === "physical",
+	),
 );
 const totalRaisedPixPhysical = computed(() =>
-  pixPhysicalPurchases.value.reduce((acc, p) => acc + (Number(p.price_paid) || 0), 0)
+	pixPhysicalPurchases.value.reduce(
+		(acc, p) => acc + (Number(p.price_paid) || 0),
+		0,
+	),
 );
 
 // 3. Loja (Links)
 const linkPurchases = computed(() =>
-  purchases.value.filter(p => p.method === 'link')
+	purchases.value.filter((p) => p.method === "link"),
 );
 
 const totalLinkItems = computed(() =>
-  linkPurchases.value.reduce((acc, p) => acc + (p.quantity || 1), 0)
+	linkPurchases.value.reduce((acc, p) => acc + (p.quantity || 1), 0),
 );
 
 // 4. Outros
 const confirmedGuests = computed(() =>
-  rsvps.value.filter(r => r.status === "confirmed").reduce((acc, r) => acc + (r.total_adults || 0) + (r.total_children || 0), 0)
+	rsvps.value
+		.filter((r) => r.status === "confirmed")
+		.reduce(
+			(acc, r) => acc + (r.total_adults || 0) + (r.total_children || 0),
+			0,
+		),
 );
 </script>
 

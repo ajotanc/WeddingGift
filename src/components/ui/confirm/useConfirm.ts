@@ -28,7 +28,7 @@ watch(
 );
 
 export function useConfirm() {
-	// A função confirm agora não precisa retornar Promise<boolean> 
+	// A função confirm agora não precisa retornar Promise<boolean>
 	// se você for usar callbacks, mas manteremos a opção para flexibilidade.
 	const confirm = (opts: ConfirmOptions) => {
 		state.options = opts;
@@ -56,6 +56,8 @@ export function useConfirm() {
 		confirm,
 		onConfirm,
 		onCancel,
-		handleClose: (isOpen: boolean) => { if (!isOpen) onCancel(); }
+		handleClose: (isOpen: boolean) => {
+			if (!isOpen) onCancel();
+		},
 	};
 }

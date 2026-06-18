@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import type { MenubarRadioItemEmits, MenubarRadioItemProps } from "reka-ui"
-import type { HTMLAttributes } from "vue"
-import { Circle } from "lucide-vue-next"
-import { reactiveOmit } from "@vueuse/core"
+import type { MenubarRadioItemEmits, MenubarRadioItemProps } from "reka-ui";
+import type { HTMLAttributes } from "vue";
+import { Circle } from "lucide-vue-next";
+import { reactiveOmit } from "@vueuse/core";
 import {
-  MenubarItemIndicator,
-  MenubarRadioItem,
-  useForwardPropsEmits,
-} from "reka-ui"
-import { cn } from "@/lib/utils"
+	MenubarItemIndicator,
+	MenubarRadioItem,
+	useForwardPropsEmits,
+} from "reka-ui";
+import { cn } from "@/lib/utils";
 
-const props = defineProps<MenubarRadioItemProps & { class?: HTMLAttributes["class"] }>()
-const emits = defineEmits<MenubarRadioItemEmits>()
+const props = defineProps<
+	MenubarRadioItemProps & { class?: HTMLAttributes["class"] }
+>();
+const emits = defineEmits<MenubarRadioItemEmits>();
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class");
 
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
+const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
 <template>

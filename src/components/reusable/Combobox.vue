@@ -1,34 +1,45 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Check, ChevronsUpDown } from 'lucide-vue-next';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Button } from '@/components/ui/button';
+import { ref, computed } from "vue";
+import { Check, ChevronsUpDown } from "lucide-vue-next";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 
 interface Option {
-  label: string;
-  value: string;
+	label: string;
+	value: string;
 }
 
 const props = defineProps<{
-  modelValue?: string;
-  options: Option[];
-  placeholder?: string;
-  emptyText?: string;
+	modelValue?: string;
+	options: Option[];
+	placeholder?: string;
+	emptyText?: string;
 }>();
 
-const emit = defineEmits<(e: 'update:modelValue', val: string) => void>();
+const emit = defineEmits<(e: "update:modelValue", val: string) => void>();
 
 const open = ref(false);
 
 const currentLabel = computed(() => {
-  const found = props.options.find((opt) => opt.value === props.modelValue);
-  return found ? found.label : (props.placeholder ?? 'Selecionar...');
+	const found = props.options.find((opt) => opt.value === props.modelValue);
+	return found ? found.label : (props.placeholder ?? "Selecionar...");
 });
 
 const handleSelect = (value: string) => {
-  emit('update:modelValue', value);
-  open.value = false;
+	emit("update:modelValue", value);
+	open.value = false;
 };
 </script>
 

@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { useTenant } from "@/composables/useTenant";
 import { useAuthStore } from "@/stores/auth";
-import { Box, Gift, LayoutDashboard, LogOut, Settings, Users } from "lucide-vue-next";
+import {
+	Box,
+	Gift,
+	LayoutDashboard,
+	LogOut,
+	Settings,
+	Users,
+} from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
@@ -10,16 +17,16 @@ const { tenant, loading, error } = useTenant();
 const authStore = useAuthStore();
 
 const handleLogout = async () => {
-  await authStore.logout();
-  router.push({ name: "login" });
+	await authStore.logout();
+	router.push({ name: "login" });
 };
 
 const navItems = [
-  { name: "Dashboard", path: "dashboard", icon: LayoutDashboard },
-  { name: "Presentes", path: "products", icon: Box },
-  { name: "Recebidos", path: "purchases", icon: Gift },
-  { name: "Convidados", path: "guests", icon: Users },
-  { name: "Configurações", path: "config", icon: Settings },
+	{ name: "Dashboard", path: "dashboard", icon: LayoutDashboard },
+	{ name: "Presentes", path: "products", icon: Box },
+	{ name: "Recebidos", path: "purchases", icon: Gift },
+	{ name: "Convidados", path: "guests", icon: Users },
+	{ name: "Configurações", path: "config", icon: Settings },
 ];
 
 const isActive = (path: string) => route.path.includes(`/${path}`);

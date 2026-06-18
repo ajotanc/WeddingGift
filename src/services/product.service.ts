@@ -108,7 +108,7 @@ export const ProductService = {
 	): Promise<IProduct> {
 		let imageUrl = data.image_url;
 		if (file) {
-			imageUrl = await StorageService.uploadFile(id, file, 'product');
+			imageUrl = await StorageService.uploadFile(id, file, "product");
 		}
 
 		const payload: Partial<Omit<IProduct, keyof Models.Row>> = {
@@ -195,7 +195,10 @@ export const ProductService = {
 		});
 	},
 
-	async updatePublic(rowId: string, data: Partial<IProduct>): Promise<IProduct> {
+	async updatePublic(
+		rowId: string,
+		data: Partial<IProduct>,
+	): Promise<IProduct> {
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,

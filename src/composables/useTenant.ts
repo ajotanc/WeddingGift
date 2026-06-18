@@ -4,18 +4,25 @@ import type { IPurchase } from "@/services/purchase.service";
 import { PurchaseService } from "@/services/purchase.service";
 import type { IRsvp } from "@/services/rsvp.service";
 import { TenantService, type ITenant } from "@/services/tenant.service";
+import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
+import { FaqService, type IFaq } from "@/services/faq.service";
+import { ScheduleService, type IScheduleItem } from "@/services/schedule.service";
 import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { sortBy } from "@/lib/utils";
 
 export function useTenant() {
 	const route = useRoute();
-	
+
 	// 1. Mudado para aceitar null em vez de um objeto vazio enganoso
 	const tenant = ref<ITenant | null>(null);
 	const products = ref<IProduct[]>([]);
 	const messages = ref<IMessage[]>([]);
 	const rsvps = ref<IRsvp[]>([]);
 	const purchases = ref<IPurchase[]>([]);
+	const gallery = ref<IGalleryImage[]>([]);
+	const faqs = ref<IFaq[]>([]);
+	const schedules = ref<IScheduleItem[]>([]);
 
 	// Começa como false para evitar travamentos falsos na Home
 	const loading = ref(false);
@@ -35,9 +42,12 @@ export function useTenant() {
 				messages.value = result.messages || [];
 				rsvps.value = result?.rsvps || [];
 				purchases.value = await PurchaseService.listByTenant(result.$id);
+				gallery.value = result?.gallery || [];
+				faqs.value = sortBy(result?.faqs || [], "order");
+				schedules.value = sortBy(result?.schedules || [], "hour");
 				
 				tenant.value = result;
-				
+
 				if (tenant.value.primary_color) {
 					applyTheme(tenant.value.primary_color);
 				}
@@ -92,6 +102,9 @@ export function useTenant() {
 				messages.value = [];
 				rsvps.value = [];
 				purchases.value = [];
+				gallery.value = [];
+				faqs.value = [];
+				schedules.value = [];
 				loading.value = false;
 			}
 		},
@@ -103,6 +116,9 @@ export function useTenant() {
 		messages,
 		rsvps,
 		purchases,
+		gallery,
+		faqs,
+		schedules,
 		loading,
 		error,
 		fetchTenant,

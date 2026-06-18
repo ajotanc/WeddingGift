@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
 } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 

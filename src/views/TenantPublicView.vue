@@ -3,7 +3,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { GalleryService } from "@/services/gallery.service";
+import type { IGalleryImage } from "@/services/gallery.service";
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
 
 // 2. Importações de componentes específicos do seu projeto
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
@@ -13,7 +26,7 @@ import Modal from "@/components/reusable/Modal.vue";
 import GuestProfileModal from "@/components/GuestProfileModal.vue";
 
 import { useTenant } from "@/composables/useTenant";
-import { generatePixPayload } from "@/lib/utils";
+import { generatePixPayload, sortBy } from "@/lib/utils";
 import { generateThankYouMessage } from "@/lib/ai";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
@@ -36,21 +49,34 @@ import { toast } from "vue-sonner";
 
 dayjs.locale("pt-br");
 
-const carouselPlugins = [Autoplay({
-  delay: 4000,
-  stopOnInteraction: false,
-  stopOnMouseEnter: true,
-})];
+const carouselPlugins = [
+  Autoplay({
+    delay: 4000,
+    stopOnInteraction: false,
+    stopOnMouseEnter: true,
+  }),
+];
 
-const { tenant, products, purchases, messages, rsvps, loading, error } = useTenant();
+const {
+  tenant,
+  products,
+  purchases,
+  messages,
+  rsvps,
+  gallery,
+  faqs,
+  loading,
+  error,
+} = useTenant();
 const authStore = useAuthStore();
+const { confirm } = useConfirm();
 
 const currentUser = computed(() => authStore.user);
 const showProfileModal = ref(false);
 
 const existingRsvp = computed(() => {
   if (!authStore.guest) return null;
-  return rsvps.value.find(r => r.guest.$id === authStore.guest?.$id);
+  return rsvps.value.find((r) => r.guest.$id === authStore.guest?.$id);
 });
 
 const currentQty = computed(() => {
@@ -81,28 +107,45 @@ const selectedProduct = ref<IProduct | null>(null);
 const quotaQuantities = ref<Record<string, number>>({});
 
 import { getProductPrice, formatMoney } from "@/lib/money";
-import { Gift, QrCode } from "lucide-vue-next";
+import {
+  Gift,
+  QrCode,
+  Heart,
+  Calendar,
+  Clock,
+  MapPin,
+  Music,
+  Utensils,
+  GlassWater,
+  Cake,
+  Camera,
+  Sparkles,
+} from "lucide-vue-next";
 
 const pixPayload = ref({ payload: "", base64: "" });
 
-watch([tenant, selectedProduct, quotaQuantities], async () => {
-  if (!tenant.value || !selectedProduct.value) {
-    pixPayload.value = { payload: "", base64: "" };
-    return;
-  }
+watch(
+  [tenant, selectedProduct, quotaQuantities],
+  async () => {
+    if (!tenant.value || !selectedProduct.value) {
+      pixPayload.value = { payload: "", base64: "" };
+      return;
+    }
 
-  const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
-  const finalPrice = getProductPrice(selectedProduct.value, qty);
-  const message = `${tenant.value.couple_name} • ${selectedProduct.value.name}`;
+    const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
+    const finalPrice = getProductPrice(selectedProduct.value, qty);
+    const message = `${tenant.value.couple_name} • ${selectedProduct.value.name}`;
 
-  pixPayload.value = await generatePixPayload(
-    tenant.value.pix_key,
-    tenant.value.couple_name,
-    String(finalPrice),
-    message,
-    selectedProduct.value.$id
-  );
-}, { immediate: true, deep: true });
+    pixPayload.value = await generatePixPayload(
+      tenant.value.pix_key,
+      tenant.value.couple_name,
+      String(finalPrice),
+      message,
+      selectedProduct.value.$id,
+    );
+  },
+  { immediate: true, deep: true },
+);
 
 const openPixModal = async (product: IProduct, quantity = 1) => {
   if (!currentUser.value) return;
@@ -135,11 +178,16 @@ const confirmPurchase = async (method: MethodType) => {
   const finalPrice = getProductPrice(selectedProduct.value, qty);
 
   try {
-    const updatedProduct = await ProductService.updatePublic(selectedProduct.value.$id, {
-      claimed_quantity: selectedProduct.value.claimed_quantity + qty,
-    });
+    const updatedProduct = await ProductService.updatePublic(
+      selectedProduct.value.$id,
+      {
+        claimed_quantity: selectedProduct.value.claimed_quantity + qty,
+      },
+    );
 
-    const productIndex = products.value.findIndex((p) => p.$id === updatedProduct.$id);
+    const productIndex = products.value.findIndex(
+      (p) => p.$id === updatedProduct.$id,
+    );
 
     if (productIndex !== -1) {
       products.value[productIndex] = updatedProduct;
@@ -189,11 +237,15 @@ const { value: totalAdults } = useField<number>("totalAdults");
 const { value: totalChildren } = useField<number>("totalChildren");
 const { value: status } = useField<"confirmed" | "declined">("status");
 
-watch(() => authStore.guest, (guest) => {
-  if (guest && !guest.phone) {
-    showProfileModal.value = true;
-  }
-}, { immediate: true });
+watch(
+  () => authStore.guest,
+  (guest) => {
+    if (guest && !guest.phone) {
+      showProfileModal.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 const rsvpLoading = ref(false);
 const isEditingRsvp = ref(false);
@@ -206,7 +258,7 @@ const submitRsvp = handleSubmit(async (values) => {
     if (values.status === "confirmed") {
       thankYouMessage = await generateThankYouMessage(
         authStore.guest.name || "Convidado",
-        tenant.value.couple_name
+        tenant.value.couple_name,
       );
     }
 
@@ -267,19 +319,22 @@ const submitMessage = async () => {
   }
 };
 
-const deleteMessage = async (msgId: string) => {
-  if (!confirm("Deseja realmente apagar esta mensagem?")) return;
-  try {
-    await MessageService.delete(msgId);
-    messages.value = messages.value.filter((m) => m.$id !== msgId);
-    toast({ title: "Sucesso", description: "Mensagem apagada com sucesso." });
-  } catch (err) {
-    toast({
-      title: "Erro",
-      description: "Erro ao apagar mensagem.",
-      variant: "destructive",
-    });
-  }
+const deleteMessage = (msgId: string) => {
+  confirm({
+    title: "Apagar Mensagem",
+    description: "Tem certeza de que deseja apagar esta mensagem do mural?",
+    confirmText: "Sim, apagar",
+    cancelText: "Não",
+    confirm: async () => {
+      try {
+        await MessageService.delete(msgId);
+        messages.value = messages.value.filter((m) => m.$id !== msgId);
+        toast.success("Mensagem apagada com sucesso.");
+      } catch (err) {
+        toast.error("Erro ao apagar mensagem.");
+      }
+    },
+  });
 };
 
 const toggleLike = async (msg: IMessage) => {
@@ -296,12 +351,62 @@ const toggleLike = async (msg: IMessage) => {
   }
 
   try {
-    msg.likes?.length && await MessageService.likes(msg.$id, msg.likes);
+    msg.likes?.length && (await MessageService.likes(msg.$id, msg.likes));
   } catch (err) {
     msg.likes = originalLikes;
 
-    toast({ title: "Erro", description: "Falha ao curtir.", variant: "destructive" });
+    toast({
+      title: "Erro",
+      description: "Falha ao curtir.",
+      variant: "destructive",
+    });
   }
+};
+
+const toggleGalleryLike = async (img: IGalleryImage) => {
+  const guestId = authStore.guest?.$id;
+  if (!guestId) {
+    toast.error("Erro", {
+      description: "Você precisa estar identificado para curtir as fotos.",
+    });
+    return;
+  }
+
+  const originalLikes = [...(img.likes || [])];
+  const isLiked = img.likes?.includes(guestId);
+
+  if (isLiked) {
+    img.likes = img.likes?.filter((id) => id !== guestId);
+  } else {
+    img.likes = [...(img.likes || []), guestId];
+  }
+
+  try {
+    await GalleryService.updateLikes(img.$id, img.likes || []);
+  } catch (err) {
+    img.likes = originalLikes;
+    toast.error("Erro", { description: "Falha ao atualizar curtida." });
+  }
+};
+
+const getTimelineItems = computed(() => {
+  if (!tenant.value?.schedules) return [];
+  return sortBy(tenant.value.schedules, "hour").map((item) => ({
+    time: item.hour,
+    title: item.title,
+    description: item.description,
+    icon: item.icon,
+  }));
+});
+
+const activeLightboxImage = ref<string | null>(null);
+
+const openLightbox = (url: string) => {
+  activeLightboxImage.value = url;
+};
+
+const closeLightbox = () => {
+  activeLightboxImage.value = null;
 };
 </script>
 
@@ -367,6 +472,87 @@ const toggleLike = async (msg: IMessage) => {
               v-html="tenant.couple_history"></div>
           </section>
 
+          <!-- Event Timeline -->
+          <section v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
+            class="space-y-12 max-w-3xl mx-auto">
+            <div class="text-center mb-12">
+              <h2 class="text-3xl font-serif text-slate-900 mb-4">Cronograma do Evento</h2>
+              <p class="text-slate-500 font-light max-w-xl mx-auto text-base">
+                Acompanhe a programação completa do nosso grande dia para não perder nenhum momento especial.
+              </p>
+            </div>
+
+            <div class="relative border-l-2 ml-4 md:ml-20 space-y-12 py-4"
+              :style="{ borderColor: tenant.primary_color + '33' }">
+              <div v-for="item in getTimelineItems" :key="item.title" class="relative pl-6 md:pl-10">
+                <!-- Icon Marker -->
+                <div
+                  class="absolute -left-[17px] top-1.5 bg-white border-2 border-primary w-8 h-8 rounded-full flex items-center justify-center text-primary shadow-sm">
+                  <Clock v-if="item.icon === 'clock'" class="w-4 h-4" />
+                  <GlassWater v-else-if="item.icon === 'cheers'" class="w-4 h-4" />
+                  <Utensils v-else-if="item.icon === 'utensils'" class="w-4 h-4" />
+                  <Music v-else-if="item.icon === 'music'" class="w-4 h-4" />
+                  <Cake v-else-if="item.icon === 'cake'" class="w-4 h-4" />
+                  <Camera v-else-if="item.icon === 'camera'" class="w-4 h-4" />
+                  <Sparkles v-else-if="item.icon === 'sparkles'" class="w-4 h-4" />
+                  <MapPin v-else-if="item.icon === 'map-pin'" class="w-4 h-4" />
+                  <Gift v-else-if="item.icon === 'gift'" class="w-4 h-4" />
+                  <Heart v-else class="w-4 h-4" />
+                </div>
+
+                <!-- Content block -->
+                <div class="flex flex-col md:flex-row md:items-start md:gap-3">
+                  <!-- Time Badge -->
+                  <span
+                    class="inline-block shrink-0 py-1 bg-primary/10 text-primary font-semibold text-sm rounded-full w-fit">
+                    {{ item.time }}
+                  </span>
+                  <div class="space-y-1.5 text-left">
+                    <h3 class="font-serif text-lg text-slate-800 font-medium">{{ item.title }}</h3>
+                    <p class="text-sm text-slate-500 font-light leading-relaxed max-w-xl">
+                      {{ item.description }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Gallery -->
+          <section v-if="tenant.show_gallery && gallery && gallery.length > 0" class="space-y-12">
+            <div class="text-center mb-12">
+              <h2 class="text-3xl font-serif text-slate-900 mb-4">Galeria de Fotos</h2>
+              <p class="text-slate-500 font-light max-w-xl mx-auto text-base">
+                Momentos especiais compartilhados por nós. Deixe o seu carinho curtindo suas fotos favoritas!
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              <div v-for="img in gallery" :key="img.$id"
+                class="group relative aspect-square rounded-3xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm cursor-pointer"
+                @click="openLightbox(img.image_url)">
+                <!-- Image -->
+                <img :src="img.image_url"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy" />
+
+                <!-- Hover Overlay -->
+                <div
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm z-10">
+                  <div
+                    class="flex items-center gap-6 text-white scale-90 group-hover:scale-100 transition-transform duration-300">
+                    <button type="button" @click.stop="toggleGalleryLike(img)"
+                      class="flex items-center gap-2 active:scale-90 px-4 py-2 rounded-full backdrop-blur-md border border-white/20 transition-all cursor-pointer">
+                      <Heart class="w-5 h-5 transition-colors"
+                        :class="img.likes?.includes(authStore.guest?.$id || '') ? 'fill-red-500 text-red-500' : 'text-white'" />
+                      <span class="font-semibold text-sm">{{ img.likes?.length || 0 }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Event Location Map -->
           <section v-if="tenant.event_location" class="text-center">
             <h2 class="text-3xl font-serif text-slate-900 mb-6">Local do Evento</h2>
@@ -382,15 +568,17 @@ const toggleLike = async (msg: IMessage) => {
               <div
                 class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                 </svg>
               </div>
               <h2 class="text-2xl font-serif text-slate-900">Queremos muito sua participação!</h2>
               <p class="text-slate-500 font-light leading-relaxed">
-                Para que possamos preparar tudo com muito carinho, identifique-se de forma rápida e segura. Assim você poderá confirmar sua presença (RSVP), escolher um presente especial de nossa lista e nos enviar uma mensagem de felicitações!
+                Para que possamos preparar tudo com muito carinho, identifique-se de forma rápida e segura. Assim você
+                poderá confirmar sua presença (RSVP), escolher um presente especial de nossa lista e nos enviar uma
+                mensagem de felicitações!
               </p>
-              <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color"
-                class="mx-auto" />
+              <GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color" class="mx-auto" />
             </div>
           </section>
 
@@ -496,7 +684,7 @@ const toggleLike = async (msg: IMessage) => {
 
                 <div
                   class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mb-10 transition-shadow duration-300 hover:shadow-md flex flex-col gap-4">
-                  
+
                   <!-- Convidado em cima -->
                   <div class="flex items-center gap-3">
                     <img v-if="authStore.guest?.photo_url" :src="authStore.guest.photo_url" alt="Foto"
@@ -507,7 +695,8 @@ const toggleLike = async (msg: IMessage) => {
                     </div>
                     <div class="flex flex-col text-left">
                       <span class="text-xs text-slate-400 font-light">Escrevendo como</span>
-                      <strong class="text-sm font-semibold text-slate-700 leading-none mt-1">{{ authStore.guest?.name }}</strong>
+                      <strong class="text-sm font-semibold text-slate-700 leading-none mt-1">{{ authStore.guest?.name
+                      }}</strong>
                     </div>
                   </div>
 
@@ -604,6 +793,31 @@ const toggleLike = async (msg: IMessage) => {
             </section>
           </template>
 
+          <!-- FAQ Section -->
+          <section v-if="tenant.show_faq && faqs && faqs.length > 0" class="space-y-12">
+            <div class="text-center mb-12">
+              <h2 class="text-3xl font-serif text-slate-900 mb-4">Dúvidas Frequentes</h2>
+              <p class="text-slate-500 font-light max-w-xl mx-auto text-base">
+                Caso tenha alguma dúvida sobre o evento, confira as perguntas mais comuns dos nossos convidados abaixo.
+              </p>
+            </div>
+
+            <div class="max-w-3xl mx-auto">
+              <Accordion type="single" collapsible class="w-full space-y-4">
+                <AccordionItem v-for="faq in faqs" :key="faq.$id" :value="faq.$id"
+                  class="bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.01)] rounded-2xl px-6 py-2 transition-shadow hover:shadow-md">
+                  <AccordionTrigger
+                    class="hover:no-underline font-serif text-base text-slate-800 font-medium py-4 text-left">
+                    {{ faq.question }}
+                  </AccordionTrigger>
+                  <AccordionContent class="text-slate-500 font-light leading-relaxed pb-4 text-left">
+                    {{ faq.answer }}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          </section>
+
         </div>
       </div>
       <div v-else class="text-center p-20 space-y-4">
@@ -684,5 +898,78 @@ const toggleLike = async (msg: IMessage) => {
 
     <!-- Guest Profile Modal -->
     <GuestProfileModal v-model:open="showProfileModal" :tenantPurchases="purchases" />
+
+    <!-- Lightbox Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="activeLightboxImage"
+          class="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
+          @click="closeLightbox">
+          <button type="button" @click="closeLightbox"
+            class="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full backdrop-blur transition-all border-0 outline-none cursor-pointer">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img :src="activeLightboxImage"
+            class="max-w-full max-h-[85vh] md:max-h-[90vh] object-contain rounded-2xl shadow-2xl cursor-default animate-zoom"
+            @click.stop />
+        </div>
+      </Transition>
+    </Teleport>
   </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-100 bg-white py-12 px-6">
+    <div
+      class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+      <div class="space-y-2">
+        <img v-if="tenant?.logo_url" :src="tenant.logo_url" alt="tenant?.couple_name" class="h-16 mx-auto">
+        <h3 class="font-serif text-2xl text-slate-900 tracking-tight">{{ tenant?.couple_name }}</h3>
+        <p v-if="tenant?.event_date" class="text-sm text-slate-400 font-light">
+          {{ dayjs(tenant?.event_date).format('DD [de] MMMM [de] YYYY') }}
+        </p>
+      </div>
+
+      <div class="flex flex-col md:items-end gap-3">
+        <p class="italic text-slate-500 font-serif text-sm max-w-xs text-center md:text-right">
+          "Com carinho, obrigado por fazer parte da nossa história!"
+        </p>
+        <div class="flex items-center justify-center md:justify-end gap-1.5 text-xs text-slate-400 font-light mt-1">
+          <span>{{dayjs().format("YYYY")}} &copy;</span>
+          <span>Desenvolvido com</span>
+          <Heart class="w-3.5 h-3.5 fill-red-400 text-red-400 inline" />
+          <span>por <a class="font-bold" href="https://instagram.com/ajotanc" target="_blank">AJOTA</a></span>
+        </div>
+      </div>
+    </div>
+  </footer>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-zoom {
+  animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>

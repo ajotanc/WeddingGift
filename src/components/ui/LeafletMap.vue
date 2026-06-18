@@ -38,7 +38,7 @@ const initMap = async () => {
 
 		if (!map) {
 			map = L.map(mapContainer.value, {
-				scrollWheelZoom: false
+				scrollWheelZoom: false,
 			}).setView([lat, lon], 16);
 			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 				attribution: "&copy; OpenStreetMap contributors",

@@ -13,4 +13,4 @@ declare module "*.vue" {
 }
 
 // ADICIONE ESTA LINHA NO FINAL DO ARQUIVO:
-declare module 'qrcode-vue';
+declare module "qrcode-vue";

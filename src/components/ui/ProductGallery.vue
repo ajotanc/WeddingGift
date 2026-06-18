@@ -6,16 +6,16 @@ import { formatMoney, getProductPrice } from "@/lib/money";
 
 // Importações dos Ícones utilizados nos Cards
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Heart,
-  Edit2,
-  Trash2,
-  ChevronsUpDown,
-  Package,
-  QrCode,
+	ChevronLeft,
+	ChevronRight,
+	ChevronsLeft,
+	ChevronsRight,
+	Heart,
+	Edit2,
+	Trash2,
+	ChevronsUpDown,
+	Package,
+	QrCode,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
@@ -23,45 +23,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationFirst,
+	PaginationItem,
+	PaginationLast,
+	PaginationNext,
+	PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Card } from "@/components/ui/card";
 
 import Combobox from "../reusable/Combobox.vue";
 
 const props = defineProps<{
-  products: IProduct[];
-  tenant: ITenant | null;
-  mode: "public" | "admin";
-  currentUser?: Record<string, unknown> | null;
+	products: IProduct[];
+	tenant: ITenant | null;
+	mode: "public" | "admin";
+	currentUser?: Record<string, unknown> | null;
 }>();
 
 const emit = defineEmits<{
-  (e: "open-pix", product: IProduct, quantity: number): void;
-  (e: "open-links", product: IProduct, quantity: number): void;
-  (e: "edit", product: IProduct): void;
-  (e: "delete", product: IProduct): void;
+	(e: "open-pix", product: IProduct, quantity: number): void;
+	(e: "open-links", product: IProduct, quantity: number): void;
+	(e: "edit", product: IProduct): void;
+	(e: "delete", product: IProduct): void;
 }>();
 
 // --- Estado de Filtros ---
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
-  const cats = new Set(
-    props.products.map((p) => p.category).filter((c): c is string => !!c),
-  );
-  return Array.from(cats).sort();
+	const cats = new Set(
+		props.products.map((p) => p.category).filter((c): c is string => !!c),
+	);
+	return Array.from(cats).sort();
 });
 
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === "all") return props.products;
-  return props.products.filter((p) => p.category === selectedCategory.value);
+	if (selectedCategory.value === "all") return props.products;
+	return props.products.filter((p) => p.category === selectedCategory.value);
 });
 
 // --- Estado de Paginação ---
@@ -69,13 +69,13 @@ const currentPage = ref(1);
 const itemsPerPage = ref(6);
 
 watch(selectedCategory, () => {
-  currentPage.value = 1;
+	currentPage.value = 1;
 });
 
 const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredProducts.value.slice(start, end);
+	const start = (currentPage.value - 1) * itemsPerPage.value;
+	const end = start + itemsPerPage.value;
+	return filteredProducts.value.slice(start, end);
 });
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
@@ -83,38 +83,41 @@ const quotaQuantities = ref<Record<string, number>>({});
 
 // Métodos auxiliares para calcular limites individuais de cada produto na lista
 const isProductSoldOut = (product: IProduct) => {
-  return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
+	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
 };
 
 const getRemainingQuantity = (product: IProduct) => {
-  return Math.max(0, (product.desired_quantity || 1) - (product.claimed_quantity || 0));
+	return Math.max(
+		0,
+		(product.desired_quantity || 1) - (product.claimed_quantity || 0),
+	);
 };
 
 const getLocalQuantity = (productId: string) => {
-  return quotaQuantities.value[productId] || 1;
+	return quotaQuantities.value[productId] || 1;
 };
 
 const setLocalQuantity = (productId: string, val: number, maxQty: number) => {
-  quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
+	quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
 };
 
 // --- Handlers de Ação de Envio ---
 const handleOpenPix = (product: IProduct) => {
-  const qty = getLocalQuantity(product.$id);
-  emit("open-pix", product, qty);
+	const qty = getLocalQuantity(product.$id);
+	emit("open-pix", product, qty);
 };
 
 const handleOpenLinks = (product: IProduct) => {
-  const qty = getLocalQuantity(product.$id);
-  emit("open-links", product, qty);
+	const qty = getLocalQuantity(product.$id);
+	emit("open-links", product, qty);
 };
 
 // TIPAGEM ESTRITA SEM ANY/UNKNOWN USANDO INTERFACES NATIVAS DO DOM
 const updateItemsPerPage = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  if (target) {
-    itemsPerPage.value = Number.parseInt(target.value, 10);
-  }
+	const target = event.target as HTMLSelectElement;
+	if (target) {
+		itemsPerPage.value = Number.parseInt(target.value, 10);
+	}
 };
 </script>
 

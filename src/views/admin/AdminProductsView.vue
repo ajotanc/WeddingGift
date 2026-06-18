@@ -94,9 +94,7 @@ const productSchema = z
 const physicalValidationSchema = toTypedSchema(
 	productSchema.and(
 		z.object({
-			price: z.coerce
-				.number()
-				.min(0.01, "O valor deve ser maior que zero."),
+			price: z.coerce.number().min(0.01, "O valor deve ser maior que zero."),
 			desiredQuantity: z.coerce
 				.number()
 				.min(1, "A quantidade deve ser maior que zero.")
@@ -190,7 +188,9 @@ const editPhysical = (p: IProduct) => {
 
 const searchExternalLinks = async () => {
 	if (!pName.value) {
-		toast.info("Aviso", { description: "Preencha o nome do produto para buscar os links." });
+		toast.info("Aviso", {
+			description: "Preencha o nome do produto para buscar os links.",
+		});
 		return;
 	}
 	isSearchingLinks.value = true;
@@ -452,7 +452,8 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 const deleteProduct = async (product: IProduct) => {
 	confirm({
 		title: product.name,
-		description: "Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita.",
+		description:
+			"Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita.",
 		confirmText: "Sim, excluir",
 		cancelText: "Não",
 		confirm: async () => {

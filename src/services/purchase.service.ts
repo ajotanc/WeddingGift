@@ -37,7 +37,10 @@ export const PurchaseService = {
 		}
 	},
 
-	async create(data: Omit<IPurchase, keyof Models.Row>, customId?: string): Promise<IPurchase> {
+	async create(
+		data: Omit<IPurchase, keyof Models.Row>,
+		customId?: string,
+	): Promise<IPurchase> {
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PURCHASES,

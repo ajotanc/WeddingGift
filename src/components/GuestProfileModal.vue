@@ -14,8 +14,8 @@ import { User, Gift, Loader2 } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 const props = defineProps<{
-  open: boolean;
-  tenantPurchases?: IPurchase[];
+	open: boolean;
+	tenantPurchases?: IPurchase[];
 }>();
 
 const emit = defineEmits(["update:open"]);
@@ -30,47 +30,47 @@ const purchases = ref<IPurchase[]>([]);
 const purchasesLoading = ref(false);
 
 watch(
-  () => props.open,
-  async (isOpen) => {
-    if (isOpen && authStore.guest) {
-      profileName.value = authStore.guest.name || "";
-      profilePhone.value = authStore.guest.phone || "";
+	() => props.open,
+	async (isOpen) => {
+		if (isOpen && authStore.guest) {
+			profileName.value = authStore.guest.name || "";
+			profilePhone.value = authStore.guest.phone || "";
 
-      if (props.tenantPurchases) {
-        console.log(props.tenantPurchases);
-        purchases.value = props.tenantPurchases.filter(
-          (p) => p.guest.$id === authStore.guest?.$id,
-        );
-      }
-    }
-  },
-  { immediate: true },
+			if (props.tenantPurchases) {
+				console.log(props.tenantPurchases);
+				purchases.value = props.tenantPurchases.filter(
+					(p) => p.guest.$id === authStore.guest?.$id,
+				);
+			}
+		}
+	},
+	{ immediate: true },
 );
 
 const saveProfile = async () => {
-  if (!authStore.guest) return;
-  isLoading.value = true;
+	if (!authStore.guest) return;
+	isLoading.value = true;
 
-  try {
-    const cleanedPhone = profilePhone.value
-      ? profilePhone.value.replace(/\D/g, "")
-      : undefined;
-    const updated = await GuestService.upsert(authStore.guest.$id, {
-      name: profileName.value,
-      phone: cleanedPhone,
-    });
+	try {
+		const cleanedPhone = profilePhone.value
+			? profilePhone.value.replace(/\D/g, "")
+			: undefined;
+		const updated = await GuestService.upsert(authStore.guest.$id, {
+			name: profileName.value,
+			phone: cleanedPhone,
+		});
 
-    authStore.guest = updated;
+		authStore.guest = updated;
 
-    toast.success("Perfil atualizado com sucesso!");
+		toast.success("Perfil atualizado com sucesso!");
 
-    emit("update:open", false);
-  } catch (e) {
-    console.error(e);
-    toast.error("Erro", { description: "Não foi possível salvar o perfil." });
-  } finally {
-    isLoading.value = false;
-  }
+		emit("update:open", false);
+	} catch (e) {
+		console.error(e);
+		toast.error("Erro", { description: "Não foi possível salvar o perfil." });
+	} finally {
+		isLoading.value = false;
+	}
 };
 </script>
 

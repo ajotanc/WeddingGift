@@ -1,92 +1,121 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { UploadCloud, X, FileText, FileSpreadsheet, File, Image as ImageIcon, Loader2, Search } from "lucide-vue-next";
+import {
+	UploadCloud,
+	X,
+	FileText,
+	FileSpreadsheet,
+	File,
+	Image as ImageIcon,
+	Loader2,
+	Search,
+} from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const isZoomed = ref(false);
 
 const props = defineProps<{
-  modelValue: string | null | undefined;
-  accept?: string;
-  maxSizeMb?: number;
-  fileName?: string;
-  uploading?: boolean;
-  autoUpload?: boolean;
+	modelValue: string | null | undefined;
+	accept?: string;
+	maxSizeMb?: number;
+	fileName?: string;
+	uploading?: boolean;
+	autoUpload?: boolean;
 }>();
 
-const emit = defineEmits(["update:modelValue", "file-selected", "update:fileName", "auto-upload"]);
+const emit = defineEmits([
+	"update:modelValue",
+	"file-selected",
+	"update:fileName",
+	"auto-upload",
+]);
 
 const isDragging = ref(false);
 const cacheKey = ref(Date.now());
 
 // Monitora o estado de upload para atualizar a chave do cache da imagem localmente
-watch(() => props.uploading, (newVal, oldVal) => {
-  if (oldVal === true && newVal === false) {
-    cacheKey.value = Date.now();
-  }
-});
+watch(
+	() => props.uploading,
+	(newVal, oldVal) => {
+		if (oldVal === true && newVal === false) {
+			cacheKey.value = Date.now();
+		}
+	},
+);
 
 // URL com cache buster para garantir atualização visual imediata no preview
 const previewUrl = computed(() => {
-  if (!props.modelValue) return "";
-  if (props.modelValue.startsWith("blob:") || props.modelValue.startsWith("data:")) {
-    return props.modelValue;
-  }
-  const separator = props.modelValue.includes("?") ? "&" : "?";
-  return `${props.modelValue}${separator}t=${cacheKey.value}`;
+	if (!props.modelValue) return "";
+	if (
+		props.modelValue.startsWith("blob:") ||
+		props.modelValue.startsWith("data:")
+	) {
+		return props.modelValue;
+	}
+	const separator = props.modelValue.includes("?") ? "&" : "?";
+	return `${props.modelValue}${separator}t=${cacheKey.value}`;
 });
 
 // Formatador da mensagem de ajuda
 const helperText = computed(() => {
-  const types = props.accept?.includes("image/*")
-    ? "PNG, JPG, WEBP, GIF, AVIF"
-    : props.accept?.replace(/\./g, "").replace(/\*/g, "").replace(/,/g, ", ").toUpperCase() || "Arquivos";
-  return `${types} / ${props.maxSizeMb ? `${props.maxSizeMb}MB` : ''}`;
+	const types = props.accept?.includes("image/*")
+		? "PNG, JPG, WEBP, GIF, AVIF"
+		: props.accept
+				?.replace(/\./g, "")
+				.replace(/\*/g, "")
+				.replace(/,/g, ", ")
+				.toUpperCase() || "Arquivos";
+	return `${types} / ${props.maxSizeMb ? `${props.maxSizeMb}MB` : ""}`;
 });
 
 const handleFiles = (file: File | undefined) => {
-  if (!file) return;
-  if (props.maxSizeMb && file.size > props.maxSizeMb * 1024 * 1024) {
-    alert(`Arquivo muito grande! Máximo: ${props.maxSizeMb}MB`);
-    return;
-  }
+	if (!file) return;
+	if (props.maxSizeMb && file.size > props.maxSizeMb * 1024 * 1024) {
+		alert(`Arquivo muito grande! Máximo: ${props.maxSizeMb}MB`);
+		return;
+	}
 
-  if (props.autoUpload) {
-    emit("auto-upload", file);
-  } else {
-    emit("update:modelValue", URL.createObjectURL(file));
-    emit("update:fileName", file.name);
-    emit("file-selected", file);
-  }
+	if (props.autoUpload) {
+		emit("auto-upload", file);
+	} else {
+		emit("update:modelValue", URL.createObjectURL(file));
+		emit("update:fileName", file.name);
+		emit("file-selected", file);
+	}
 };
 
 const handleUpload = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  handleFiles(file);
+	const file = (event.target as HTMLInputElement).files?.[0];
+	handleFiles(file);
 };
 
 const removeFile = () => {
-  if (fileInput.value) {
-    fileInput.value.value = "";
-  }
-  emit("update:modelValue", "");
-  emit("update:fileName", "");
-  emit("file-selected", null);
+	if (fileInput.value) {
+		fileInput.value.value = "";
+	}
+	emit("update:modelValue", "");
+	emit("update:fileName", "");
+	emit("file-selected", null);
 };
 
 const fileIcon = computed(() => {
-  if (!props.modelValue) return null;
-  if (props.fileName?.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i) || props.modelValue.startsWith('blob:') || props.modelValue.startsWith('http')) return ImageIcon;
-  if (props.fileName?.match(/\.(pdf)$/i)) return FileText;
-  if (props.fileName?.match(/\.(xlsx|xls|csv)$/i)) return FileSpreadsheet;
-  return File;
+	if (!props.modelValue) return null;
+	if (
+		props.fileName?.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i) ||
+		props.modelValue.startsWith("blob:") ||
+		props.modelValue.startsWith("http")
+	)
+		return ImageIcon;
+	if (props.fileName?.match(/\.(pdf)$/i)) return FileText;
+	if (props.fileName?.match(/\.(xlsx|xls|csv)$/i)) return FileSpreadsheet;
+	return File;
 });
 
 const closeZoomOverlay = (event: MouseEvent) => {
-  event.stopImmediatePropagation();
-  event.stopPropagation();
-  isZoomed.value = false;
+	event.stopImmediatePropagation();
+	event.stopPropagation();
+	isZoomed.value = false;
 };
 </script>
 

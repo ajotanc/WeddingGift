@@ -3,26 +3,26 @@ import { LogOut } from "lucide-vue-next";
 import { computed } from "vue";
 
 const props = defineProps({
-  fill: { type: Boolean, default: false },
-  themeColor: { type: String, default: "#ec4899" },
-  user: { type: Object, default: null },
+	fill: { type: Boolean, default: false },
+	themeColor: { type: String, default: "#ec4899" },
+	user: { type: Object, default: null },
 });
 
 const emit = defineEmits(["click", "logout"]);
 
 const buttonStyle = computed(() => {
-  if (props.fill && !props.user) {
-    return {
-      backgroundColor: props.themeColor,
-      color: "#ffffff",
-      borderColor: props.themeColor,
-    };
-  }
-  return {
-    backgroundColor: "#ffffff",
-    color: "#334155",
-    borderColor: "#e2e8f0",
-  };
+	if (props.fill && !props.user) {
+		return {
+			backgroundColor: props.themeColor,
+			color: "#ffffff",
+			borderColor: props.themeColor,
+		};
+	}
+	return {
+		backgroundColor: "#ffffff",
+		color: "#334155",
+		borderColor: "#e2e8f0",
+	};
 });
 </script>
 

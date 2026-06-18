@@ -84,7 +84,7 @@ const onBlur = () => {
       <Input
         v-model="query"
         :placeholder="props.placeholder ?? 'Encontrar endereço…'"
-        class="w-full pl-10 px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-700"
+        class="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-700"
         @input="onInput"
         autocomplete="off"
       />

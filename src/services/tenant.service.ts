@@ -1,10 +1,13 @@
 import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
 import { TABLE_TENANTS } from "@/lib/collections";
-import { AppwriteException, ID, type Models, Query } from "appwrite";
+import { ID, type Models, Query } from "appwrite";
 import type { IMessage } from "./message.service";
 import type { IProduct } from "./product.service";
 import type { IPurchase } from "./purchase.service";
 import type { IRsvp } from "./rsvp.service";
+import type { IGalleryImage } from "./gallery.service";
+import type { IFaq } from "./faq.service";
+import type { IScheduleItem } from "./schedule.service";
 
 export interface ITenant extends Models.Row {
 	slug: string;
@@ -24,10 +27,16 @@ export interface ITenant extends Models.Row {
 	logo_url?: string | null;
 	guest_limit?: number | null;
 	show_countdown?: boolean;
+	show_gallery?: boolean;
+	show_faq?: boolean;
+	show_schedule?: boolean;
 	products?: IProduct[];
 	messages?: IMessage[];
 	rsvps?: IRsvp[];
 	purchases: IPurchase[];
+	gallery: IGalleryImage[];
+	faqs: IFaq[];
+	schedules?: IScheduleItem[];
 }
 
 export const TenantService = {
@@ -45,10 +54,13 @@ export const TenantService = {
 					"messages.guest.*",
 					"rsvps.*",
 					"rsvps.guest.*",
+					"gallery.*",
+					"faqs.*",
+					"schedules.*",
 				]),
 			],
 		});
-		
+
 		if (res.rows.length === 0) return null;
 		return res.rows[0];
 	},
