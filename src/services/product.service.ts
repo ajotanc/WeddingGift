@@ -1,4 +1,4 @@
-import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
+import { DATABASE_ID, getProductPermissions, tables } from "@/lib/appwrite";
 import { TABLE_PRODUCTS, TABLE_PRODUCT_LINKS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 import { StorageService } from "./storage.service";
@@ -74,12 +74,14 @@ export const ProductService = {
 		const links = payload.links || [];
 		payload.links = undefined;
 
+		const ownerId = data.tenant;
+
 		const row = await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId,
 			data: payload as Omit<IProduct, keyof Models.Row>,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getProductPermissions(ownerId),
 		});
 
 		if (links.length > 0) {
@@ -93,7 +95,7 @@ export const ProductService = {
 						url: link.url,
 						product: row.$id,
 					},
-					permissions: PUBLIC_PERMISSIONS,
+					permissions: getProductPermissions(ownerId),
 				});
 			}
 		}
@@ -119,12 +121,15 @@ export const ProductService = {
 		const links = payload.links;
 		payload.links = undefined;
 
+		const existing = await ProductService.get(id);
+		const ownerId = existing?.tenant || data.tenant || "";
+
 		const row = await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId: id,
 			data: payload as Partial<Omit<IProduct, keyof Models.Row>>,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getProductPermissions(ownerId),
 		});
 
 		if (links) {
@@ -153,7 +158,7 @@ export const ProductService = {
 							url: link.url,
 							product: row.$id,
 						},
-						permissions: PUBLIC_PERMISSIONS,
+						permissions: getProductPermissions(ownerId),
 					});
 				}
 			}
@@ -178,12 +183,18 @@ export const ProductService = {
 			data.image_url = await StorageService.uploadFile(id, file, "product");
 		}
 
+		let ownerId = data.tenant || "";
+		if (id && !ownerId) {
+			const existing = await ProductService.get(id);
+			ownerId = existing?.tenant || "";
+		}
+
 		return await tables.upsertRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId: id,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getProductPermissions(ownerId),
 		});
 	},
 
@@ -199,12 +210,15 @@ export const ProductService = {
 		rowId: string,
 		data: Partial<IProduct>,
 	): Promise<IProduct> {
+		const existing = await ProductService.get(rowId);
+		const ownerId = existing?.tenant || data.tenant || "";
+
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getProductPermissions(ownerId),
 		});
 	},
 };

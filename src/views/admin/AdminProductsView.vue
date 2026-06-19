@@ -388,7 +388,6 @@ const quotaSubmit = handleQuotaSubmit(async (values) => {
 		editProductId.value,
 		payload,
 		qImageFile.value,
-		// biome-ignore lint/style/useNamingConvention: database schema uses camelCase/snakeCase combination
 	);
 
 	const quotaIndex = products.value.findIndex((p) => p.$id === newQuota.$id);

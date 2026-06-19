@@ -30,13 +30,14 @@ import LeafletMap from "@/components/ui/LeafletMap.vue";
 import { useTenant } from "@/composables/useTenant";
 import { generateThankYouMessage } from "@/lib/ai";
 import { generatePixPayload, sortBy } from "@/lib/utils";
+import { ConsentService } from "@/services/consent.service";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { RsvpService } from "@/services/rsvp.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import * as z from "zod";
 
 import dayjs from "dayjs";
@@ -78,7 +79,10 @@ const showProfileModal = ref(false);
 
 const existingRsvp = computed(() => {
 	if (!authStore.guest) return null;
-	return rsvps.value.find((r) => r.guest.$id === authStore.guest?.$id);
+	return rsvps.value.find((r) => {
+		const guestId = typeof r.guest === "string" ? r.guest : r.guest?.$id;
+		return guestId === authStore.guest?.$id;
+	});
 });
 
 const currentQty = computed(() => {
@@ -232,6 +236,9 @@ const rsvpSchema = toTypedSchema(
 		totalAdults: z.number().min(1, "No mínimo 1 adulto"),
 		totalChildren: z.number().min(0),
 		status: z.enum(["confirmed", "declined"]),
+		acceptedTerms: z
+			.boolean()
+			.refine((val) => val === true, "Você deve aceitar os termos"),
 	}),
 );
 
@@ -241,12 +248,14 @@ const { handleSubmit, errors, defineField } = useForm({
 		totalAdults: 1,
 		totalChildren: 0,
 		status: "confirmed",
+		acceptedTerms: false,
 	},
 });
 
 const [totalAdults] = defineField("totalAdults");
 const [totalChildren] = defineField("totalChildren");
 const [status] = defineField("status");
+const [acceptedTerms] = defineField("acceptedTerms");
 
 watch(
 	() => authStore.guest,
@@ -288,6 +297,16 @@ const submitRsvp = handleSubmit(async (values) => {
 		} else {
 			const created = await RsvpService.create(payload);
 			rsvps.value.push(created);
+		}
+
+		// Log RSVP consent in immutable collection
+		if (authStore.guest) {
+			await ConsentService.log({
+				user_id: authStore.guest.$id,
+				email: authStore.guest.email,
+				accepted_terms: true,
+				accepted_terms_at: dayjs().toISOString()
+			});
 		}
 
 		isEditingRsvp.value = false;
@@ -499,21 +518,51 @@ const activeSections = computed(() => {
 	return list;
 });
 
-const handleScroll = () => {
-	const sections = activeSections.value;
-	let current = "home";
+let observer: IntersectionObserver | null = null;
+const visibleSections = ref<Record<string, boolean>>({});
 
-	for (const section of sections) {
+const setupScrollSpy = () => {
+	if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+	if (observer) {
+		observer.disconnect();
+	}
+
+	observer = new IntersectionObserver(
+		(entries) => {
+			for (const entry of entries) {
+				visibleSections.value[entry.target.id] = entry.isIntersecting;
+			}
+
+			const intersecting = activeSections.value.filter(
+				(s) => visibleSections.value[s.id],
+			);
+			if (intersecting.length > 0) {
+				currentSection.value = intersecting[intersecting.length - 1].id;
+			}
+		},
+		{
+			rootMargin: "-200px 0px -50% 0px",
+			threshold: 0,
+		},
+	);
+
+	for (const section of activeSections.value) {
 		const el = document.getElementById(section.id);
 		if (el) {
-			const rect = el.getBoundingClientRect();
-			if (rect.top <= 200) {
-				current = section.id;
-			}
+			observer.observe(el);
 		}
 	}
-	currentSection.value = current;
 };
+
+watch(
+	() => [loading.value, activeSections.value],
+	() => {
+		nextTick(() => {
+			setupScrollSpy();
+		});
+	},
+	{ immediate: true, deep: true, flush: "post" },
+);
 
 const customSmoothScroll = (targetY: number, duration = 800) => {
 	const startPosition = window.scrollY;
@@ -780,19 +829,29 @@ watch([() => tenant.value?.ambient_effect, effectCanvas], () => {
 });
 
 onMounted(() => {
-	window.addEventListener("scroll", handleScroll);
+	// ScrollSpy is handled by the IntersectionObserver watcher
 });
 
 onUnmounted(() => {
-	window.removeEventListener("scroll", handleScroll);
+	if (observer) {
+		observer.disconnect();
+	}
 });
 </script>
 
 <template>
 	<main class="min-h-screen font-sans text-slate-600"
 		:style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
-		<div v-if="loading" class="flex justify-center p-20 text-slate-400 font-light tracking-wide animate-pulse">
-			Carregando experiência...</div>
+		<div v-if="loading" class="fixed inset-0 flex flex-col items-center justify-center p-6 text-center z-[999] animate-in fade-in-0 duration-500" :style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
+			<div class="relative flex items-center justify-center mb-6">
+				<!-- Pulse decoration -->
+				<div class="absolute w-16 h-16 rounded-full bg-pink-100 animate-ping duration-1000"></div>
+				<!-- Spinner -->
+				<div class="w-12 h-12 rounded-full border-4 border-slate-100 border-t-primary animate-spin"></div>
+			</div>
+			<h2 class="font-serif text-2xl md:text-3xl text-slate-900 tracking-wide mb-2">Carregando experiência</h2>
+			<p class="text-slate-400 text-sm font-light tracking-wider animate-pulse">Preparando todos os detalhes com carinho...</p>
+		</div>
 		<div v-else-if="error" class="text-center p-20 text-red-500 font-medium">{{ error }}</div>
 		<template v-else-if="tenant">
 
@@ -1062,7 +1121,7 @@ onUnmounted(() => {
 								</Button>
 							</div>
 
-							<div v-if="!authStore.isPremium && rsvps.length >= 20 && !existingRsvp"
+							<div v-else-if="!authStore.isPremium && rsvps.length >= 20 && !existingRsvp"
 								class="bg-amber-50/70 p-8 rounded-3xl border border-amber-100 text-center shadow-[0_8px_30px_rgb(0,0,0,0.01)]">
 								<div
 									class="w-12 h-12 bg-amber-100/80 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1109,6 +1168,17 @@ onUnmounted(() => {
 										</div>
 									</FormGroup>
 								</div>
+								
+								<div class="space-y-1">
+									<div class="flex items-start gap-2.5 py-1">
+										<input type="checkbox" id="accept-rsvp-terms" v-model="acceptedTerms" class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer" required />
+										<label for="accept-rsvp-terms" class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
+											Autorizo o tratamento de meus dados em conformidade com os <a href="/termos" target="_blank" class="underline text-primary font-medium">Termos de Uso</a> e <a href="/privacidade" target="_blank" class="underline text-primary font-medium">Política de Privacidade</a> (LGPD).
+										</label>
+									</div>
+									<p v-if="errors.acceptedTerms" class="text-xs text-red-500 mt-1">{{ errors.acceptedTerms }}</p>
+								</div>
+
 								<Button type="submit" class="w-full" :disabled="rsvpLoading">
 									{{ rsvpLoading ? 'Enviando...' : 'Confirmar Presença' }}
 								</Button>
@@ -1199,7 +1269,7 @@ onUnmounted(() => {
 											</div>
 
 											<p class="reveal-text font-serif italic leading-relaxed text-lg z-10 whitespace-pre-wrap break-words w-full min-w-0 max-w-full"
-												:class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'" v-html="msg.content" />
+												:class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'">{{ msg.content }}</p>
 
 											<div class="flex items-center gap-4 w-full pt-6 border-t mt-auto"
 												:class="index % 2 === 0 ? 'border-slate-50' : 'border-white/20'">

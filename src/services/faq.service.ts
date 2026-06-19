@@ -1,4 +1,4 @@
-import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
+import { DATABASE_ID, getFaqSchedulePermissions, tables } from "@/lib/appwrite";
 import { TABLE_FAQS } from "@/lib/collections";
 import { ID, type Models, Query } from "appwrite";
 
@@ -25,12 +25,13 @@ export const FaqService = {
 	},
 
 	async create(data: Omit<IFaq, keyof Models.Row>): Promise<IFaq> {
+		const ownerId = data.tenant;
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_FAQS,
 			rowId: ID.unique(),
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getFaqSchedulePermissions(ownerId),
 		});
 	},
 
@@ -43,12 +44,19 @@ export const FaqService = {
 	},
 
 	async update(id: string, data: Partial<IFaq>): Promise<IFaq> {
+		const existing = await tables.getRow<IFaq>({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_FAQS,
+			rowId: id,
+		});
+		const ownerId = existing?.tenant || data.tenant || "";
+
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_FAQS,
 			rowId: id,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getFaqSchedulePermissions(ownerId),
 		});
 	},
 };

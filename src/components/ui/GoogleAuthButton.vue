@@ -6,6 +6,7 @@ const props = defineProps({
 	fill: { type: Boolean, default: false },
 	themeColor: { type: String, default: "#ec4899" },
 	user: { type: Object, default: null },
+	label: { type: String, default: "Entrar com Google" },
 });
 
 const emit = defineEmits(["click", "logout"]);
@@ -75,7 +76,7 @@ const buttonStyle = computed(() => {
           fill="#EA4335" />
       </svg>
 
-      <span class="text-sm pr-2">Entrar com Google</span>
+      <span class="text-sm pr-2">{{ props.label }}</span>
     </template>
   </button>
 </template>

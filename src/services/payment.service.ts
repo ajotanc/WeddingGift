@@ -7,7 +7,8 @@ export const PaymentService = {
 	// Gera a URL de autorização para o usuário clicar
 	getAuthUrl: (tenantId: string) => {
 		console.log(MP_CLIENT_ID);
-		const redirectUri = `https://texts-september-garmin-individual.trycloudflare.com/admin/config/mercadopago`;
+		const redirectUri =
+			"https://texts-september-garmin-individual.trycloudflare.com/admin/config/mercadopago";
 
 		return `https://auth.mercadopago.com/authorization?client_id=${MP_CLIENT_ID}&response_type=code&platform_id=mp&state=${tenantId}&redirect_uri=${redirectUri}`;
 	},

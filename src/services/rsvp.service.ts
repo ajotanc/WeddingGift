@@ -1,4 +1,4 @@
-import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
+import { DATABASE_ID, getRsvpPermissions, tables } from "@/lib/appwrite";
 import { TABLE_RSVPS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 
@@ -43,22 +43,34 @@ export const RsvpService = {
 		data: Omit<IRsvp, keyof Models.Row>,
 		customId?: string,
 	): Promise<IRsvp> {
+		const ownerId = data.tenant;
+		const guestId =
+			data.guest?.$id || (typeof data.guest === "string" ? data.guest : null);
+
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_RSVPS,
 			rowId: customId || ID.unique(),
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getRsvpPermissions(ownerId, guestId),
 		});
 	},
 
 	async update(rowId: string, data: Partial<IRsvp>): Promise<IRsvp> {
+		const existing = await RsvpService.get(rowId);
+		const ownerId = existing?.tenant || data.tenant || "";
+		const guestId =
+			existing?.guest?.$id ||
+			(typeof existing?.guest === "string" ? existing.guest : null) ||
+			data.guest?.$id ||
+			null;
+
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_RSVPS,
 			rowId,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getRsvpPermissions(ownerId, guestId),
 		});
 	},
 
@@ -66,12 +78,29 @@ export const RsvpService = {
 		rowId: string | undefined,
 		data: Partial<IRsvp>,
 	): Promise<IRsvp> {
+		const id = rowId || ID.unique();
+		let ownerId = data.tenant || "";
+		let guestId =
+			data.guest?.$id ||
+			(typeof data.guest === "string" ? data.guest : null) ||
+			null;
+
+		if (rowId && (!ownerId || !guestId)) {
+			const existing = await RsvpService.get(rowId);
+			if (!ownerId) ownerId = existing?.tenant || "";
+			if (!guestId)
+				guestId =
+					existing?.guest?.$id ||
+					(typeof existing?.guest === "string" ? existing.guest : null) ||
+					null;
+		}
+
 		return await tables.upsertRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_RSVPS,
-			rowId: rowId || ID.unique(),
+			rowId: id,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getRsvpPermissions(ownerId, guestId),
 		});
 	},
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Card } from "@/components/ui/card";
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
 import { useAuthStore } from "@/stores/auth";
 import { onMounted } from "vue";
@@ -25,36 +26,30 @@ const handleGoogleLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="text-center">
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900 font-serif">
-          Login - Painel do Casal
-        </h2>
-        <p class="mt-2 text-center text-sm text-slate-600">
-          Acesse a plataforma para gerenciar seus presentes e convidados.
-        </p>
+  <main class="min-h-screen bg-slate-50 py-20 px-4 font-sans text-slate-600 flex items-center justify-center">
+    <div class="max-w-md w-full">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 font-serif">Login - Painel do Casal</h1>
+        <p class="text-slate-500 mt-2 text-sm">Acesse a plataforma para gerenciar seus presentes e convidados.</p>
       </div>
 
-      <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 sm:rounded-2xl sm:px-10 border border-slate-100">
-          <div class="space-y-6">
-            <div>
-              <p class="text-sm font-medium text-slate-700 mb-4 text-center">Entrar com sua conta</p>
-              <GoogleAuthButton @click="handleGoogleLogin" :disabled="authStore.loading" class="w-full" />
-            </div>
-            
-            <div class="mt-6 text-center">
-              <p class="text-sm text-slate-500">
-                Ainda não tem uma conta?
-                <router-link to="/register" class="font-medium text-primary hover:text-primary/80 transition-colors">
-                  Cadastre-se aqui
-                </router-link>
-              </p>
-            </div>
+      <Card class="p-8 border border-slate-100 shadow-xl shadow-slate-200/50 rounded-2xl bg-white">
+        <div class="space-y-6">
+          <div>
+            <p class="text-sm font-medium text-slate-700 mb-4 text-center">Entrar com sua conta</p>
+            <GoogleAuthButton @click="handleGoogleLogin" :disabled="authStore.loading" class="w-full flex items-center justify-center py-2.5 h-11 text-sm font-semibold rounded-xl cursor-pointer" />
+          </div>
+          
+          <div class="mt-6 text-center border-t border-slate-100 pt-6">
+            <p class="text-sm text-slate-500">
+              Ainda não tem uma conta?
+              <router-link to="/register" class="font-medium text-primary hover:text-primary/80 transition-colors">
+                Cadastre-se aqui
+              </router-link>
+            </p>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
-  </div>
+  </main>
 </template>

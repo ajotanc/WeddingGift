@@ -1,4 +1,5 @@
 import { account } from "@/lib/appwrite";
+import { ConsentService } from "@/services/consent.service";
 import { GuestService, type IGuest } from "@/services/guest.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
 import { type Models, OAuthProvider } from "appwrite";
@@ -69,9 +70,41 @@ export const useAuthStore = defineStore("auth", {
 
 					const pending = localStorage.getItem("pending_tenant");
 					if (pending) {
-						const data = JSON.parse(pending) as ITenant;
+						const data = JSON.parse(pending) as ITenant & {
+							accepted_terms?: boolean;
+							accepted_terms_at?: string;
+						};
 						await TenantService.create(data, sessionUser.$id);
 						localStorage.removeItem("pending_tenant");
+
+						// Save LGPD consent status in User Preferences
+						if (data.accepted_terms) {
+							try {
+								await account.updatePrefs({
+									prefs: {
+										...sessionUser.prefs,
+										accepted_terms: true,
+										accepted_terms_at: data.accepted_terms_at,
+									},
+								});
+								this.user.prefs = {
+									...sessionUser.prefs,
+									accepted_terms: true,
+									accepted_terms_at: data.accepted_terms_at,
+								};
+
+								await ConsentService.log({
+									user_id: sessionUser.$id,
+									email: sessionUser.email,
+									accepted_terms: true,
+									accepted_terms_at:
+										data.accepted_terms_at || dayjs().toISOString()
+								});
+							} catch (e) {
+								console.error("Failed to update user consent preferences:", e);
+							}
+						}
+
 						const t = await TenantService.get(sessionUser.$id);
 						this.tenant = this.sanitizeTenant(t);
 						const g = await GuestService.get(sessionUser.$id);

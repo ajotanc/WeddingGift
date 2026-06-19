@@ -15,6 +15,7 @@ import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 import * as z from "zod";
+import CookieConsent from "./components/reusable/CookieConsent.vue";
 import FormGroup from "./components/reusable/FormGroup.vue";
 import {
 	Select,
@@ -150,6 +151,7 @@ watch(
 	<RouterView />
 	<Confirm />
 	<Toaster position="top-right" richColors />
+	<CookieConsent />
 
 	<!-- Monta uma vez, nunca desmonta -->
 	<template v-if="music.isPremium && music.videoId">

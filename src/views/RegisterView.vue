@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { Button } from "@/components/ui/button";
+import FormGroup from "@/components/reusable/FormGroup.vue";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/components/ui/input-group";
 import { useAuthStore } from "@/stores/auth";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { toast } from "vue-sonner";
+import dayjs from "dayjs";
+
 const authStore = useAuthStore();
 const loading = ref(false);
+
+const hostName = ref<string | null>(null);
 
 const form = ref({
 	groom_name: "",
@@ -15,6 +24,11 @@ const form = ref({
 	slug: "",
 	pix_key: "",
 	primary_color: "#ec4899",
+	acceptedTerms: false,
+});
+
+onMounted(() => {
+	hostName.value = window.location.host; // Correto
 });
 
 const generateSlug = () => {
@@ -22,6 +36,7 @@ const generateSlug = () => {
 		form.value.slug = `${form.value.groom_name}-${form.value.bride_name}`
 			.toLowerCase()
 			.normalize("NFD")
+			// biome-ignore lint/suspicious/noMisleadingCharacterClass: standard diacritics stripping after NFD normalization
 			.replace(/[\u0300-\u036f]/g, "")
 			.replace(/[^a-z0-9]+/g, "-")
 			.replace(/(^-|-$)+/g, "");
@@ -29,6 +44,13 @@ const generateSlug = () => {
 };
 
 const registerTenant = async () => {
+	if (!form.value.acceptedTerms) {
+		toast.error("Erro", {
+			description:
+				"Você deve aceitar os Termos de Uso e a Política de Privacidade para continuar.",
+		});
+		return;
+	}
 	loading.value = true;
 	try {
 		const coupleName = `${form.value.bride_name} & ${form.value.groom_name}`;
@@ -43,10 +65,11 @@ const registerTenant = async () => {
 				pix_key: form.value.pix_key,
 				plan: "free",
 				show_countdown: true,
-				guest_limit: null,
 				primary_color: form.value.primary_color,
 				background_color: "#ffffff",
 				background_image: null,
+				accepted_terms: true,
+				accepted_terms_at: dayjs().toISOString(),
 			}),
 		);
 
@@ -66,54 +89,71 @@ const registerTenant = async () => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-50 py-20 px-4">
-    <div class="max-w-md mx-auto">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-slate-900">Crie sua Lista de Casamento</h1>
-        <p class="text-slate-500 mt-2">Tudo em um só lugar. Rápido, lindo e seguro.</p>
-      </div>
+	<main class="min-h-screen bg-slate-50 py-20 px-4 font-sans text-slate-600">
+		<div class="max-w-md mx-auto">
+			<div class="text-center mb-8">
+				<h1 class="text-3xl font-bold text-slate-900 font-serif">Crie sua Lista de Casamento</h1>
+				<p class="text-slate-500 mt-2 text-sm">Tudo em um só lugar. Rápido, lindo e seguro.</p>
+			</div>
 
-      <Card class="p-8">
-        <form @submit.prevent="registerTenant" class="space-y-6">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <Label class="block mb-1">Nome do Noivo</Label>
-              <Input v-model="form.groom_name" required placeholder="Ex: João" @blur="generateSlug" />
-            </div>
-            <div>
-              <Label class="block mb-1">Nome da Noiva</Label>
-              <Input v-model="form.bride_name" required placeholder="Ex: Maria" @blur="generateSlug" />
-            </div>
-          </div>
+			<Card class="p-8 border border-slate-100 shadow-xl shadow-slate-200/50 rounded-2xl bg-white">
+				<form @submit.prevent="registerTenant" class="space-y-5">
+					<div class="grid grid-cols-2 gap-4">
+						<FormGroup label="Nome do Noivo">
+							<Input v-model="form.groom_name" required placeholder="Ex: João" @blur="generateSlug"
+								class="bg-slate-50/50" />
+						</FormGroup>
+						<FormGroup label="Nome da Noiva">
+							<Input v-model="form.bride_name" required placeholder="Ex: Maria" @blur="generateSlug"
+								class="bg-slate-50/50" />
+						</FormGroup>
+					</div>
 
-          <div>
-            <Label class="block mb-1">Link Personalizado</Label>
-            <div class="flex items-center">
-              <span
-                class="bg-slate-100 border border-r-0 border-slate-300 rounded-l-md px-3 h-10 flex items-center text-slate-500 text-sm">wedding.app/</span>
-              <Input v-model="form.slug" required placeholder="joao-e-maria" class="rounded-l-none" />
-            </div>
-          </div>
+					<FormGroup label="Link Personalizado">
+						<InputGroup class="border-slate-200">
+							<InputGroupAddon align="inline-start">
+								<span class="text-slate-500 font-medium text-sm">https://{{ hostName }}/</span>
+							</InputGroupAddon>
+							<InputGroupInput v-model="form.slug" required placeholder="joao-e-maria"
+								class="bg-transparent focus:outline-none text-slate-700" />
+						</InputGroup>
+					</FormGroup>
 
-          <div>
-            <Label class="block mb-1">Sua Chave PIX</Label>
-            <Input v-model="form.pix_key" required placeholder="Para receber as cotas direto na conta" />
-            <p class="text-xs text-slate-500 mt-1">Nós não cobramos taxas sobre os presentes em dinheiro.</p>
-          </div>
+					<FormGroup label="Sua Chave PIX">
+						<Input v-model="form.pix_key" required placeholder="Para receber as cotas direto na conta"
+							class="bg-slate-50/50" />
+						<p class="text-[10px] text-slate-400 mt-1 font-light">Nós não cobramos taxas sobre os presentes em dinheiro.
+						</p>
+					</FormGroup>
 
-          <div>
-            <Label class="block mb-1">Cor do Casamento</Label>
-            <div class="flex items-center gap-4">
-              <input type="color" v-model="form.primary_color" class="w-10 h-10 p-1 rounded cursor-pointer" />
-              <span class="text-sm font-mono text-slate-600">{{ form.primary_color }}</span>
-            </div>
-          </div>
+					<FormGroup label="Cor do Casamento">
+						<div class="flex items-center gap-3">
+							<div class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
+								<input type="color" v-model="form.primary_color"
+									class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent" />
+							</div>
+							<span class="text-sm font-mono text-slate-600">{{ form.primary_color }}</span>
+						</div>
+					</FormGroup>
 
-          <Button type="submit" class="w-full" size="lg" :disabled="loading">
-            {{ loading ? 'Criando Conta...' : 'Continuar com Google' }}
-          </Button>
-        </form>
-      </Card>
-    </div>
-  </main>
+					<div class="flex items-start gap-2.5 py-2">
+						<input type="checkbox" id="accept-terms" v-model="form.acceptedTerms"
+							class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+							required />
+						<label for="accept-terms"
+							class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
+							Li e concordo com os <a href="/termos" target="_blank" class="underline text-primary font-medium">Termos
+								de Uso</a> e a <a href="/privacidade" target="_blank"
+								class="underline text-primary font-medium">Política de Privacidade</a>, e autorizo o tratamento de meus
+							dados em conformidade com a LGPD.
+						</label>
+					</div>
+
+					<GoogleAuthButton type="submit" :label="loading ? 'Criando Conta...' : 'Continuar com Google'"
+						:disabled="loading"
+						class="w-full flex items-center justify-center py-2.5 h-11 text-sm font-semibold rounded-xl cursor-pointer" />
+				</form>
+			</Card>
+		</div>
+	</main>
 </template>

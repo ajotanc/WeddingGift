@@ -9,7 +9,7 @@ import {
 import type { UnwrapRefCarouselApi } from "@/components/ui/carousel/interface";
 import { useTenant } from "@/composables/useTenant";
 import type { IGalleryImage } from "@/services/gallery.service";
-import { Heart, Trash2, X } from "lucide-vue-next";
+import { Download, Heart, Trash2, X } from "lucide-vue-next";
 import { nextTick, ref, watch } from "vue";
 
 import Autoplay from "embla-carousel-autoplay";
@@ -201,15 +201,21 @@ const canDeleteImage = (img: IGalleryImage) => {
       @click="closeLightbox">
       <button type="button" @click="closeLightbox"
         class="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full border-0 outline-none cursor-pointer backdrop-blur-sm transition-colors z-[110]">
-        <X class="w-8 h-8" />
+        <X class="w-5 h-5" />
       </button>
 
       <div class="flex flex-col max-w-full max-h-[90vh]" @click.stop>
-
-        <img :src="activeLightboxImage.image_url" class="max-h-[80vh] w-full object-contain" />
+        <div class="relative max-h-[80vh] flex items-center justify-center">
+          <img :src="activeLightboxImage.image_url" class="max-h-[80vh] w-full object-contain" />
+          <a :href="activeLightboxImage.image_url" download target="_blank"
+            class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2.5 rounded-full backdrop-blur-md transition-colors cursor-pointer border border-white/20 flex items-center justify-center shadow-lg"
+            title="Baixar imagem">
+            <Download class="w-5 h-5" />
+          </a>
+        </div>
 
         <p v-if="activeLightboxImage.caption"
-          class="text-base font-serif italic text-center text-white px-6 py-4 overflow-y-auto">
+          class="text-base font-serif italic text-center text-white py-4 overflow-y-auto">
           "{{ activeLightboxImage.caption }}" — {{ activeLightboxImage.guest?.name }}
         </p>
       </div>

@@ -1,4 +1,4 @@
-import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
+import { DATABASE_ID, getGuestPermissions, tables } from "@/lib/appwrite";
 import { TABLE_GUESTS } from "@/lib/collections";
 import { AppwriteException, ID, type Models } from "appwrite";
 
@@ -31,12 +31,13 @@ export const GuestService = {
 		data: Omit<IGuest, keyof Models.Row>,
 		customId?: string,
 	): Promise<IGuest> {
+		const guestId = customId || ID.unique();
 		return await tables.createRow<IGuest>({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_GUESTS,
-			rowId: customId || ID.unique(),
+			rowId: guestId,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getGuestPermissions(guestId),
 		});
 	},
 
@@ -49,7 +50,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: id,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getGuestPermissions(id),
 		});
 	},
 
@@ -62,7 +63,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: id,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getGuestPermissions(id),
 		});
 	},
 

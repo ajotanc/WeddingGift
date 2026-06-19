@@ -1,4 +1,4 @@
-import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
+import { DATABASE_ID, getTenantPermissions, tables } from "@/lib/appwrite";
 import { TABLE_TENANTS } from "@/lib/collections";
 import { ID, type Models, Query } from "appwrite";
 import type { IFaq } from "./faq.service";
@@ -30,7 +30,6 @@ export interface ITenant extends Models.Row {
 	logo_url?: string | null;
 	title_font?: string | null;
 	body_font?: string | null;
-	guest_limit?: number | null;
 	show_countdown?: boolean;
 	show_gallery?: boolean;
 	show_faq?: boolean;
@@ -91,12 +90,13 @@ export const TenantService = {
 		data: Omit<ITenant, keyof Models.Row>,
 		customId?: string,
 	): Promise<ITenant> {
+		const ownerId = customId || ID.unique();
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
-			rowId: customId || ID.unique(),
+			rowId: ownerId,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getTenantPermissions(ownerId),
 		});
 	},
 
@@ -106,7 +106,7 @@ export const TenantService = {
 			tableId: TABLE_TENANTS,
 			rowId,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getTenantPermissions(rowId),
 		});
 	},
 
@@ -114,12 +114,13 @@ export const TenantService = {
 		rowId: string | undefined,
 		data: Partial<ITenant>,
 	): Promise<ITenant> {
+		const id = rowId || ID.unique();
 		return await tables.upsertRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
-			rowId: rowId || ID.unique(),
+			rowId: id,
 			data,
-			permissions: PUBLIC_PERMISSIONS,
+			permissions: getTenantPermissions(id),
 		});
 	},
 

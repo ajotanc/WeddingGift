@@ -39,10 +39,10 @@ const isActive = (path: string) => route.path.includes(`/${path}`);
 
         <div class="flex items-center gap-3">
           <h1 class="text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">Casamento</h1>
-          <span v-if="tenant" :style="{ backgroundColor: tenant.primary_color + '20', color: tenant.primary_color }"
-            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold">
+          <a v-if="tenant" :href="`/${tenant.slug}`" target="_blank" :style="{ backgroundColor: tenant.primary_color + '20', color: tenant.primary_color }"
+            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold cursor-pointer hover:opacity-90 active:scale-95 transition-all">
             {{ tenant.couple_name }}
-          </span>
+          </a>
         </div>
 
         <nav class="hidden md:flex items-center gap-1">

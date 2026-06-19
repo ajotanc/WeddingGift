@@ -5,6 +5,7 @@ import FormGroup from "@/components/reusable/FormGroup.vue";
 import Modal from "@/components/reusable/Modal.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import PlanLimitAlert from "@/components/reusable/PlanLimitAlert.vue";
+import PlanRequired from "@/components/reusable/PlanRequired.vue";
 import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
@@ -132,7 +133,6 @@ const showUpgradeToast = () => {
 const hostName = ref("");
 
 onMounted(() => {
-	hostName.value = window.location.host;
 	for (const f of Object.keys(FONTS_REGISTRY)) {
 		loadGoogleFont(f);
 	}
@@ -153,7 +153,6 @@ const zodSchema = z.object({
 	event_location: z.string().nullable().optional(),
 	event_latitude: z.number().nullable().optional(),
 	event_longitude: z.number().nullable().optional(),
-	guest_limit: z.number().int().positive().nullable().optional(),
 	show_countdown: z.boolean().optional(),
 	show_gallery: z.boolean().optional(),
 	show_faq: z.boolean().optional(),
@@ -233,7 +232,6 @@ const [event_time] = defineField("event_time");
 const [event_location] = defineField("event_location");
 const [event_latitude] = defineField("event_latitude");
 const [event_longitude] = defineField("event_longitude");
-const [guest_limit] = defineField("guest_limit");
 const [show_countdown] = defineField("show_countdown");
 const [show_gallery] = defineField("show_gallery");
 const [show_faq] = defineField("show_faq");
@@ -715,7 +713,6 @@ const loadSettings = () => {
 			event_location: tenant.value.event_location || "",
 			event_latitude: tenant.value.event_latitude || null,
 			event_longitude: tenant.value.event_longitude || null,
-			guest_limit: tenant.value.guest_limit ?? 0,
 			show_countdown: tenant.value.show_countdown ?? true,
 			primary_color: tenant.value.primary_color || "#ec4899",
 			background_image: tenant.value.background_image || "",
@@ -979,17 +976,16 @@ const connectToMarketPago = () => {
 						</FormGroup>
 
 						<FormGroup label="Exibir Contagem Regressiva">
-							<div class="flex items-center gap-2">
-								<Switch :model-value="authStore.isPremium ? show_countdown : false"
-									@update:model-value="(val: boolean) => { if (!authStore.isPremium) { showUpgradeToast(); } else { show_countdown = val; } }"
-									id="show_countdown" />
-								<label for="show_countdown" class="flex items-center gap-1.5 text-sm select-none">
-									{{ (authStore.isPremium && show_countdown) ? 'Ativo' : 'Inativo' }}
-									<span v-if="!authStore.isPremium"
-										class="bg-rose-100 text-rose-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-										<Lock class="w-2.5 h-2.5" /> Premium
-									</span>
-								</label>
+							<div class="flex flex-col gap-2">
+								<div class="flex items-center gap-2">
+									<Switch :model-value="authStore.isPremium ? show_countdown : false"
+										@update:model-value="(val: boolean) => { if (!authStore.isPremium) { showUpgradeToast(); } else { show_countdown = val; } }"
+										id="show_countdown" />
+									<label for="show_countdown" class="flex items-center gap-1.5 text-sm select-none">
+										{{ (authStore.isPremium && show_countdown) ? 'Ativo' : 'Inativo' }}
+									</label>
+								</div>
+								<PlanRequired v-if="!authStore.isPremium" text="Contagem regressiva requer Premium" />
 							</div>
 						</FormGroup>
 
@@ -1020,11 +1016,7 @@ const connectToMarketPago = () => {
 							</div>
 						</FormGroup>
 
-						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-							<FormGroup label="Limite de Convidados" :error="errors.guest_limit">
-								<Input type="number" v-model.number="guest_limit" min="0" class="bg-slate-50/50" />
-							</FormGroup>
-
+						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
 							<FormGroup label="Cor Principal">
 								<div v-if="authStore.isPremium" class="flex items-center gap-3">
 									<div class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
@@ -1036,13 +1028,14 @@ const connectToMarketPago = () => {
 								<div v-else class="flex flex-col gap-2">
 									<div class="flex items-center gap-2">
 										<button v-for="color in ['#ec4899', '#2e7d32', '#d4af37', '#1976d2']" :key="color" type="button"
-											@click="primary_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer"
-											:class="primary_color === color ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'"
+											@click="primary_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm"
+											:class="primary_color === color ? 'border-slate-800 scale-110' : 'border-slate-200 hover:scale-105'"
 											:style="{ backgroundColor: color }"></button>
+										<button type="button" @click="showUpgradeToast" class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-sm" title="Escolher cor personalizada (Premium)">
+											<Lock class="w-3.5 h-3.5 text-slate-400" />
+										</button>
 									</div>
-									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
-										<Lock class="w-3 h-3 text-rose-500" /> Cor customizada requer Premium
-									</span>
+									<PlanRequired text="Cor customizada requer Premium" />
 								</div>
 							</FormGroup>
 
@@ -1057,13 +1050,14 @@ const connectToMarketPago = () => {
 								<div v-else class="flex flex-col gap-2">
 									<div class="flex items-center gap-2">
 										<button v-for="color in ['#ffffff', '#f8fafc', '#fffaf0', '#f5f5f4']" :key="color" type="button"
-											@click="background_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer"
-											:class="background_color === color ? 'border-slate-800 scale-110 shadow-sm' : 'border-slate-200 hover:scale-105'"
+											@click="background_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm"
+											:class="background_color === color ? 'border-slate-800 scale-110' : 'border-slate-200 hover:scale-105'"
 											:style="{ backgroundColor: color }"></button>
+										<button type="button" @click="showUpgradeToast" class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-sm" title="Escolher cor personalizada (Premium)">
+											<Lock class="w-3.5 h-3.5 text-slate-400" />
+										</button>
 									</div>
-									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
-										<Lock class="w-3 h-3 text-rose-500" /> Fundo customizado requer Premium
-									</span>
+									<PlanRequired text="Fundo customizado requer Premium" />
 								</div>
 							</FormGroup>
 						</div>
@@ -1088,9 +1082,7 @@ const connectToMarketPago = () => {
 											<SelectValue placeholder="Playfair Display (Serifada Elegante)" />
 										</SelectTrigger>
 									</Select>
-									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
-										<Lock class="w-3 h-3 text-rose-500" /> Alterar fonte de títulos requer Premium
-									</span>
+									<PlanRequired text="Alterar fonte de títulos requer Premium" />
 								</div>
 							</FormGroup>
 
@@ -1113,9 +1105,7 @@ const connectToMarketPago = () => {
 											<SelectValue placeholder="Inter (Padrão Limpo)" />
 										</SelectTrigger>
 									</Select>
-									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
-										<Lock class="w-3 h-3 text-rose-500" /> Alterar fonte de texto requer Premium
-									</span>
+									<PlanRequired text="Alterar fonte de texto requer Premium" />
 								</div>
 							</FormGroup>
 						</div>
@@ -1142,9 +1132,7 @@ const connectToMarketPago = () => {
 								</div>
 								<div v-else class="flex flex-col gap-2">
 									<Input disabled placeholder="Música desativada (Requer Premium)" class="bg-slate-100 text-slate-400 rounded-xl h-10 border-slate-200 cursor-not-allowed" />
-									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
-										<Lock class="w-3 h-3 text-rose-500" /> Música de fundo requer Premium
-									</span>
+									<PlanRequired text="Música de fundo requer Premium" />
 								</div>
 							</FormGroup>
 
@@ -1167,9 +1155,7 @@ const connectToMarketPago = () => {
 											<SelectValue placeholder="Nenhum efeito" />
 										</SelectTrigger>
 									</Select>
-									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
-										<Lock class="w-3 h-3 text-rose-500" /> Efeitos ambientais requerem Premium
-									</span>
+									<PlanRequired text="Efeitos ambientais requerem Premium" />
 								</div>
 							</FormGroup>
 						</div>
