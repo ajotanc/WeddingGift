@@ -10,9 +10,9 @@ const { purchases } = useTenant();
 const loading = ref(false);
 
 const totalAmount = computed(() => {
-  return purchases.value
-    .filter((p) => p.method === "pix")
-    .reduce((acc, p) => acc + parseMoney(p.price_paid || "0"), 0);
+	return purchases.value
+		.filter((p) => p.method === "pix")
+		.reduce((acc, p) => acc + parseMoney(p.price_paid || "0"), 0);
 });
 </script>
 

@@ -1,11 +1,6 @@
 import { DATABASE_ID, PUBLIC_PERMISSIONS, tables } from "@/lib/appwrite";
 import { TABLE_PURCHASES } from "@/lib/collections";
-import {
-	AppwriteException,
-	ID,
-	type Models,
-	Query,
-} from "appwrite";
+import { AppwriteException, ID, type Models, Query } from "appwrite";
 import type { IGuest } from "./guest.service";
 import type { IProduct } from "./product.service";
 

@@ -36,7 +36,6 @@ watch(
 			profilePhone.value = authStore.guest.phone || "";
 
 			if (props.tenantPurchases) {
-				console.log(props.tenantPurchases);
 				purchases.value = props.tenantPurchases.filter(
 					(p) => p.guest.$id === authStore.guest?.$id,
 				);
@@ -80,10 +79,12 @@ const saveProfile = async () => {
     <Tabs default-value="profile" class="w-full mt-4">
       <div class="px-6">
         <TabsList class="grid w-full grid-cols-2 rounded-none border-b border-slate-100 bg-transparent p-0 h-auto">
-          <TabsTrigger value="profile" class="rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent py-3 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none">
+          <TabsTrigger value="profile"
+            class="rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent py-3 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none">
             <User class="w-4 h-4 mr-1.5" /> Meu Perfil
           </TabsTrigger>
-          <TabsTrigger value="gifts" class="rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent py-3 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none">
+          <TabsTrigger value="gifts"
+            class="rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent py-3 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none">
             <Gift class="w-4 h-4 mr-1.5" /> Meus Presentes
           </TabsTrigger>
         </TabsList>
@@ -102,7 +103,8 @@ const saveProfile = async () => {
           </div>
 
           <FormGroup label="Nome Completo">
-            <Input v-model="profileName" placeholder="Seu nome" class="h-12 bg-slate-50/50 rounded-xl border-slate-200" />
+            <Input v-model="profileName" placeholder="Seu nome"
+              class="h-12 bg-slate-50/50 rounded-xl border-slate-200" />
           </FormGroup>
 
           <FormGroup label="Telefone / WhatsApp">

@@ -7,16 +7,19 @@ const router = createRouter({
 			path: "/",
 			name: "home",
 			component: () => import("@/views/HomeView.vue"),
+			meta: { title: "Wedding Gift • Crie sua Lista de Presentes" },
 		},
 		{
 			path: "/register",
 			name: "register",
 			component: () => import("@/views/RegisterView.vue"),
+			meta: { title: "Wedding Gift • Cadastro" },
 		},
 		{
 			path: "/login",
 			name: "login",
 			component: () => import("@/views/LoginView.vue"),
+			meta: { title: "Wedding Gift • Login" },
 		},
 		{
 			path: "/:slug/gallery",
@@ -75,17 +78,46 @@ import { useAuthStore } from "@/stores/auth";
 router.beforeEach((to, _from, next) => {
 	const authStore = useAuthStore();
 
-	// 1. Se tentar entrar no painel Admin sem estar logado -> vai pro login
-	if (to.path.includes("/admin") && !authStore.user) {
-		return next({ name: "login" });
+	// Redirecionamento da rota estática /admin/config para a rota dinâmica com slug (OAuth Mercado Pago)
+	if (to.path === "/admin/config/mercadopago") {
+		if (!authStore.user) {
+			return next({ name: "login", query: { redirect: to.fullPath } });
+		}
+
+		if (!authStore.tenant) {
+			return next({ name: "login", query: { no_tenant: "1" } });
+		}
+
+		return next({
+			path: `/${authStore.tenant.slug}/admin/config`,
+			query: to.query,
+		});
 	}
 
-	// 2. Se já estiver logado e na tela de login -> manda para o dashboard dele
+	// 1. Se tentar entrar no painel Admin
+	if (to.path.includes("/admin")) {
+		if (!authStore.user) {
+			return next({ name: "login" });
+		}
+		if (!authStore.tenant) {
+			// Não tem casamento cadastrado, impede acesso
+			return next({ name: "login", query: { no_tenant: "1" } });
+		}
+		// Se tentar entrar no painel de OUTRO casal, redireciona para o seu próprio painel
+		if (to.params.slug && to.params.slug !== authStore.tenant.slug) {
+			return next({ path: `/${authStore.tenant.slug}/admin/dashboard` });
+		}
+	}
+
+	// 2. Se já estiver logado e na tela de login -> manda para o redirect ou para o dashboard dele se houver
 	if (to.name === "login" && authStore.user && authStore.tenant?.slug) {
+		const redirect = to.query.redirect as string;
+		if (redirect) {
+			return next({ path: redirect });
+		}
 		return next({ path: `/${authStore.tenant.slug}/admin/dashboard` });
 	}
 
-	// Permite a navegação para qualquer outra rota pública (como a Home ou TenantPublicView)
 	next();
 });
 

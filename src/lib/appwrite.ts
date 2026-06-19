@@ -15,9 +15,13 @@ export const BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 
 const client = new Client();
 
-client
-	.setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
-	.setProject(PROJECT_ID);
+const appwriteEndpoint =
+	import.meta.env.VITE_APPWRITE_ENDPOINT &&
+	import.meta.env.VITE_APPWRITE_ENDPOINT.startsWith("http")
+		? import.meta.env.VITE_APPWRITE_ENDPOINT
+		: `${window.location.origin}/v1`;
+
+client.setEndpoint(appwriteEndpoint).setProject(PROJECT_ID);
 
 export const account = new Account(client);
 export const tables = new TablesDB(client);

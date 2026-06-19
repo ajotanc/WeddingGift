@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from "vue-router";
+import { RouterView, useRoute } from "vue-router";
 
 import Modal from "@/components/reusable/Modal.vue";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
-import { MessageSquarePlus } from "lucide-vue-next";
-import { ref, watch } from "vue";
-import { toast } from "vue-sonner";
-import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
+import { MessageSquarePlus, Pause, Play } from "lucide-vue-next";
+import { useForm } from "vee-validate";
+import { computed, ref, watch } from "vue";
+import { toast } from "vue-sonner";
 import * as z from "zod";
 import FormGroup from "./components/reusable/FormGroup.vue";
 import SelectTrigger from "./components/ui/select/SelectTrigger.vue";
@@ -22,9 +22,19 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectValue,
-} from "./components/ui/select/index.js";
+} from "./components/ui/select";
+import { useMusicStore } from "./stores/music";
 
 const authStore = useAuthStore();
+const route = useRoute();
+const music = useMusicStore();
+
+const isPageLoadingTheme = computed(() => {
+	if (route.params.slug) {
+		return !authStore.tenant || authStore.tenant.slug !== route.params.slug;
+	}
+	return false;
+});
 const showFeedbackModal = ref(false);
 const sending = ref(false);
 
@@ -34,7 +44,7 @@ const feedbackSchema = toTypedSchema(
 		email: z.email("E-mail inválido"),
 		type: z.enum(["Sugestão", "Dúvida", "Crítica"]),
 		message: z.string().min(10, "Mensagem deve ter pelo menos 10 caracteres"),
-	})
+	}),
 );
 
 const { handleSubmit, errors, setValues, defineField, resetForm } = useForm({
@@ -85,7 +95,7 @@ const openFeedback = () => {
 			email: authStore.user?.email || authStore.guest?.email || "",
 			type: "Sugestão",
 			message: "",
-		}
+		},
 	});
 	showFeedbackModal.value = true;
 };
@@ -108,58 +118,102 @@ const onSubmitFeedback = handleSubmit(async (values) => {
 		sending.value = false;
 	}
 });
+// Reativamente e de forma centralizada atualiza o título do documento
+watch(
+	[() => authStore.tenant, () => route.path],
+	([tenant, path]) => {
+		// 1. Títulos estáticos definidos na rota
+		if (route.meta?.title) {
+			document.title = route.meta.title as string;
+			return;
+		}
+
+		// 2. Títulos dinâmicos baseados nos dados do casamento (tenant)
+		if (tenant) {
+			if (path.includes("/gallery")) {
+				document.title = `Wedding Gift • ${tenant.couple_name} • Galeria`;
+			} else if (path.includes("/admin")) {
+				document.title = `Wedding Gift • ${tenant.couple_name} • Painel`;
+			} else {
+				document.title = `Wedding Gift • ${tenant.couple_name}`;
+			}
+		} else {
+			// Título fallback padrão
+			document.title = "Wedding Gift SaaS";
+		}
+	},
+	{ immediate: true },
+);
 </script>
 
 <template>
-  <RouterView />
-  <Confirm />
-  <Toaster position="top-right" richColors />
+	<RouterView />
+	<Confirm />
+	<Toaster position="top-right" richColors />
 
-  <!-- Global Floating Feedback Button -->
-  <button type="button" @click="openFeedback"
-    class="fixed bottom-6 left-6 z-50 bg-primary text-white p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 border-0 outline-none">
-    <MessageSquarePlus class="w-5 h-5 text-white" />
-    <span class="text-sm font-semibold hidden md:inline">Feedback</span>
-  </button>
+	<!-- Monta uma vez, nunca desmonta -->
+	<template v-if="music.isPremium && music.embedUrl">
+		<iframe :src="music.isPlaying ? music.embedUrl : 'about:blank'" class="fixed w-0 h-0 opacity-0 pointer-events-none"
+			allow="autoplay" />
 
-  <!-- Feedback Modal -->
-  <Modal v-model:open="showFeedbackModal" title="Sugestões / Dúvidas / Críticas"
-    description="Ajude-nos a melhorar a plataforma enviando o seu feedback.">
-    <form @submit="onSubmitFeedback" class="space-y-4 pt-4">
-      <FormGroup label="Seu Nome" :error="errors.name">
-        <Input v-model="name" placeholder="Ex: João" class="bg-slate-50/50" />
-      </FormGroup>
-      <FormGroup label="Seu E-mail" :error="errors.email">
-        <Input v-model="email" type="email" placeholder="joao@example.com"
-          class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50" />
-      </FormGroup>
-      <FormGroup label="Tipo" :error="errors.type">
-        <Select v-model="type">
-          <SelectTrigger
-            class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-11">
-            <SelectValue placeholder="Selecione um ícone" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Sugestão">Sugestão</SelectItem>
-            <SelectItem value="Dúvida">Dúvida</SelectItem>
-            <SelectItem value="Crítica">Crítica</SelectItem>
-          </SelectContent>
-        </Select>
-      </FormGroup>
+		<div class="fixed bottom-6 left-6 z-50 flex items-center gap-2">
+			<button @click="music.toggle()"
+				class="bg-white text-primary border-2 border-white p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer outline-none">
+				<Pause v-if="music.isPlaying" class="w-5 h-5" />
+				<Play v-else class="w-5 h-5" />
+			</button>
 
-      <FormGroup label="Mensagem" :error="errors.message">
-        <Textarea v-model="message" placeholder="O que você gostaria de nos dizer?"
-          class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50 min-h-[100px] resize-none" />
-      </FormGroup>
+			<div v-if="!music.isPlaying"
+				class="bg-white/90 backdrop-blur-sm border border-slate-100 px-3 py-1.5 rounded-xl shadow-md text-xs font-light text-slate-500">
+				Tocar música de fundo? 🎵
+			</div>
+		</div>
+	</template>
 
-      <div class="pt-2 flex justify-end gap-3">
-        <Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-500">
-          Cancelar
-        </Button>
-        <Button type="submit" :disabled="sending">
-          {{ sending ? 'Enviando...' : 'Enviar Feedback' }}
-        </Button>
-      </div>
-    </form>
-  </Modal>
+	<!-- Global Floating Feedback Button -->
+	<button v-if="!isPageLoadingTheme" type="button" @click="openFeedback"
+		class="fixed bottom-6 right-6 z-50 bg-primary text-white p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 border-0 outline-none">
+		<MessageSquarePlus class="w-5 h-5 text-white" />
+	</button>
+
+	<!-- Feedback Modal -->
+	<Modal v-model:open="showFeedbackModal" title="Sugestões / Dúvidas / Críticas"
+		description="Ajude-nos a melhorar a plataforma enviando o seu feedback.">
+		<form @submit="onSubmitFeedback" class="space-y-4 pt-4">
+			<FormGroup label="Seu Nome" :error="errors.name">
+				<Input v-model="name" placeholder="Ex: João" class="bg-slate-50/50" />
+			</FormGroup>
+			<FormGroup label="Seu E-mail" :error="errors.email">
+				<Input v-model="email" type="email" placeholder="joao@example.com"
+					class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50" />
+			</FormGroup>
+			<FormGroup label="Tipo" :error="errors.type">
+				<Select v-model="type">
+					<SelectTrigger
+						class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-11">
+						<SelectValue placeholder="Selecione um ícone" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="Sugestão">Sugestão</SelectItem>
+						<SelectItem value="Dúvida">Dúvida</SelectItem>
+						<SelectItem value="Crítica">Crítica</SelectItem>
+					</SelectContent>
+				</Select>
+			</FormGroup>
+
+			<FormGroup label="Mensagem" :error="errors.message">
+				<Textarea v-model="message" placeholder="O que você gostaria de nos dizer?"
+					class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50 min-h-[100px] resize-none" />
+			</FormGroup>
+
+			<div class="pt-2 flex justify-end gap-3">
+				<Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-500">
+					Cancelar
+				</Button>
+				<Button type="submit" :disabled="sending">
+					{{ sending ? 'Enviando...' : 'Enviar Feedback' }}
+				</Button>
+			</div>
+		</form>
+	</Modal>
 </template>

@@ -215,6 +215,22 @@ const capturePhoto = () => {
 
 const uploadCapturedFile = async (file: File) => {
 	if (!tenant.value) return;
+
+	const publicImagesCount = gallery.value.filter(
+		(img) => img.is_public || img.guest,
+	).length;
+	const isPremium = authStore.isPremium;
+	const limit = isPremium ? 99999 : 50;
+
+	if (publicImagesCount + 1 > limit) {
+		toast.error("Limite atingido", {
+			description: isPremium
+				? `A galeria pública atingiu o limite de ${limit} fotos.`
+				: `No plano gratuito, a galeria pública deste casamento pode receber no máximo 50 fotos.`,
+		});
+		return;
+	}
+
 	isUploading.value = true;
 	try {
 		toast.info("Publicando foto...");
@@ -257,12 +273,16 @@ const handleUpload = async (e: Event) => {
 
 		// Limit checking
 		const publicImagesCount = gallery.value.filter(
-			(img) => img.is_public,
+			(img) => img.is_public || img.guest,
 		).length;
+		const isPremium = authStore.isPremium;
+		const limit = isPremium ? 99999 : 50;
 
-		if (publicImagesCount + filesArray.length > 100) {
+		if (publicImagesCount + filesArray.length > limit) {
 			toast.error("Limite atingido", {
-				description: `Você pode enviar no máximo 100 fotos públicas. Espaço restante: ${100 - publicImagesCount}.`,
+				description: isPremium
+					? `A galeria pública atingiu o limite de ${limit} fotos.`
+					: `No plano gratuito, a galeria pública deste casamento pode receber no máximo 50 fotos.`,
 			});
 			return;
 		}

@@ -53,19 +53,6 @@ const quotaProgress = computed(() =>
 	),
 );
 
-// 2. Físicos (PIX)
-const pixPhysicalPurchases = computed(() =>
-	purchases.value.filter(
-		(p) => p.method === "pix" && p.product?.type === "physical",
-	),
-);
-const totalRaisedPixPhysical = computed(() =>
-	pixPhysicalPurchases.value.reduce(
-		(acc, p) => acc + (Number(p.price_paid) || 0),
-		0,
-	),
-);
-
 // 3. Outros
 const confirmedGuests = computed(() =>
 	rsvps.value
@@ -146,6 +133,9 @@ const categoryStats = computed(() => {
 		.sort((a, b) => b.count - a.count)
 		.slice(0, 5);
 });
+
+const getDonutValue = (d: { value: number }) => d.value;
+const getDonutColor = (d: { color: string }) => d.color;
 </script>
 
 <template>
@@ -286,7 +276,7 @@ const categoryStats = computed(() => {
           <div v-else class="flex flex-col items-center w-full">
             <div class="h-48 w-48 relative flex items-center justify-center">
               <VisSingleContainer :data="rsvpStats" class="w-full h-full">
-                <VisDonut :value="(d: { value: number }) => d.value" :color="(d: { color: string }) => d.color" :innerRadius="65" />
+                <VisDonut :value="getDonutValue" :color="getDonutColor" :innerRadius="65" />
               </VisSingleContainer>
               <div class="absolute flex flex-col items-center text-center">
                 <span class="text-3xl font-bold text-slate-800">{{ rsvpStats[0].value }}</span>
@@ -329,7 +319,7 @@ const categoryStats = computed(() => {
           <div v-else class="flex flex-col items-center w-full">
             <div class="h-48 w-48 relative flex items-center justify-center">
               <VisSingleContainer :data="headcountStats" class="w-full h-full">
-                <VisDonut :value="(d: { value: number }) => d.value" :color="(d: { color: string }) => d.color" :innerRadius="65" />
+                <VisDonut :value="getDonutValue" :color="getDonutColor" :innerRadius="65" />
               </VisSingleContainer>
               <div class="absolute flex flex-col items-center text-center">
                 <span class="text-3xl font-bold text-slate-800">{{ confirmedGuests }}</span>

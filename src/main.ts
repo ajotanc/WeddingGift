@@ -14,17 +14,15 @@ import "@vueup/vue-quill/dist/vue-quill.snow.css";
 
 const app = createApp(App);
 
-// 1. Crie e instale o Pinia PRIMEIRO
+// 1. Instale o Pinia
 const pinia = createPinia();
 app.use(pinia);
 
-// 2. Agora que o Pinia está instalado, você pode usar os stores
+// 3. Auth
 const authStore = useAuthStore();
-
-// 3. Inicialize o que precisar
 await authStore.init();
 
-// 4. Instale o restante
+// 4. Plugins e componentes
 app.use(money);
 app.directive("maska", vMaska);
 app.component("QuillEditor", QuillEditor);

@@ -1,11 +1,25 @@
 <script setup lang="ts">
+import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
 import { useAuthStore } from "@/stores/auth";
+import { onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { toast } from "vue-sonner";
 
 const authStore = useAuthStore();
+const route = useRoute();
+
+onMounted(async () => {
+	// Verifica se o usuário logou mas não possui um casamento registrado
+	if (route.query.no_tenant === "1" || (authStore.user && !authStore.tenant)) {
+		toast.error("Acesso Negado", {
+			description:
+				"Sua conta Google não possui um casamento cadastrado. Crie uma conta na página de cadastro.",
+		});
+		await authStore.logout();
+	}
+});
 
 const handleGoogleLogin = async () => {
-	// Use current URL to redirect back, but since we are at /login, it might redirect back to /login
-	// The router guard will catch the logged in user and redirect to their dashboard
 	await authStore.loginWithGoogle(window.location.href, window.location.href);
 };
 </script>

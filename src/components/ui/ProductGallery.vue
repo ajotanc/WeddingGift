@@ -151,7 +151,8 @@ const updateItemsPerPage = (event: Event) => {
           <!-- Glassmorphic premium overlay for sold out -->
           <div v-if="isProductSoldOut(product)"
             class="absolute inset-0 bg-slate-900/5 backdrop-blur-[2px] flex items-center justify-center p-4">
-            <div class="relative overflow-hidden bg-white/95 border border-slate-200/50 px-4 py-2 rounded-xl flex items-center gap-2 shadow-md">
+            <div
+              class="relative overflow-hidden bg-white/95 border border-slate-200/50 px-4 py-2 rounded-xl flex items-center gap-2 shadow-md">
               <Heart class="w-3.5 h-3.5 fill-current animate-pulse"
                 :style="{ color: tenant?.primary_color || '#10b981' }" />
               <span class="text-xs font-semibold tracking-wider text-slate-700">Presenteado!</span>
@@ -209,8 +210,7 @@ const updateItemsPerPage = (event: Event) => {
               <div class="flex flex-col gap-2 mt-4">
 
                 <div v-if="getRemainingQuantity(product) > 1" class="flex items-center gap-2 mb-2">
-                  <Button variant="outline"
-                    class="w-12 p-0"
+                  <Button variant="outline" class="w-12 p-0"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">-</Button>
 
                   <Input type="number" min="1" :max="getRemainingQuantity(product)"
@@ -218,8 +218,7 @@ const updateItemsPerPage = (event: Event) => {
                     :model-value="getLocalQuantity(product.$id)"
                     @update:model-value="(val: string | number) => setLocalQuantity(product.$id, Number(val), getRemainingQuantity(product))" />
 
-                  <Button variant="outline"
-                    class="w-12 p-0"
+                  <Button variant="outline" class="w-12 p-0"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">+</Button>
                 </div>
 
@@ -242,8 +241,8 @@ const updateItemsPerPage = (event: Event) => {
 
             <template v-if="mode === 'admin'">
               <div class="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-                <Button variant="outline" class="flex-1"
-                  @click="emit('edit', product)" :disabled="product?.claimed_quantity > 0">
+                <Button variant="outline" class="flex-1" @click="emit('edit', product)"
+                  :disabled="product?.claimed_quantity > 0">
                   <Edit2 class="w-4 h-4 mr-2" /> Editar
                 </Button>
                 <Button variant="outline"

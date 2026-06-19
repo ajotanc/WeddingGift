@@ -2,22 +2,33 @@ import { account } from "@/lib/appwrite";
 import { GuestService, type IGuest } from "@/services/guest.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
 import { type Models, OAuthProvider } from "appwrite";
+import dayjs from "dayjs";
 import { defineStore } from "pinia";
 
 interface AuthState {
 	user: Models.User<Models.Preferences> | null;
-	tenant: ITenant | null; // Alterado para aceitar null
-	guest: IGuest | null; // Alterado para aceitar null
+	tenant: ITenant | null;
+	guest: IGuest | null;
 	loading: boolean;
 }
 
 export const useAuthStore = defineStore("auth", {
 	state: (): AuthState => ({
 		user: null,
-		tenant: null, // Começa estritamente como null
-		guest: null, // Começa estritamente como null
+		tenant: null,
+		guest: null,
 		loading: true,
 	}),
+	getters: {
+		isPremium: (state): boolean => {
+			if (!state.tenant) return false;
+			if (state.tenant.plan === "premium") {
+				if (!state.tenant.premium_until) return true;
+				return dayjs(state.tenant.premium_until).isAfter(dayjs());
+			}
+			return false;
+		},
+	},
 	actions: {
 		async init() {
 			this.loading = true;
@@ -37,7 +48,7 @@ export const useAuthStore = defineStore("auth", {
 							const res = await fetch(
 								`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${session.providerAccessToken}`,
 							);
-							const data = await res.json();
+							const data = (await res.json()) as { picture?: string };
 
 							if (data.picture) {
 								await account.updatePrefs({
@@ -46,7 +57,6 @@ export const useAuthStore = defineStore("auth", {
 										photoURL: data.picture,
 									},
 								});
-
 								this.user.prefs = {
 									...sessionUser.prefs,
 									photoURL: data.picture,
@@ -58,13 +68,12 @@ export const useAuthStore = defineStore("auth", {
 					}
 
 					const pending = localStorage.getItem("pending_tenant");
-
 					if (pending) {
-						const data = JSON.parse(pending);
+						const data = JSON.parse(pending) as ITenant;
 						await TenantService.create(data, sessionUser.$id);
 						localStorage.removeItem("pending_tenant");
 						const t = await TenantService.get(sessionUser.$id);
-						this.tenant = t;
+						this.tenant = this.sanitizeTenant(t);
 						const g = await GuestService.get(sessionUser.$id);
 						this.guest = g?.$id
 							? g
@@ -78,7 +87,7 @@ export const useAuthStore = defineStore("auth", {
 
 					try {
 						const t = await TenantService.get(sessionUser.$id);
-						this.tenant = t;
+						this.tenant = this.sanitizeTenant(t);
 					} catch (e) {
 						this.tenant = null;
 					}
@@ -101,7 +110,6 @@ export const useAuthStore = defineStore("auth", {
 					}
 				}
 			} catch (err) {
-				// Certifica que o estado fica nulo caso não haja sessão ativa
 				this.user = null;
 				this.tenant = null;
 				this.guest = null;
@@ -114,7 +122,11 @@ export const useAuthStore = defineStore("auth", {
 				provider: OAuthProvider.Google,
 				success: successUrl,
 				failure: failureUrl,
-				scopes: ["profile", "email"],
+				scopes: [
+					"https://www.googleapis.com/auth/userinfo.email",
+					"https://www.googleapis.com/auth/userinfo.profile",
+					"openid",
+				],
 			});
 		},
 		async logout() {
@@ -130,7 +142,41 @@ export const useAuthStore = defineStore("auth", {
 		async registerTenant(data: ITenant) {
 			if (!this.user) return;
 			const t = await TenantService.create(data, this.user.$id);
-			this.tenant = t;
+			this.tenant = this.sanitizeTenant(t);
+		},
+		async upgradeTenant(planType: "quarterly" | "semestral") {
+			if (!this.tenant) return;
+			const months = planType === "quarterly" ? 3 : 6;
+			const expiresAt = dayjs().add(months, "month");
+
+			const updated = await TenantService.update(this.tenant.$id, {
+				plan: "premium",
+				premium_until: expiresAt.toISOString(),
+			});
+
+			this.tenant = this.sanitizeTenant(updated);
+		},
+		sanitizeTenant(t: ITenant): ITenant {
+			const copy = { ...t };
+			if (!this.isPremium) {
+				const freeColors = ["#ec4899", "#2e7d32", "#d4af37", "#1976d2"];
+				if (!freeColors.includes(copy.primary_color)) {
+					copy.primary_color = "#ec4899";
+				}
+				const freeBackgrounds = ["#ffffff", "#f8fafc", "#fffaf0", "#f5f5f4"];
+				if (
+					copy.background_color &&
+					!freeBackgrounds.includes(copy.background_color)
+				) {
+					copy.background_color = "#ffffff";
+				}
+				copy.title_font = "playfair";
+				copy.body_font = "inter";
+				copy.show_countdown = false;
+				copy.music_url = null;
+				copy.ambient_effect = null;
+			}
+			return copy;
 		},
 	},
 });

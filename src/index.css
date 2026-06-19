@@ -6,10 +6,17 @@
 
 :root {
 	--color-primary: #ec4899;
+	--font-title: "Playfair Display", serif;
+	--font-body: "Inter", sans-serif;
+}
+
+html {
+	scroll-behavior: smooth;
 }
 
 body {
 	@apply bg-zinc-50/50 text-slate-900 antialiased;
+	font-family: var(--font-body);
 }
 
 label {
@@ -20,5 +27,9 @@ h1,
 h2,
 h3,
 .font-serif {
-	font-family: "Playfair Display", serif;
+	font-family: var(--font-title);
+}
+
+.font-sans {
+	font-family: var(--font-body);
 }

@@ -6,15 +6,121 @@ import type { IProduct } from "@/services/product.service";
 import type { IPurchase } from "@/services/purchase.service";
 import { PurchaseService } from "@/services/purchase.service";
 import type { IRsvp } from "@/services/rsvp.service";
-import {
-	type IScheduleItem,
-} from "@/services/schedule.service";
+import type { IScheduleItem } from "@/services/schedule.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
+import { useAuthStore } from "@/stores/auth";
+import { useMusicStore } from "@/stores/music";
 import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+export interface IFontDefinition {
+	googleFamily: string;
+	cssFamily: string;
+	name: string;
+}
+
+export const FONTS_REGISTRY: Record<string, IFontDefinition> = {
+	playfair: {
+		googleFamily: "Playfair+Display:ital,wght@0,400;0,600;1,400",
+		cssFamily: '"Playfair Display", serif',
+		name: "Playfair Display",
+	},
+	cormorant: {
+		googleFamily: "Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400",
+		cssFamily: '"Cormorant Garamond", serif',
+		name: "Cormorant Garamond",
+	},
+	lora: {
+		googleFamily: "Lora:ital,wght@0,400;0,600;1,400",
+		cssFamily: '"Lora", serif',
+		name: "Lora",
+	},
+	cinzel: {
+		googleFamily: "Cinzel:wght@400;600;700",
+		cssFamily: '"Cinzel", serif',
+		name: "Cinzel",
+	},
+	greatVibes: {
+		googleFamily: "Great+Vibes",
+		cssFamily: '"Great Vibes", cursive',
+		name: "Great Vibes",
+	},
+	sacramento: {
+		googleFamily: "Sacramento",
+		cssFamily: '"Sacramento", cursive',
+		name: "Sacramento",
+	},
+	inter: {
+		googleFamily: "Inter:wght@300;400;500;600;700",
+		cssFamily: '"Inter", sans-serif',
+		name: "Inter",
+	},
+	outfit: {
+		googleFamily: "Outfit:wght@300;400;500;600;700",
+		cssFamily: '"Outfit", sans-serif',
+		name: "Outfit",
+	},
+	montserrat: {
+		googleFamily: "Montserrat:wght@300;400;500;600;700",
+		cssFamily: '"Montserrat", sans-serif',
+		name: "Montserrat",
+	},
+	quicksand: {
+		googleFamily: "Quicksand:wght@400;500;600;700",
+		cssFamily: '"Quicksand", sans-serif',
+		name: "Quicksand",
+	},
+	dancingScript: {
+		googleFamily: "Dancing+Script:wght@400;600;700",
+		cssFamily: '"Dancing Script", cursive',
+		name: "Dancing Script",
+	},
+	alexBrush: {
+		googleFamily: "Alex+Brush",
+		cssFamily: '"Alex Brush", cursive',
+		name: "Alex Brush",
+	},
+	monsieurLaDoulaise: {
+		googleFamily: "Monsieur+La+Doulaise",
+		cssFamily: '"Monsieur La Doulaise", cursive',
+		name: "Monsieur La Doulaise",
+	},
+	playfairDisplaySc: {
+		googleFamily: "Playfair+Display+SC:wght@400;600;700",
+		cssFamily: '"Playfair Display SC", serif',
+		name: "Playfair Display SC",
+	},
+	cardo: {
+		googleFamily: "Cardo:ital,wght@0,400;0,700;1,400",
+		cssFamily: '"Cardo", serif',
+		name: "Cardo",
+	},
+};
+
+export const FONT_ALIASES: Record<string, string> = {
+	serif: "playfair",
+	sans: "inter",
+};
+
+export function loadGoogleFont(fontKey: string) {
+	const key = FONT_ALIASES[fontKey] || fontKey;
+	const font = FONTS_REGISTRY[key];
+	if (!font) return;
+
+	const linkId = `google-font-${key}`;
+	if (document.getElementById(linkId)) return;
+
+	const link = document.createElement("link");
+	link.id = linkId;
+	link.rel = "stylesheet";
+	link.href = `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`;
+	document.head.appendChild(link);
+}
+
 export function useTenant() {
 	const route = useRoute();
+	const { sanitizeTenant, isPremium } = useAuthStore();
+	const music = useMusicStore();
 
 	// 1. Mudado para aceitar null em vez de um objeto vazio enganoso
 	const tenant = ref<ITenant | null>(null);
@@ -26,33 +132,40 @@ export function useTenant() {
 	const faqs = ref<IFaq[]>([]);
 	const schedules = ref<IScheduleItem[]>([]);
 
-	// Começa como false para evitar travamentos falsos na Home
-	const loading = ref(false);
+	// Começa como true se houver slug na rota para evitar flashes da cor rosa padrão antes do fetch terminar
+	const loading = ref(!!route.params.slug);
 	const error = ref<string | null>(null);
 
 	const fetchTenant = async (slug: string) => {
-		// Proteção 1: Se já estiver carregando ou o slug for inválido, não faz nada
-		if (loading.value || !slug || slug.trim() === "") return;
+		// Proteção 1: Se o slug for inválido, não faz nada
+		if (!slug || slug.trim() === "") return;
 
 		loading.value = true;
 		error.value = null;
 		try {
-			const result = await TenantService.getBySlug(slug);
+			const data = await TenantService.getBySlug(slug);
 
-			if (result) {
-				products.value = result?.products || [];
-				messages.value = result.messages || [];
-				rsvps.value = result?.rsvps || [];
-				purchases.value = await PurchaseService.listByTenant(result.$id);
-				gallery.value = result?.gallery || [];
-				faqs.value = sortBy(result?.faqs || [], "order");
-				schedules.value = sortBy(result?.schedules || [], "hour");
+			if (data) {
+				products.value = data?.products || [];
+				messages.value = data.messages || [];
+				rsvps.value = data?.rsvps || [];
+				purchases.value = await PurchaseService.listByTenant(data.$id);
+				gallery.value = data?.gallery || [];
+				faqs.value = sortBy(data?.faqs || [], "order");
+				schedules.value = sortBy(data?.schedules || [], "hour");
 
-				tenant.value = result;
+				tenant.value = sanitizeTenant(data);
 
 				if (tenant.value.primary_color) {
-					applyTheme(tenant.value.primary_color);
+					applyTheme(
+						tenant.value.primary_color,
+						tenant.value.title_font,
+						tenant.value.body_font,
+					);
 				}
+
+				music.musicUrl = data.music_url ?? null;
+				music.isPremium = isPremium;
 			} else {
 				error.value = "Casamento não encontrado";
 				tenant.value = null;
@@ -66,10 +179,29 @@ export function useTenant() {
 		}
 	};
 
-	const applyTheme = (color: string) => {
+	const applyTheme = (
+		color: string,
+		titleFont?: string | null,
+		bodyFont?: string | null,
+	) => {
 		if (color) {
 			document.documentElement.style.setProperty("--color-primary", color);
 		}
+
+		if (titleFont) loadGoogleFont(titleFont);
+		if (bodyFont) loadGoogleFont(bodyFont);
+
+		const resolvedTitleKey = FONT_ALIASES[titleFont || ""] || titleFont || "";
+		const resolvedBodyKey = FONT_ALIASES[bodyFont || ""] || bodyFont || "";
+
+		const titleFamily =
+			FONTS_REGISTRY[resolvedTitleKey]?.cssFamily ||
+			'"Playfair Display", serif';
+		const bodyFamily =
+			FONTS_REGISTRY[resolvedBodyKey]?.cssFamily || '"Inter", sans-serif';
+
+		document.documentElement.style.setProperty("--font-title", titleFamily);
+		document.documentElement.style.setProperty("--font-body", bodyFamily);
 	};
 
 	onMounted(() => {
@@ -78,7 +210,11 @@ export function useTenant() {
 			if (tenant.value?.slug === currentSlug) {
 				loading.value = false;
 				if (tenant.value.primary_color) {
-					applyTheme(tenant.value.primary_color);
+					applyTheme(
+						tenant.value.primary_color,
+						tenant.value.title_font,
+						tenant.value.body_font,
+					);
 				}
 			} else {
 				fetchTenant(currentSlug);
@@ -111,7 +247,6 @@ export function useTenant() {
 			}
 		},
 	);
-
 	return {
 		tenant,
 		products,

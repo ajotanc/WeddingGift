@@ -1,51 +1,51 @@
 <script setup lang="ts">
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
 } from "@/components/ui/carousel";
 import type { UnwrapRefCarouselApi } from "@/components/ui/carousel/interface";
+import { useTenant } from "@/composables/useTenant";
 import type { IGalleryImage } from "@/services/gallery.service";
 import { Heart, Trash2, X } from "lucide-vue-next";
 import { nextTick, ref, watch } from "vue";
-import { useTenant } from "@/composables/useTenant";
 
 import Autoplay from "embla-carousel-autoplay";
 
 const { tenant } = useTenant();
 
 const props = withDefaults(
-  defineProps<{
-    images: IGalleryImage[];
-    carousel?: boolean;
-    isAdmin?: boolean;
-    currentGuestId?: string;
-    autoplay?: boolean;
-  }>(),
-  {
-    carousel: false,
-    isAdmin: false,
-    currentGuestId: "",
-    autoplay: false,
-  },
+	defineProps<{
+		images: IGalleryImage[];
+		carousel?: boolean;
+		isAdmin?: boolean;
+		currentGuestId?: string;
+		autoplay?: boolean;
+	}>(),
+	{
+		carousel: false,
+		isAdmin: false,
+		currentGuestId: "",
+		autoplay: false,
+	},
 );
 
 const emit = defineEmits<{
-  (e: "like", image: IGalleryImage): void;
-  (e: "delete", image: IGalleryImage): void;
+	(e: "like", image: IGalleryImage): void;
+	(e: "delete", image: IGalleryImage): void;
 }>();
 
 // Lightbox state
 const activeLightboxImage = ref<IGalleryImage | null>(null);
 
 const openLightbox = (img: IGalleryImage) => {
-  activeLightboxImage.value = img;
+	activeLightboxImage.value = img;
 };
 
 const closeLightbox = () => {
-  activeLightboxImage.value = null;
+	activeLightboxImage.value = null;
 };
 
 // Carousel state & API
@@ -54,36 +54,36 @@ const current = ref(1);
 const count = ref(0);
 
 function onInitApi(val: UnwrapRefCarouselApi) {
-  if (!val) return;
-  api.value = val;
-  count.value = val.scrollSnapList().length;
-  current.value = val.selectedScrollSnap() + 1;
+	if (!val) return;
+	api.value = val;
+	count.value = val.scrollSnapList().length;
+	current.value = val.selectedScrollSnap() + 1;
 
-  val.on("select", () => {
-    current.value = val.selectedScrollSnap() + 1;
-  });
+	val.on("select", () => {
+		current.value = val.selectedScrollSnap() + 1;
+	});
 }
 
 // Keep indicators updated when images array changes
 watch(
-  () => props.images,
-  () => {
-    if (api.value) {
-      nextTick(() => {
-        api.value?.reInit();
-        count.value = api.value?.scrollSnapList().length || 0;
-        current.value = (api.value?.selectedScrollSnap() || 0) + 1;
-      });
-    }
-  },
-  { deep: true },
+	() => props.images,
+	() => {
+		if (api.value) {
+			nextTick(() => {
+				api.value?.reInit();
+				count.value = api.value?.scrollSnapList().length || 0;
+				current.value = (api.value?.selectedScrollSnap() || 0) + 1;
+			});
+		}
+	},
+	{ deep: true },
 );
 
 // Check if current user is allowed to delete this image
 const canDeleteImage = (img: IGalleryImage) => {
-  if (props.isAdmin) return true;
-  if (!props.currentGuestId) return false;
-  return img.guest?.$id === props.currentGuestId;
+	if (props.isAdmin) return true;
+	if (!props.currentGuestId) return false;
+	return img.guest?.$id === props.currentGuestId;
 };
 </script>
 
@@ -166,7 +166,8 @@ const canDeleteImage = (img: IGalleryImage) => {
           <div class="flex items-center justify-between w-full">
             <div class="text-xs text-white/70">
               <div v-if="img.guest" class="flex items-center gap-2">
-                <img v-if="img.guest?.photo_url" class="w-5 h-5 rounded-full" :src="img.guest.photo_url" :alt="img.guest.name" />
+                <img v-if="img.guest?.photo_url" class="w-5 h-5 rounded-full" :src="img.guest.photo_url"
+                  :alt="img.guest.name" referrerpolicy="no-referrer" />
                 <span>{{ img.guest.name }}</span>
               </div>
               <span v-else>{{ tenant?.couple_name }}</span>

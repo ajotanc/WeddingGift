@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { useConfirm } from "@/components/ui/confirm/useConfirm";
-import { useTenant } from "@/composables/useTenant";
-import { TenantService } from "@/services/tenant.service";
-import { useAuthStore } from "@/stores/auth";
-import { ref, watch } from "vue";
-import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import DatePicker from "@/components/reusable/DatePicker.vue";
 import FileUpload from "@/components/reusable/FileUpload.vue";
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import Modal from "@/components/reusable/Modal.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
+import PlanLimitAlert from "@/components/reusable/PlanLimitAlert.vue";
 import LocationAutocomplete from "@/components/ui/LocationAutocomplete.vue";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { Input } from "@/components/ui/input";
 import {
 	InputGroup,
+	InputGroupAddon,
 	InputGroupInput,
-	InputGroupText,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -29,16 +26,25 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	FONTS_REGISTRY,
+	loadGoogleFont,
+	useTenant,
+} from "@/composables/useTenant";
 import { sortBy } from "@/lib/utils";
 import { FaqService } from "@/services/faq.service";
 import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
 import { ScheduleService } from "@/services/schedule.service";
 import { StorageService } from "@/services/storage.service";
+import { TenantService } from "@/services/tenant.service";
+import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
+import dayjs from "dayjs";
 import {
 	Cake,
 	Calendar,
 	Camera,
+	CheckCircle,
 	Clock,
 	Gift,
 	GlassWater,
@@ -47,6 +53,7 @@ import {
 	HelpCircle,
 	Image as ImageIcon,
 	Loader2,
+	Lock,
 	MapPin,
 	Music,
 	Settings,
@@ -55,15 +62,81 @@ import {
 	Utensils,
 } from "lucide-vue-next";
 import { useForm } from "vee-validate";
+import { ref, watch } from "vue";
 import { toast } from "vue-sonner";
 import * as z from "zod";
 
 const { tenant, gallery, faqs, schedules } = useTenant();
 const authStore = useAuthStore();
 const { confirm } = useConfirm();
-const activeTab = ref("geral");
+const activeTab = ref("general");
+import { onMounted } from "vue";
+import { useRoute } from "vue-router";
 
-const hostName = window.location.host;
+const route = useRoute();
+
+watch(
+	() => route.query.tab,
+	(newTab) => {
+		if (newTab) {
+			activeTab.value = newTab as string;
+		}
+	},
+	{ immediate: true },
+);
+
+// --- Mercado Pago Subscription Simulation State ---
+const showCheckoutModal = ref(false);
+const selectedPlan = ref<"quarterly" | "semestral">("quarterly");
+const isSimulatingPayment = ref(false);
+
+const openCheckout = (plan: "quarterly" | "semestral") => {
+	selectedPlan.value = plan;
+	showCheckoutModal.value = true;
+};
+
+const handleConfirmSimulatedPayment = async () => {
+	isSimulatingPayment.value = true;
+	try {
+		await authStore.upgradeTenant(selectedPlan.value);
+		toast.success("Assinatura Ativada com sucesso!", {
+			description:
+				"Obrigado! Sua conta agora possui acesso Premium a todas as funcionalidades.",
+		});
+		showCheckoutModal.value = false;
+		if (tenant.value && authStore.tenant) {
+			tenant.value.plan = authStore.tenant.plan;
+			tenant.value.premium_until = authStore.tenant.premium_until;
+		}
+	} catch (e) {
+		console.error(e);
+		toast.error("Erro ao processar ativação de assinatura.");
+	} finally {
+		isSimulatingPayment.value = false;
+	}
+};
+
+const showUpgradeToast = () => {
+	toast.info("Recurso Premium", {
+		description:
+			"Esta funcionalidade requer o plano Premium. Vá para a aba 'Assinatura' para fazer o upgrade!",
+		action: {
+			label: "Upgrade",
+			onClick: () => {
+				activeTab.value = "subscription";
+			},
+		},
+	});
+};
+
+const hostName = ref("");
+
+onMounted(() => {
+	hostName.value = window.location.host;
+	for (const f of Object.keys(FONTS_REGISTRY)) {
+		loadGoogleFont(f);
+	}
+});
 
 const zodSchema = z.object({
 	groom_name: z.string().min(2, "Nome muito curto").optional(),
@@ -107,6 +180,13 @@ const zodSchema = z.object({
 		.string()
 		.regex(/^#([0-9A-Fa-f]{3}){1,2}$/, { message: "Cor inválida" })
 		.optional(),
+	title_font: z.string().optional().nullable(),
+	body_font: z.string().optional().nullable(),
+	music_url: z.string().optional().nullable(),
+	ambient_effect: z
+		.enum(["none", "rose-petals", "sparkles"])
+		.optional()
+		.nullable(),
 });
 
 const configSchema = toTypedSchema(zodSchema);
@@ -135,6 +215,10 @@ const { handleSubmit, errors, setValues, defineField } =
 			primary_color: "#ec4899",
 			background_color: "#ffffff",
 			logo_url: "",
+			title_font: "playfair",
+			body_font: "inter",
+			music_url: "",
+			ambient_effect: "none",
 		},
 	});
 
@@ -158,6 +242,10 @@ const [primary_color] = defineField("primary_color");
 const [background_image] = defineField("background_image");
 const [logo_url] = defineField("logo_url");
 const [background_color] = defineField("background_color");
+const [title_font] = defineField("title_font");
+const [body_font] = defineField("body_font");
+const [music_url] = defineField("music_url");
+const [ambient_effect] = defineField("ambient_effect");
 
 const isSaving = ref(false);
 
@@ -166,6 +254,7 @@ const isUploadingLogo = ref(false);
 
 // Configurações do upload e separação da galeria
 import ImageGallery from "@/components/ui/ImageGallery.vue";
+import { PaymentService } from "@/services/payment.service";
 import { computed } from "vue";
 
 const uploadIsPublic = ref(false);
@@ -235,12 +324,46 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 	const tenantId = tenant.value.$id;
 
 	const filesArray = Array.isArray(files) ? files : [files];
+	const isPremium = authStore.isPremium;
 
-	if (gallery.value.length + filesArray.length > 20) {
-		toast.error("Limite atingido", {
-			description: `Você pode enviar no máximo 20 imagens. Espaço restante: ${20 - gallery.value.length}.`,
-		});
-		return;
+	if (uploadIsPublic.value) {
+		const currentPublicCount = generalGalleryImages.value.length;
+		const limit = isPremium ? 99999 : 50;
+		if (currentPublicCount + filesArray.length > limit) {
+			toast.error("Limite atingido", {
+				description: isPremium
+					? `Limite de ${limit} fotos na galeria pública atingido.`
+					: 'No plano gratuito, a galeria pública é limitada a 50 fotos. Faça o upgrade para fotos ilimitadas!',
+				action: isPremium
+					? undefined
+					: {
+							label: "Upgrade",
+							onClick: () => {
+								activeTab.value = "subscription";
+							},
+						},
+			});
+			return;
+		}
+	} else {
+		const currentPrivateCount = homePrivateImages.value.length;
+		const limit = isPremium ? 20 : 5;
+		if (currentPrivateCount + filesArray.length > limit) {
+			toast.error("Limite atingido", {
+				description: isPremium
+					? 'No plano Premium, o limite é de 20 fotos privadas na página inicial.'
+					: 'No plano gratuito, o limite é de 5 fotos privadas na página inicial. Faça o upgrade para enviar até 20 fotos!',
+				action: isPremium
+					? undefined
+					: {
+							label: "Upgrade",
+							onClick: () => {
+								activeTab.value = "subscription";
+							},
+						},
+			});
+			return;
+		}
 	}
 
 	isUploadingGalleryImage.value = true;
@@ -292,12 +415,21 @@ const deleteGalleryImage = (image: IGalleryImage) => {
 
 const faqSchema = toTypedSchema(
 	z.object({
-		faqQuestion: z.string().min(5, "A pergunta deve ter pelo menos 5 caracteres"),
-		faqAnswer: z.string().min(10, "A resposta deve ter pelo menos 10 caracteres"),
-	})
+		faqQuestion: z
+			.string()
+			.min(5, "A pergunta deve ter pelo menos 5 caracteres"),
+		faqAnswer: z
+			.string()
+			.min(10, "A resposta deve ter pelo menos 10 caracteres"),
+	}),
 );
 
-const { handleSubmit: handleFaqSubmit, errors: faqErrors, defineField: defineFaqField, resetForm: resetFaqForm } = useForm({
+const {
+	handleSubmit: handleFaqSubmit,
+	errors: faqErrors,
+	defineField: defineFaqField,
+	resetForm: resetFaqForm,
+} = useForm({
 	validationSchema: faqSchema,
 	initialValues: {
 		faqQuestion: "",
@@ -353,14 +485,23 @@ const deleteFaq = (id: string) => {
 
 const scheduleSchema = toTypedSchema(
 	z.object({
-		scheduleTitle: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
+		scheduleTitle: z
+			.string()
+			.min(3, "O título deve ter pelo menos 3 caracteres"),
 		scheduleDescription: z.string().optional(),
-		scheduleHour: z.string().regex(/^[0-9]{2}:[0-9]{2}$/, "Horário inválido (deve ser HH:MM)"),
+		scheduleHour: z
+			.string()
+			.regex(/^[0-9]{2}:[0-9]{2}$/, "Horário inválido (deve ser HH:MM)"),
 		scheduleIcon: z.string(),
-	})
+	}),
 );
 
-const { handleSubmit: handleScheduleSubmit, errors: scheduleErrors, defineField: defineScheduleField, resetForm: resetScheduleForm } = useForm({
+const {
+	handleSubmit: handleScheduleSubmit,
+	errors: scheduleErrors,
+	defineField: defineScheduleField,
+	resetForm: resetScheduleForm,
+} = useForm({
 	validationSchema: scheduleSchema,
 	initialValues: {
 		scheduleTitle: "",
@@ -580,6 +721,10 @@ const loadSettings = () => {
 			background_image: tenant.value.background_image || "",
 			logo_url: tenant.value.logo_url || "",
 			background_color: tenant.value.background_color || "#ffffff",
+			title_font: tenant.value.title_font || "playfair",
+			body_font: tenant.value.body_font || "inter",
+			music_url: tenant.value.music_url || "",
+			ambient_effect: tenant.value.ambient_effect || "none",
 		});
 	}
 };
@@ -681,6 +826,41 @@ const saveSettings = handleSubmit(async (values) => {
 		isSaving.value = false;
 	}
 });
+
+onMounted(async () => {
+	hostName.value = window.location.host; // Correto
+
+	// Lógica do Mercado Pago
+	const code = route.query.code as string;
+	const state = route.query.state as string;
+
+	if (code && state && tenant.value?.$id === state) {
+		toast.info("Processando conexão...");
+		try {
+			// AQUI: Chame sua Appwrite Function que troca o code pelo token
+			// await AppwriteFunctions.exchangeCodeForToken(code);
+			toast.success("Conta conectada com sucesso!");
+		} catch (e) {
+			toast.error("Erro ao conectar conta.");
+		}
+		window.history.replaceState({}, document.title, window.location.pathname);
+	}
+});
+
+const handleDisconnect = async () => {
+	if (!tenant.value) return;
+	await PaymentService.disconnect(tenant.value.$id);
+	toast.success("Conta desconectada.");
+	window.location.reload();
+};
+
+const connectToMarketPago = () => {
+	if (tenant.value) {
+		window.location.href = PaymentService.getAuthUrl(tenant.value.$id);
+	} else {
+		toast.error("Erro ao conectar: Tenant não encontrado.");
+	}
+};
 </script>
 
 <template>
@@ -691,15 +871,15 @@ const saveSettings = handleSubmit(async (values) => {
 		<Tabs v-model="activeTab" class="w-full">
 			<div
 				class="flex items-center gap-1.5 mb-8 w-full overflow-x-auto pb-2 flex-nowrap hide-scrollbar md:w-fit md:pb-0">
-				<button type="button" @click="activeTab = 'geral'"
+				<button type="button" @click="activeTab = 'general'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'geral' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'general' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<Settings class="w-4 h-4" />
 					Geral
 				</button>
-				<button type="button" @click="activeTab = 'galeria'"
+				<button type="button" @click="activeTab = 'gallery'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'galeria' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'gallery' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<ImageIcon class="w-4 h-4" />
 					Galeria de Fotos
 				</button>
@@ -709,16 +889,22 @@ const saveSettings = handleSubmit(async (values) => {
 					<HelpCircle class="w-4 h-4" />
 					FAQ (Dúvidas)
 				</button>
-				<button type="button" @click="activeTab = 'cronograma'"
+				<button type="button" @click="activeTab = 'schedule'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'cronograma' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'schedule' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<Calendar class="w-4 h-4" />
 					Cronograma
+				</button>
+				<button type="button" @click="activeTab = 'subscription'"
+					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
+					:class="activeTab === 'subscription' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					<Sparkles class="w-4 h-4" />
+					Assinatura (Premium)
 				</button>
 			</div>
 
 			<!-- TAB: GERAL -->
-			<TabsContent value="geral" class="mt-0">
+			<TabsContent value="general" class="mt-0">
 				<form @submit.prevent="saveSettings"
 					class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8">
 					<div class="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -742,11 +928,11 @@ const saveSettings = handleSubmit(async (values) => {
 						<FormGroup label="Link Personalizado" :error="errors.slug">
 							<InputGroup
 								:class="{ 'border-red-400': slugStatus === 'unavailable', 'border-emerald-400': slugStatus === 'available', 'border-slate-200': slugStatus === 'idle' || slugStatus === 'checking' }">
-								<InputGroupText align="inline-start">
+								<InputGroupAddon align="inline-start">
 									<span class="text-slate-500 font-medium text-sm">https://{{ hostName }}/</span>
-								</InputGroupText>
+								</InputGroupAddon>
 								<InputGroupInput v-model="slug" type="text" placeholder="joao-maria" @blur="checkSlug"
-									class="bg-white focus:outline-none text-slate-700" />
+									class="bg-transparent focus:outline-none text-slate-700" />
 							</InputGroup>
 							<div class="flex items-center gap-2 mt-1 min-h-[20px]">
 								<p class="text-xs text-red-400">Atenção: alterar o link invalida o acesso antigo.</p>
@@ -794,9 +980,15 @@ const saveSettings = handleSubmit(async (values) => {
 
 						<FormGroup label="Exibir Contagem Regressiva">
 							<div class="flex items-center gap-2">
-								<Switch v-model="show_countdown" id="show_countdown" />
-								<label for="show_countdown">
-									{{ show_countdown ? 'Ativo' : 'Inativo' }}
+								<Switch :model-value="authStore.isPremium ? show_countdown : false"
+									@update:model-value="(val: boolean) => { if (!authStore.isPremium) { showUpgradeToast(); } else { show_countdown = val; } }"
+									id="show_countdown" />
+								<label for="show_countdown" class="flex items-center gap-1.5 text-sm select-none">
+									{{ (authStore.isPremium && show_countdown) ? 'Ativo' : 'Inativo' }}
+									<span v-if="!authStore.isPremium"
+										class="bg-rose-100 text-rose-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+										<Lock class="w-2.5 h-2.5" /> Premium
+									</span>
 								</label>
 							</div>
 						</FormGroup>
@@ -834,18 +1026,96 @@ const saveSettings = handleSubmit(async (values) => {
 							</FormGroup>
 
 							<FormGroup label="Cor Principal">
-								<div class="flex items-center gap-4 h-10">
-									<Input type="color" v-model="primary_color"
-										class="w-8 h-8 rounded cursor-pointer p-0 border-0 bg-transparent" />
+								<div v-if="authStore.isPremium" class="flex items-center gap-3">
+									<div class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
+										<input type="color" v-model="primary_color"
+											class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent" />
+									</div>
 									<span class="text-sm font-medium text-slate-600">{{ primary_color }}</span>
+								</div>
+								<div v-else class="flex flex-col gap-2">
+									<div class="flex items-center gap-2">
+										<button v-for="color in ['#ec4899', '#2e7d32', '#d4af37', '#1976d2']" :key="color" type="button"
+											@click="primary_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer"
+											:class="primary_color === color ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'"
+											:style="{ backgroundColor: color }"></button>
+									</div>
+									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
+										<Lock class="w-3 h-3 text-rose-500" /> Cor customizada requer Premium
+									</span>
 								</div>
 							</FormGroup>
 
 							<FormGroup label="Cor de Fundo" :error="errors.background_color">
-								<div class="flex items-center gap-4 h-10">
-									<Input type="color" v-model="background_color"
-										class="w-8 h-8 rounded cursor-pointer p-0 border-0 bg-transparent" />
+								<div v-if="authStore.isPremium" class="flex items-center gap-3">
+									<div class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
+										<input type="color" v-model="background_color"
+											class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent" />
+									</div>
 									<span class="text-sm font-medium text-slate-600">{{ background_color }}</span>
+								</div>
+								<div v-else class="flex flex-col gap-2">
+									<div class="flex items-center gap-2">
+										<button v-for="color in ['#ffffff', '#f8fafc', '#fffaf0', '#f5f5f4']" :key="color" type="button"
+											@click="background_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer"
+											:class="background_color === color ? 'border-slate-800 scale-110 shadow-sm' : 'border-slate-200 hover:scale-105'"
+											:style="{ backgroundColor: color }"></button>
+									</div>
+									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
+										<Lock class="w-3 h-3 text-rose-500" /> Fundo customizado requer Premium
+									</span>
+								</div>
+							</FormGroup>
+						</div>
+
+						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+							<FormGroup label="Fonte dos Títulos">
+								<div v-if="authStore.isPremium" class="w-full">
+									<Select v-model="title_font">
+										<SelectTrigger class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
+											<SelectValue placeholder="Selecione a fonte dos títulos" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem v-for="(font, key) in FONTS_REGISTRY" :key="key" :value="key" :style="{ fontFamily: font.cssFamily }">
+												{{ font.name }}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div v-else class="flex flex-col gap-2">
+									<Select disabled model-value="playfair">
+										<SelectTrigger class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
+											<SelectValue placeholder="Playfair Display (Serifada Elegante)" />
+										</SelectTrigger>
+									</Select>
+									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
+										<Lock class="w-3 h-3 text-rose-500" /> Alterar fonte de títulos requer Premium
+									</span>
+								</div>
+							</FormGroup>
+
+							<FormGroup label="Fonte do Texto">
+								<div v-if="authStore.isPremium" class="w-full">
+									<Select v-model="body_font">
+										<SelectTrigger class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
+											<SelectValue placeholder="Selecione a fonte do texto" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem v-for="(font, key) in FONTS_REGISTRY" :key="key" :value="key" :style="{ fontFamily: font.cssFamily }">
+												{{ font.name }}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div v-else class="flex flex-col gap-2">
+									<Select disabled model-value="inter">
+										<SelectTrigger class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
+											<SelectValue placeholder="Inter (Padrão Limpo)" />
+										</SelectTrigger>
+									</Select>
+									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
+										<Lock class="w-3 h-3 text-rose-500" /> Alterar fonte de texto requer Premium
+									</span>
 								</div>
 							</FormGroup>
 						</div>
@@ -861,6 +1131,48 @@ const saveSettings = handleSubmit(async (values) => {
 									@auto-upload="onBackgroundUpload" :maxSizeMb="2" accept="image/*" />
 							</FormGroup>
 						</div>
+
+						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100/50">
+							<FormGroup label="Música de Fundo (YouTube)" :error="errors.music_url">
+								<div v-if="authStore.isPremium" class="w-full space-y-1">
+									<Input v-model="music_url" placeholder="https://www.youtube.com/watch?v=..." class="bg-slate-50/50 rounded-xl border-slate-200" />
+									<span class="text-[10px] text-slate-400 font-light">
+										Cole o link de um vídeo do YouTube.
+									</span>
+								</div>
+								<div v-else class="flex flex-col gap-2">
+									<Input disabled placeholder="Música desativada (Requer Premium)" class="bg-slate-100 text-slate-400 rounded-xl h-10 border-slate-200 cursor-not-allowed" />
+									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
+										<Lock class="w-3 h-3 text-rose-500" /> Música de fundo requer Premium
+									</span>
+								</div>
+							</FormGroup>
+
+							<FormGroup label="Efeito Visual de Fundo">
+								<div v-if="authStore.isPremium" class="w-full">
+									<Select v-model="ambient_effect">
+										<SelectTrigger class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
+											<SelectValue placeholder="Selecione um efeito" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">Nenhum efeito</SelectItem>
+											<SelectItem value="rose-petals">Pétalas de Rosas</SelectItem>
+											<SelectItem value="sparkles">Brilhos Dourados</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div v-else class="flex flex-col gap-2">
+									<Select disabled model-value="none">
+										<SelectTrigger class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
+											<SelectValue placeholder="Nenhum efeito" />
+										</SelectTrigger>
+									</Select>
+									<span class="text-[10px] text-slate-500 flex items-center gap-1 font-light">
+										<Lock class="w-3 h-3 text-rose-500" /> Efeitos ambientais requerem Premium
+									</span>
+								</div>
+							</FormGroup>
+						</div>
 					</div>
 
 					<div class="pt-6 border-t border-slate-100 flex justify-end">
@@ -868,11 +1180,47 @@ const saveSettings = handleSubmit(async (values) => {
 							{{ isSaving ? 'Salvando...' : 'Salvar Alterações' }}
 						</Button>
 					</div>
+
+					<div class="space-y-6 pt-6 border-t border-slate-100">
+						<div class="flex items-center justify-between">
+							<div>
+								<h3 class="text-lg font-semibold text-slate-800">Integração Financeira</h3>
+								<p class="text-xs text-slate-500">Conecte sua conta Mercado Pago para receber pagamentos.</p>
+							</div>
+						</div>
+
+						<div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between gap-4">
+							<div class="flex items-center gap-4">
+								<div class="w-12 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center">
+									<svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+										<path
+											d="M12 0C5.37 0 0 5.37 0 12c0 6.63 5.37 12 12 12 6.63 0 12-5.37 12-12C24 5.37 18.63 0 12 0zm0 21.6c-5.3 0-9.6-4.3-9.6-9.6 0-5.3 4.3-9.6 9.6-9.6 5.3 0 9.6 4.3 9.6 9.6 0 5.3-4.3 9.6-9.6 9.6z" />
+									</svg>
+								</div>
+								<div>
+									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar Mercado Pago" }}</h4>
+									<p class="text-xs text-slate-500">{{ tenant?.mp_user_id ? "Sua conta está conectada." : "Permita o acesso para receber pagamentos diretamente." }}</p>
+								</div>
+							</div>
+
+							<div v-if="!tenant?.mp_user_id">
+								<Button type="button" @click="connectToMarketPago">
+									Conectar Conta
+								</Button>
+							</div>
+							<div v-else>
+								<Button type="button" variant="outline" class="text-red-500 hover:text-red-600"
+									@click="handleDisconnect">
+									Desconectar
+								</Button>
+							</div>
+						</div>
+					</div>
 				</form>
 			</TabsContent>
 
 			<!-- TAB: GALERIA -->
-			<TabsContent value="galeria" class="mt-0">
+			<TabsContent value="gallery" class="mt-0">
 				<div
 					class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6">
 					<div class="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -883,6 +1231,23 @@ const saveSettings = handleSubmit(async (values) => {
 					</div>
 
 					<div v-if="show_gallery" class="space-y-8 pt-2">
+						<!-- Gallery Limits Information Alert -->
+						<PlanLimitAlert
+							:variant="authStore.isPremium ? 'success' : 'danger'"
+							:icon="Sparkles"
+							:title="`Limites da Galeria (Plano ${authStore.isPremium ? 'Premium' : 'Grátis'}):`"
+							:button-label="!authStore.isPremium ? 'Aumentar Limites ✨' : undefined"
+							@action="activeTab = 'subscription'"
+						>
+							<template #description>
+								<p class="text-xs text-slate-600 mt-0.5 font-light">
+									Fotos da Página Inicial: <span class="font-bold text-slate-800">{{ homePrivateImages.length }} / {{
+										authStore.isPremium ? 20 : 5 }} fotos</span> |
+									Fotos da Galeria Pública: <span class="font-bold text-slate-800">{{ generalGalleryImages.length }} /
+										{{ authStore.isPremium ? 'Sem limite' : 50 }} fotos</span>
+								</p>
+							</template>
+						</PlanLimitAlert>
 						<FormGroup label="Adicionar Foto">
 							<div class="flex flex-col gap-4 p-4 border border-slate-100 rounded-2xl bg-slate-50/50">
 								<div class="flex flex-col md:flex-row md:items-center gap-4">
@@ -890,11 +1255,13 @@ const saveSettings = handleSubmit(async (values) => {
 									<RadioGroup v-model="handleChangeUpload" class="flex items-center gap-6">
 										<div class="flex items-center gap-2">
 											<RadioGroupItem id="option-private" value="false" />
-											<Label for="option-private" class="cursor-pointer text-sm font-normal text-slate-600">Página Inicial (Privada)</Label>
+											<Label for="option-private" class="cursor-pointer text-sm font-normal text-slate-600">Página
+												Inicial (Privada)</Label>
 										</div>
 										<div class="flex items-center gap-2">
 											<RadioGroupItem id="option-public" value="true" />
-											<Label for="option-public" class="cursor-pointer text-sm font-normal text-slate-600">Galeria Geral (Pública)</Label>
+											<Label for="option-public" class="cursor-pointer text-sm font-normal text-slate-600">Galeria Geral
+												(Pública)</Label>
 										</div>
 									</RadioGroup>
 								</div>
@@ -929,7 +1296,7 @@ const saveSettings = handleSubmit(async (values) => {
 								Fotos da Galeria Geral
 								<span class="text-xs font-normal text-slate-400">({{ generalGalleryImages.length }} fotos)</span>
 							</h4>
-							<p class="text-xs text-slate-500">Estas fotos aparecem na galeria geral pública de convidados (inclui
+							<p class="text-xs text-slate-500">Estas fotos aparecem na galeria general pública de convidados (inclui
 								fotos públicas enviadas pelos noivos e fotos enviadas por convidados).</p>
 							<ImageGallery v-if="generalGalleryImages.length > 0" :images="generalGalleryImages" :isAdmin="true"
 								@delete="deleteGalleryImage" />
@@ -1003,7 +1370,8 @@ const saveSettings = handleSubmit(async (values) => {
 						</div>
 
 						<!-- Add FAQ Form -->
-						<form @submit.prevent="addCustomFaq" class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
+						<form @submit.prevent="addCustomFaq"
+							class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
 							<h4 class="text-sm font-semibold text-slate-800">Nova Pergunta</h4>
 
 							<FormGroup label="Pergunta" :error="faqErrors.faqQuestion">
@@ -1030,7 +1398,7 @@ const saveSettings = handleSubmit(async (values) => {
 			</TabsContent>
 
 			<!-- TAB: CRONOGRAMA -->
-			<TabsContent value="cronograma" class="mt-0">
+			<TabsContent value="schedule" class="mt-0">
 				<div
 					class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6">
 					<div class="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -1097,7 +1465,8 @@ const saveSettings = handleSubmit(async (values) => {
 						</div>
 
 						<!-- Add Schedule Form -->
-						<form @submit.prevent="addCustomSchedule" class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
+						<form @submit.prevent="addCustomSchedule"
+							class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
 							<h4 class="text-sm font-semibold text-slate-800">Novo Evento</h4>
 
 							<FormGroup label="Título do Evento" :error="scheduleErrors.scheduleTitle">
@@ -1148,8 +1517,180 @@ const saveSettings = handleSubmit(async (values) => {
 					</div>
 				</div>
 			</TabsContent>
+
+			<!-- TAB: ASSINATURA -->
+			<TabsContent value="subscription" class="mt-0">
+				<div
+					class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8">
+					<div class="flex items-center justify-between border-b border-slate-100 pb-4">
+						<div>
+							<h3 class="text-lg font-semibold text-slate-800">Assinatura Premium</h3>
+							<p class="text-xs text-slate-500">Ative os recursos exclusivos da plataforma para o seu casamento.</p>
+						</div>
+					</div>
+
+					<!-- Status da Assinatura -->
+					<PlanLimitAlert
+						v-if="authStore.isPremium"
+						variant="success"
+						:icon="Sparkles"
+						icon-effect="pulse"
+						title="Seu Plano é Premium! ✨"
+					>
+						<template #description>
+							<p v-if="tenant?.premium_until" class="text-xs text-slate-600 mt-0.5 font-light">
+								Aproveite todos os recursos exclusivos liberados em seu plano, válido até <span class="font-semibold text-slate-950">{{
+									dayjs(tenant.premium_until).format('DD/MM/YYYY') }}</span>.
+							</p>
+						</template>
+						<template #actions>
+							<div
+								class="bg-white px-4 py-2 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-600 uppercase tracking-widest text-center shadow-sm">
+								Plano Ativo
+							</div>
+						</template>
+					</PlanLimitAlert>
+
+					<div v-else class="space-y-8">
+						<!-- Banner de Upgrade -->
+						<PlanLimitAlert
+							variant="premium"
+							:icon="Sparkles"
+							title="Desbloqueie todo o potencial da sua lista"
+							description="Aproveite recursos exclusivos como paleta de cores customizada, contagem regressiva, convidados ilimitados e relatórios completos."
+						/>
+
+						<!-- Lista de Planos -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+							<!-- Plano Trimestral -->
+							<div
+								class="border border-slate-150 rounded-2xl p-6 bg-white hover:border-slate-300 transition-all flex flex-col justify-between shadow-sm">
+								<div class="space-y-4">
+									<div>
+										<h5 class="font-bold text-lg text-slate-900">Plano Trimestral</h5>
+										<p class="text-slate-500 text-xs mt-0.5">Ideal para casamentos próximos</p>
+									</div>
+									<div class="text-3xl font-bold text-slate-900 font-serif">R$ 79,99 <span
+											class="text-xs font-normal text-slate-400">/ 3 meses</span></div>
+									<ul class="space-y-2.5 pt-4 border-t border-slate-100 text-sm text-slate-600">
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-emerald-500" /> Cores de tema personalizadas
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-emerald-500" /> RSVP e Convidados ilimitados
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-emerald-500" /> Galeria: máx 20 fotos Home / públicas ilimitadas
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-emerald-500" /> Contagem regressiva active
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-emerald-500" /> Exportação de planilhas de convidados
+										</li>
+									</ul>
+								</div>
+								<Button type="button" @click="openCheckout('quarterly')"
+									class="w-full mt-6 bg-slate-900 hover:bg-slate-800 text-white rounded-xl">
+									Assinar Trimestral
+								</Button>
+							</div>
+
+							<!-- Plano Semestral -->
+							<div
+								class="border-2 border-rose-500 rounded-2xl p-6 bg-white shadow-md shadow-rose-50/50 flex flex-col justify-between">
+								<div class="space-y-4">
+									<div class="flex justify-between items-start">
+										<div>
+											<h5 class="font-bold text-lg text-rose-600">Plano Semestral</h5>
+											<p class="text-slate-500 text-xs mt-0.5">Mais tempo para planejar</p>
+										</div>
+										<span
+											class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Melhor
+											Valor</span>
+									</div>
+									<div class="text-3xl font-bold text-slate-900 font-serif">R$ 159,99 <span
+											class="text-xs font-normal text-slate-400">/ 6 meses</span></div>
+									<ul class="space-y-2.5 pt-4 border-t border-slate-100 text-sm text-slate-600">
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-rose-500" /> Todos os recursos liberados
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-rose-500" /> Galeria: máx 20 fotos Home / públicas ilimitadas
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-rose-500" /> Paletas e logotipo customizados
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-rose-500" /> Suporte prioritário via WhatsApp
+										</li>
+										<li class="flex items-center gap-2">
+											<CheckCircle class="w-4 h-4 text-rose-500" /> Exportações e controle estendido
+										</li>
+									</ul>
+								</div>
+								<Button type="button" @click="openCheckout('semestral')"
+									class="w-full mt-6 bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-sm">
+									Assinar Semestral
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</TabsContent>
 		</Tabs>
 	</div>
+
+	<!-- MOCK MERCADO PAGO CHECKOUT PRO MODAL -->
+	<Modal v-model:open="showCheckoutModal" title="Checkout Mercado Pago"
+		description="Finalize seu pagamento de forma segura via Mercado Pago.">
+		<div class="space-y-6 pt-4">
+			<div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+				<div class="flex justify-between items-center text-sm">
+					<span class="text-slate-500">Produto:</span>
+					<span class="font-bold text-slate-800">Wedding Gift Premium ({{ selectedPlan === 'quarterly' ? 'Trimestral' :
+						'Semestral' }})</span>
+				</div>
+				<div class="flex justify-between items-center text-sm">
+					<span class="text-slate-500">Valor:</span>
+					<span class="font-bold text-slate-800">R$ {{ selectedPlan === 'quarterly' ? '79,99' : '159,99' }}</span>
+				</div>
+			</div>
+
+			<div
+				class="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 rounded-2xl bg-white space-y-3">
+				<div
+					class="w-40 h-40 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 relative overflow-hidden">
+					<svg class="w-32 h-32 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+						stroke-width="1.5">
+						<rect x="2" y="2" width="6" height="6" rx="1" />
+						<rect x="16" y="2" width="6" height="6" rx="1" />
+						<rect x="2" y="16" width="6" height="6" rx="1" />
+						<path d="M6 9v2M9 6h2M18 9v2M15 6h1M9 18v2M6 15h2M18 18v4M15 15h3M21 15v1M15 21h3" />
+					</svg>
+					<div class="absolute inset-0 bg-slate-900/5 flex items-center justify-center">
+						<span
+							class="bg-white/95 px-3 py-1 rounded-full text-[10px] font-bold text-sky-600 shadow border border-sky-100">Mercado
+							Pago Pix</span>
+					</div>
+				</div>
+				<span class="text-xs text-slate-500 text-center max-w-xs leading-relaxed font-light">
+					Escaneie o QR Code acima com o app do seu banco para pagar com Pix. O acesso é liberado instantaneamente.
+				</span>
+			</div>
+
+			<div class="space-y-3">
+				<Button type="button" @click="handleConfirmSimulatedPayment" :disabled="isSimulatingPayment"
+					class="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md">
+					<Loader2 v-if="isSimulatingPayment" class="w-4 h-4 animate-spin mr-2" />
+					Simular Confirmação de Pagamento (Mercado Pago)
+				</Button>
+				<Button type="button" variant="ghost" @click="showCheckoutModal = false" class="w-full text-slate-500">
+					Cancelar
+				</Button>
+			</div>
+		</div>
+	</Modal>
 </template>
 
 <style scoped>

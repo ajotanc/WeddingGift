@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/auth";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
@@ -34,17 +38,15 @@ const registerTenant = async () => {
 			JSON.stringify({
 				slug: form.value.slug,
 				couple_name: coupleName,
+				groom_name: form.value.groom_name,
+				bride_name: form.value.bride_name,
 				pix_key: form.value.pix_key,
-				status: "active",
-				settings: {
-					show_countdown: true,
-					guest_limit: null,
-				},
-				theme: {
-					primary_color: form.value.primary_color,
-					background_color: "#ffffff",
-					background_image: null,
-				},
+				plan: "free",
+				show_countdown: true,
+				guest_limit: null,
+				primary_color: form.value.primary_color,
+				background_color: "#ffffff",
+				background_image: null,
 			}),
 		);
 

@@ -340,8 +340,6 @@ const [qCategoryCustom] = defineQuotaField("categoryCustom");
 const qImageBase64 = ref("");
 const qImageFile = ref<File | null>(null);
 
-
-
 const openNewQuota = () => {
 	editProductId.value = null;
 	resetQuotaForm();

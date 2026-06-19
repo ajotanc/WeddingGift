@@ -8,3 +8,5 @@ dist-ssr
 .vscode/
 scratch
 .antigravity
+appwrite.json
+functions

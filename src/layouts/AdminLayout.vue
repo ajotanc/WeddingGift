@@ -79,7 +79,7 @@ const isActive = (path: string) => route.path.includes(`/${path}`);
     </header>
 
     <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-10 overflow-hidden">
-      <div v-if="loading" class="flex justify-center p-20 text-slate-400 font-light tracking-wide animate-pulse">
+      <div v-if="loading" class="flex items-center justify-center min-h-[50vh] w-full text-slate-400 font-light tracking-wide animate-pulse">
         Carregando painel...
       </div>
       <div v-else-if="error" class="text-center p-20 text-red-500 font-medium">{{ error }}</div>

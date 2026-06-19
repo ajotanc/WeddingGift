@@ -22,16 +22,21 @@ export interface ITenant extends Models.Row {
 	event_longitude?: number | null;
 	couple_history?: string;
 	quote?: string;
-	status: "active" | "pending";
+	plan?: "free" | "premium" | null;
+	premium_until?: string | null;
 	primary_color: string;
 	background_color: string;
 	background_image?: string | null;
 	logo_url?: string | null;
+	title_font?: string | null;
+	body_font?: string | null;
 	guest_limit?: number | null;
 	show_countdown?: boolean;
 	show_gallery?: boolean;
 	show_faq?: boolean;
 	show_schedule?: boolean;
+	music_url?: string | null;
+	ambient_effect?: "none" | "rose-petals" | "sparkles" | null;
 	products?: IProduct[];
 	messages?: IMessage[];
 	rsvps?: IRsvp[];
@@ -39,6 +44,9 @@ export interface ITenant extends Models.Row {
 	gallery: IGalleryImage[];
 	faqs: IFaq[];
 	schedules?: IScheduleItem[];
+	mp_user_id: string | null;
+	mp_access_token: string | null;
+	mp_refresh_token: string | null;
 }
 
 export const TenantService = {

@@ -1,28 +1,34 @@
 <script setup lang="ts">
 import Modal from "@/components/reusable/Modal.vue";
 import PageHeader from "@/components/reusable/PageHeader.vue";
+import PlanLimitAlert from "@/components/reusable/PlanLimitAlert.vue";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { useTenant } from "@/composables/useTenant";
 import { generateThankYouMessage } from "@/lib/ai";
 import type { IGuest } from "@/services/guest.service";
 import { MessageService } from "@/services/message.service";
+import { useAuthStore } from "@/stores/auth";
 import { formatPhone } from "@brazilian-utils/brazilian-utils";
 import dayjs from "dayjs";
 import {
 	Copy,
 	Download,
+	Lock,
 	MessageCircle,
 	Sparkles,
 	Trash2,
 	Users,
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 import * as XLSX from "xlsx";
 
 const { confirm } = useConfirm();
 const { tenant, rsvps, messages } = useTenant();
+const authStore = useAuthStore();
+const router = useRouter();
 
 const rsvpStats = computed(() => {
 	const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
@@ -101,9 +107,21 @@ const openWhatsApp = () => {
 	guestPhone.value = undefined;
 };
 
-
-
 const exportToExcel = () => {
+	if (!authStore.isPremium) {
+		toast.info("Recurso Premium", {
+			description:
+				"A exportação da planilha de convidados em formato Excel requer o plano Premium.",
+			action: {
+				label: "Upgrade",
+				onClick: () => {
+					router.push({ name: "admin-config", query: { tab: "subscription" } });
+				},
+			},
+		});
+		return;
+	}
+
 	const confirmed = rsvps.value.filter((r) => r.status === "confirmed");
 
 	if (confirmed.length === 0) {
@@ -134,6 +152,17 @@ const exportToExcel = () => {
   <div class="space-y-12">
     <!-- Header -->
     <PageHeader title="Convidados &amp; Recados" description="Acompanhe as confirmações de presença e o mural." />
+
+    <!-- Free Plan Limit Warning Banner -->
+    <PlanLimitAlert
+      v-if="!authStore.isPremium"
+      variant="danger"
+      :icon="Lock"
+      :title="`Limite do Plano Grátis (${rsvps.length}/20 RSVPs)`"
+      description="No plano gratuito seu casamento está limitado a receber até 20 confirmações de presença (RSVP). Faça o upgrade para receber confirmações ilimitadas e liberar exportações."
+      button-label="Obter Premium"
+      @action="router.push({ name: 'admin-config', query: { tab: 'subscription' } })"
+    />
 
     <!-- Metrics -->
     <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">

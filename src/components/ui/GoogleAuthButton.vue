@@ -31,7 +31,7 @@ const buttonStyle = computed(() => {
     class="flex items-center gap-3 bg-white/80 backdrop-blur border border-slate-200 p-2 rounded-full shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
     :style="props.user ? undefined : buttonStyle">
     <template v-if="props.user">
-      <img v-if="props.user.prefs?.photoURL" :src="props.user.prefs?.photoURL" class="w-6 h-6 rounded-full" />
+      <img v-if="props.user.prefs?.photoURL" :src="props.user.prefs?.photoURL" referrerpolicy="no-referrer" class="w-6 h-6 rounded-full" />
       <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs"
         v-else>
         {{ props.user.name?.charAt(0) || 'C' }}
