@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import type { Component } from "vue";
 
-const props = defineProps<{
+defineProps<{
 	variant?: "danger" | "premium" | "success";
 	title: string;
 	description?: string;

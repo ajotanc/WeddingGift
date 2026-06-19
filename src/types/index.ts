@@ -59,7 +59,7 @@ export interface Guest {
 	id: string;
 	email: string;
 	displayName: string;
-	photoURL?: string;
+	photo_url?: string;
 	createdAt: number;
 }
 

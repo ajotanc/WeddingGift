@@ -2,12 +2,28 @@ import { account } from "@/lib/appwrite";
 import { ConsentService } from "@/services/consent.service";
 import { GuestService, type IGuest } from "@/services/guest.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
+import {
+	DEFAULT_BACKGROUND_COLOR,
+	DEFAULT_BODY_FONT,
+	DEFAULT_PRIMARY_COLOR,
+	DEFAULT_TITLE_FONT,
+	FREE_BACKGROUND_COLORS,
+	FREE_PRIMARY_COLORS,
+} from "@/lib/defaults";
 import { type Models, OAuthProvider } from "appwrite";
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
 
+export interface IUserPreferences extends Models.Preferences {
+	photo_url?: string;
+	accepted_terms?: boolean;
+	accepted_terms_at?: string;
+}
+
+export type IUser = Models.User<IUserPreferences> | null;
+
 interface AuthState {
-	user: Models.User<Models.Preferences> | null;
+	user: IUser;
 	tenant: ITenant | null;
 	guest: IGuest | null;
 	loading: boolean;
@@ -34,7 +50,7 @@ export const useAuthStore = defineStore("auth", {
 		async init() {
 			this.loading = true;
 			try {
-				const sessionUser = await account.get();
+				const sessionUser = await account.get<IUserPreferences>();
 				this.user = sessionUser;
 
 				if (sessionUser) {
@@ -44,7 +60,7 @@ export const useAuthStore = defineStore("auth", {
 						if (
 							session.provider === "google" &&
 							session.providerAccessToken &&
-							!sessionUser.prefs?.photoURL
+							!sessionUser.prefs?.photo_url
 						) {
 							const res = await fetch(
 								`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${session.providerAccessToken}`,
@@ -55,13 +71,15 @@ export const useAuthStore = defineStore("auth", {
 								await account.updatePrefs({
 									prefs: {
 										...sessionUser.prefs,
-										photoURL: data.picture,
+										photo_url: data.picture,
 									},
 								});
-								this.user.prefs = {
-									...sessionUser.prefs,
-									photoURL: data.picture,
-								};
+								if (this.user) {
+									this.user.prefs = {
+										...sessionUser.prefs,
+										photo_url: data.picture,
+									};
+								}
 							}
 						}
 					} catch (e) {
@@ -87,11 +105,13 @@ export const useAuthStore = defineStore("auth", {
 										accepted_terms_at: data.accepted_terms_at,
 									},
 								});
-								this.user.prefs = {
-									...sessionUser.prefs,
-									accepted_terms: true,
-									accepted_terms_at: data.accepted_terms_at,
-								};
+								if (this.user) {
+									this.user.prefs = {
+										...sessionUser.prefs,
+										accepted_terms: true,
+										accepted_terms_at: data.accepted_terms_at,
+									};
+								}
 
 								await ConsentService.log({
 									user_id: sessionUser.$id,
@@ -111,10 +131,10 @@ export const useAuthStore = defineStore("auth", {
 						this.guest = g?.$id
 							? g
 							: ({
-									$id: sessionUser.$id,
-									email: sessionUser.email,
-									name: sessionUser.name,
-								} as IGuest);
+								$id: sessionUser.$id,
+								email: sessionUser.email,
+								name: sessionUser.name,
+							} as IGuest);
 						return;
 					}
 
@@ -130,10 +150,10 @@ export const useAuthStore = defineStore("auth", {
 						this.guest = g?.$id
 							? g
 							: ({
-									$id: sessionUser.$id,
-									email: sessionUser.email,
-									name: sessionUser.name,
-								} as IGuest);
+								$id: sessionUser.$id,
+								email: sessionUser.email,
+								name: sessionUser.name,
+							} as IGuest);
 					} catch (e) {
 						this.guest = {
 							$id: sessionUser.$id,
@@ -192,19 +212,17 @@ export const useAuthStore = defineStore("auth", {
 		sanitizeTenant(t: ITenant): ITenant {
 			const copy = { ...t };
 			if (!this.isPremium) {
-				const freeColors = ["#ec4899", "#2e7d32", "#d4af37", "#1976d2"];
-				if (!freeColors.includes(copy.primary_color)) {
-					copy.primary_color = "#ec4899";
+				if (!FREE_PRIMARY_COLORS.includes(copy.primary_color)) {
+					copy.primary_color = DEFAULT_PRIMARY_COLOR;
 				}
-				const freeBackgrounds = ["#ffffff", "#f8fafc", "#fffaf0", "#f5f5f4"];
 				if (
 					copy.background_color &&
-					!freeBackgrounds.includes(copy.background_color)
+					!FREE_BACKGROUND_COLORS.includes(copy.background_color)
 				) {
-					copy.background_color = "#ffffff";
+					copy.background_color = DEFAULT_BACKGROUND_COLOR;
 				}
-				copy.title_font = "playfair";
-				copy.body_font = "inter";
+				copy.title_font = DEFAULT_TITLE_FONT;
+				copy.body_font = DEFAULT_BODY_FONT;
 				copy.show_countdown = false;
 				copy.music_url = null;
 				copy.ambient_effect = null;

@@ -26,6 +26,7 @@ export interface ITenant extends Models.Row {
 	premium_until?: string | null;
 	primary_color: string;
 	background_color: string;
+	text_color?: string | null;
 	background_image?: string | null;
 	logo_url?: string | null;
 	title_font?: string | null;

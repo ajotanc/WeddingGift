@@ -3,6 +3,7 @@ import FormGroup from "@/components/reusable/FormGroup.vue";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
+import { DEFAULT_PRIMARY_COLOR } from "@/lib/defaults";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -23,7 +24,7 @@ const form = ref({
 	bride_name: "",
 	slug: "",
 	pix_key: "",
-	primary_color: "#ec4899",
+	primary_color: DEFAULT_PRIMARY_COLOR,
 	acceptedTerms: false,
 });
 

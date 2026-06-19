@@ -39,6 +39,15 @@ import { ScheduleService } from "@/services/schedule.service";
 import { StorageService } from "@/services/storage.service";
 import { TenantService } from "@/services/tenant.service";
 import { useAuthStore } from "@/stores/auth";
+import {
+	DEFAULT_BACKGROUND_COLOR,
+	DEFAULT_BODY_FONT,
+	DEFAULT_PRIMARY_COLOR,
+	DEFAULT_TEXT_COLOR,
+	DEFAULT_TITLE_FONT,
+	FREE_BACKGROUND_COLORS,
+	FREE_PRIMARY_COLORS,
+} from "@/lib/defaults";
 import { toTypedSchema } from "@vee-validate/zod";
 import dayjs from "dayjs";
 import {
@@ -109,6 +118,9 @@ const handleConfirmSimulatedPayment = async () => {
 			tenant.value.plan = authStore.tenant.plan;
 			tenant.value.premium_until = authStore.tenant.premium_until;
 		}
+		setTimeout(() => {
+			window.location.reload();
+		}, 1500);
 	} catch (e) {
 		console.error(e);
 		toast.error("Erro ao processar ativação de assinatura.");
@@ -179,6 +191,10 @@ const zodSchema = z.object({
 		.string()
 		.regex(/^#([0-9A-Fa-f]{3}){1,2}$/, { message: "Cor inválida" })
 		.optional(),
+	text_color: z
+		.string()
+		.regex(/^#([0-9A-Fa-f]{3}){1,2}$/, { message: "Cor inválida" })
+		.optional(),
 	title_font: z.string().optional().nullable(),
 	body_font: z.string().optional().nullable(),
 	music_url: z.string().optional().nullable(),
@@ -211,11 +227,12 @@ const { handleSubmit, errors, setValues, defineField } =
 			show_gallery: false,
 			show_faq: false,
 			show_schedule: false,
-			primary_color: "#ec4899",
-			background_color: "#ffffff",
+			primary_color: DEFAULT_PRIMARY_COLOR,
+			background_color: DEFAULT_BACKGROUND_COLOR,
+			text_color: DEFAULT_TEXT_COLOR,
 			logo_url: "",
-			title_font: "playfair",
-			body_font: "inter",
+			title_font: DEFAULT_TITLE_FONT,
+			body_font: DEFAULT_BODY_FONT,
 			music_url: "",
 			ambient_effect: "none",
 		},
@@ -240,6 +257,7 @@ const [primary_color] = defineField("primary_color");
 const [background_image] = defineField("background_image");
 const [logo_url] = defineField("logo_url");
 const [background_color] = defineField("background_color");
+const [text_color] = defineField("text_color");
 const [title_font] = defineField("title_font");
 const [body_font] = defineField("body_font");
 const [music_url] = defineField("music_url");
@@ -335,11 +353,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-							label: "Upgrade",
-							onClick: () => {
-								activeTab.value = "subscription";
-							},
+						label: "Upgrade",
+						onClick: () => {
+							activeTab.value = "subscription";
 						},
+					},
 			});
 			return;
 		}
@@ -354,11 +372,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-							label: "Upgrade",
-							onClick: () => {
-								activeTab.value = "subscription";
-							},
+						label: "Upgrade",
+						onClick: () => {
+							activeTab.value = "subscription";
 						},
+					},
 			});
 			return;
 		}
@@ -714,12 +732,13 @@ const loadSettings = () => {
 			event_latitude: tenant.value.event_latitude || null,
 			event_longitude: tenant.value.event_longitude || null,
 			show_countdown: tenant.value.show_countdown ?? true,
-			primary_color: tenant.value.primary_color || "#ec4899",
+			primary_color: tenant.value.primary_color || DEFAULT_PRIMARY_COLOR,
 			background_image: tenant.value.background_image || "",
 			logo_url: tenant.value.logo_url || "",
-			background_color: tenant.value.background_color || "#ffffff",
-			title_font: tenant.value.title_font || "playfair",
-			body_font: tenant.value.body_font || "inter",
+			background_color: tenant.value.background_color || DEFAULT_BACKGROUND_COLOR,
+			text_color: tenant.value.text_color || DEFAULT_TEXT_COLOR,
+			title_font: tenant.value.title_font || DEFAULT_TITLE_FONT,
+			body_font: tenant.value.body_font || DEFAULT_BODY_FONT,
 			music_url: tenant.value.music_url || "",
 			ambient_effect: tenant.value.ambient_effect || "none",
 		});
@@ -896,7 +915,7 @@ const connectToMarketPago = () => {
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
 					:class="activeTab === 'subscription' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<Sparkles class="w-4 h-4" />
-					Assinatura (Premium)
+					Assinatura
 				</button>
 			</div>
 
@@ -1016,10 +1035,26 @@ const connectToMarketPago = () => {
 							</div>
 						</FormGroup>
 
-						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+							<FormGroup label="Cor do Texto" :error="errors.text_color">
+								<div class="flex flex-col gap-2">
+									<div class="flex items-center gap-3">
+										<div
+											class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
+											<input type="color" v-model="text_color"
+												class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent" />
+										</div>
+										<span class="text-sm font-medium text-slate-600">{{ text_color }}</span>
+									</div>
+									<span class="text-[10px] text-slate-400 font-light leading-normal">
+										Essa cor serve como base para todos os textos, bordas e detalhes cinzas do site.
+									</span>
+								</div>
+							</FormGroup>
 							<FormGroup label="Cor Principal">
 								<div v-if="authStore.isPremium" class="flex items-center gap-3">
-									<div class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
+									<div
+										class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
 										<input type="color" v-model="primary_color"
 											class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent" />
 									</div>
@@ -1027,11 +1062,14 @@ const connectToMarketPago = () => {
 								</div>
 								<div v-else class="flex flex-col gap-2">
 									<div class="flex items-center gap-2">
-										<button v-for="color in ['#ec4899', '#2e7d32', '#d4af37', '#1976d2']" :key="color" type="button"
-											@click="primary_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm"
+										<button v-for="color in FREE_PRIMARY_COLORS" :key="color" type="button"
+											@click="primary_color = color"
+											class="w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm"
 											:class="primary_color === color ? 'border-slate-800 scale-110' : 'border-slate-200 hover:scale-105'"
 											:style="{ backgroundColor: color }"></button>
-										<button type="button" @click="showUpgradeToast" class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-sm" title="Escolher cor personalizada (Premium)">
+										<button type="button" @click="showUpgradeToast"
+											class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-sm"
+											title="Escolher cor personalizada (Premium)">
 											<Lock class="w-3.5 h-3.5 text-slate-400" />
 										</button>
 									</div>
@@ -1041,7 +1079,8 @@ const connectToMarketPago = () => {
 
 							<FormGroup label="Cor de Fundo" :error="errors.background_color">
 								<div v-if="authStore.isPremium" class="flex items-center gap-3">
-									<div class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
+									<div
+										class="relative w-9 h-9 rounded-xl border border-slate-200 overflow-hidden cursor-pointer shadow-sm">
 										<input type="color" v-model="background_color"
 											class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent" />
 									</div>
@@ -1049,11 +1088,14 @@ const connectToMarketPago = () => {
 								</div>
 								<div v-else class="flex flex-col gap-2">
 									<div class="flex items-center gap-2">
-										<button v-for="color in ['#ffffff', '#f8fafc', '#fffaf0', '#f5f5f4']" :key="color" type="button"
-											@click="background_color = color" class="w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm"
+										<button v-for="color in FREE_BACKGROUND_COLORS" :key="color" type="button"
+											@click="background_color = color"
+											class="w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm"
 											:class="background_color === color ? 'border-slate-800 scale-110' : 'border-slate-200 hover:scale-105'"
 											:style="{ backgroundColor: color }"></button>
-										<button type="button" @click="showUpgradeToast" class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-sm" title="Escolher cor personalizada (Premium)">
+										<button type="button" @click="showUpgradeToast"
+											class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-sm"
+											title="Escolher cor personalizada (Premium)">
 											<Lock class="w-3.5 h-3.5 text-slate-400" />
 										</button>
 									</div>
@@ -1066,11 +1108,13 @@ const connectToMarketPago = () => {
 							<FormGroup label="Fonte dos Títulos">
 								<div v-if="authStore.isPremium" class="w-full">
 									<Select v-model="title_font">
-										<SelectTrigger class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
+										<SelectTrigger
+											class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
 											<SelectValue placeholder="Selecione a fonte dos títulos" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem v-for="(font, key) in FONTS_REGISTRY" :key="key" :value="key" :style="{ fontFamily: font.cssFamily }">
+											<SelectItem v-for="(font, key) in FONTS_REGISTRY" :key="key" :value="key"
+												:style="{ fontFamily: font.cssFamily }">
 												{{ font.name }}
 											</SelectItem>
 										</SelectContent>
@@ -1078,7 +1122,8 @@ const connectToMarketPago = () => {
 								</div>
 								<div v-else class="flex flex-col gap-2">
 									<Select disabled model-value="playfair">
-										<SelectTrigger class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
+										<SelectTrigger
+											class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
 											<SelectValue placeholder="Playfair Display (Serifada Elegante)" />
 										</SelectTrigger>
 									</Select>
@@ -1089,11 +1134,13 @@ const connectToMarketPago = () => {
 							<FormGroup label="Fonte do Texto">
 								<div v-if="authStore.isPremium" class="w-full">
 									<Select v-model="body_font">
-										<SelectTrigger class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
+										<SelectTrigger
+											class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
 											<SelectValue placeholder="Selecione a fonte do texto" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem v-for="(font, key) in FONTS_REGISTRY" :key="key" :value="key" :style="{ fontFamily: font.cssFamily }">
+											<SelectItem v-for="(font, key) in FONTS_REGISTRY" :key="key" :value="key"
+												:style="{ fontFamily: font.cssFamily }">
 												{{ font.name }}
 											</SelectItem>
 										</SelectContent>
@@ -1101,7 +1148,8 @@ const connectToMarketPago = () => {
 								</div>
 								<div v-else class="flex flex-col gap-2">
 									<Select disabled model-value="inter">
-										<SelectTrigger class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
+										<SelectTrigger
+											class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
 											<SelectValue placeholder="Inter (Padrão Limpo)" />
 										</SelectTrigger>
 									</Select>
@@ -1125,13 +1173,15 @@ const connectToMarketPago = () => {
 						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100/50">
 							<FormGroup label="Música de Fundo (YouTube)" :error="errors.music_url">
 								<div v-if="authStore.isPremium" class="w-full space-y-1">
-									<Input v-model="music_url" placeholder="https://www.youtube.com/watch?v=..." class="bg-slate-50/50 rounded-xl border-slate-200" />
+									<Input v-model="music_url" placeholder="https://www.youtube.com/watch?v=..."
+										class="bg-slate-50/50 rounded-xl border-slate-200" />
 									<span class="text-[10px] text-slate-400 font-light">
 										Cole o link de um vídeo do YouTube.
 									</span>
 								</div>
 								<div v-else class="flex flex-col gap-2">
-									<Input disabled placeholder="Música desativada (Requer Premium)" class="bg-slate-100 text-slate-400 rounded-xl h-10 border-slate-200 cursor-not-allowed" />
+									<Input disabled placeholder="Música desativada (Requer Premium)"
+										class="bg-slate-100 text-slate-400 rounded-xl h-10 border-slate-200 cursor-not-allowed" />
 									<PlanRequired text="Música de fundo requer Premium" />
 								</div>
 							</FormGroup>
@@ -1139,7 +1189,8 @@ const connectToMarketPago = () => {
 							<FormGroup label="Efeito Visual de Fundo">
 								<div v-if="authStore.isPremium" class="w-full">
 									<Select v-model="ambient_effect">
-										<SelectTrigger class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
+										<SelectTrigger
+											class="w-full bg-slate-50/50 border-slate-200 rounded-xl text-sm text-slate-700 h-10">
 											<SelectValue placeholder="Selecione um efeito" />
 										</SelectTrigger>
 										<SelectContent>
@@ -1151,7 +1202,8 @@ const connectToMarketPago = () => {
 								</div>
 								<div v-else class="flex flex-col gap-2">
 									<Select disabled model-value="none">
-										<SelectTrigger class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
+										<SelectTrigger
+											class="w-full bg-slate-100 border-slate-200 rounded-xl text-sm text-slate-400 h-10 cursor-not-allowed">
 											<SelectValue placeholder="Nenhum efeito" />
 										</SelectTrigger>
 									</Select>
@@ -1218,13 +1270,10 @@ const connectToMarketPago = () => {
 
 					<div v-if="show_gallery" class="space-y-8 pt-2">
 						<!-- Gallery Limits Information Alert -->
-						<PlanLimitAlert
-							:variant="authStore.isPremium ? 'success' : 'danger'"
-							:icon="Sparkles"
+						<PlanLimitAlert :variant="authStore.isPremium ? 'success' : 'danger'" :icon="Sparkles"
 							:title="`Limites da Galeria (Plano ${authStore.isPremium ? 'Premium' : 'Grátis'}):`"
 							:button-label="!authStore.isPremium ? 'Aumentar Limites ✨' : undefined"
-							@action="activeTab = 'subscription'"
-						>
+							@action="activeTab = 'subscription'">
 							<template #description>
 								<p class="text-xs text-slate-600 mt-0.5 font-light">
 									Fotos da Página Inicial: <span class="font-bold text-slate-800">{{ homePrivateImages.length }} / {{
@@ -1516,17 +1565,13 @@ const connectToMarketPago = () => {
 					</div>
 
 					<!-- Status da Assinatura -->
-					<PlanLimitAlert
-						v-if="authStore.isPremium"
-						variant="success"
-						:icon="Sparkles"
-						icon-effect="pulse"
-						title="Seu Plano é Premium! ✨"
-					>
+					<PlanLimitAlert v-if="authStore.isPremium" variant="success" :icon="Sparkles" icon-effect="pulse"
+						title="Seu Plano é Premium! ✨">
 						<template #description>
 							<p v-if="tenant?.premium_until" class="text-xs text-slate-600 mt-0.5 font-light">
-								Aproveite todos os recursos exclusivos liberados em seu plano, válido até <span class="font-semibold text-slate-950">{{
-									dayjs(tenant.premium_until).format('DD/MM/YYYY') }}</span>.
+								Aproveite todos os recursos exclusivos liberados em seu plano, válido até <span
+									class="font-semibold text-slate-950">{{
+										dayjs(tenant.premium_until).format('DD/MM/YYYY') }}</span>.
 							</p>
 						</template>
 						<template #actions>
@@ -1539,12 +1584,8 @@ const connectToMarketPago = () => {
 
 					<div v-else class="space-y-8">
 						<!-- Banner de Upgrade -->
-						<PlanLimitAlert
-							variant="premium"
-							:icon="Sparkles"
-							title="Desbloqueie todo o potencial da sua lista"
-							description="Aproveite recursos exclusivos como paleta de cores customizada, contagem regressiva, convidados ilimitados e relatórios completos."
-						/>
+						<PlanLimitAlert variant="premium" :icon="Sparkles" title="Desbloqueie todo o potencial da sua lista"
+							description="Aproveite recursos exclusivos como paleta de cores customizada, contagem regressiva, convidados ilimitados e relatórios completos." />
 
 						<!-- Lista de Planos -->
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">

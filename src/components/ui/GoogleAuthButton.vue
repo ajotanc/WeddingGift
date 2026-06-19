@@ -1,29 +1,32 @@
 <script setup lang="ts">
 import { LogOut } from "lucide-vue-next";
+import { DEFAULT_PRIMARY_COLOR, DEFAULT_BACKGROUND_COLOR, DEFAULT_SLATE_COLORS } from "@/lib/defaults";
 import { computed } from "vue";
+import type { IUser } from "@/stores/auth";
+import type { PropType } from "vue";
 
 const props = defineProps({
-	fill: { type: Boolean, default: false },
-	themeColor: { type: String, default: "#ec4899" },
-	user: { type: Object, default: null },
-	label: { type: String, default: "Entrar com Google" },
+  fill: { type: Boolean, default: false },
+  themeColor: { type: String, default: DEFAULT_PRIMARY_COLOR },
+  user: { type: Object as PropType<IUser>, default: null },
+  label: { type: String, default: "Entrar com Google" },
 });
 
 const emit = defineEmits(["click", "logout"]);
 
 const buttonStyle = computed(() => {
-	if (props.fill && !props.user) {
-		return {
-			backgroundColor: props.themeColor,
-			color: "#ffffff",
-			borderColor: props.themeColor,
-		};
-	}
-	return {
-		backgroundColor: "#ffffff",
-		color: "#334155",
-		borderColor: "#e2e8f0",
-	};
+  if (props.fill && !props.user) {
+    return {
+      backgroundColor: props.themeColor,
+      color: DEFAULT_SLATE_COLORS["50"],
+      borderColor: props.themeColor,
+    };
+  }
+  return {
+    backgroundColor: DEFAULT_BACKGROUND_COLOR,
+    color: DEFAULT_SLATE_COLORS["700"],
+    borderColor: DEFAULT_SLATE_COLORS["200"],
+  };
 });
 </script>
 
@@ -32,7 +35,8 @@ const buttonStyle = computed(() => {
     class="flex items-center gap-3 bg-white/80 backdrop-blur border border-slate-200 p-2 rounded-full shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
     :style="props.user ? undefined : buttonStyle">
     <template v-if="props.user">
-      <img v-if="props.user.prefs?.photoURL" :src="props.user.prefs?.photoURL" referrerpolicy="no-referrer" class="w-6 h-6 rounded-full" />
+      <img v-if="props.user.prefs?.photo_url" :src="props.user.prefs?.photo_url" referrerpolicy="no-referrer"
+        class="w-6 h-6 rounded-full" />
       <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs"
         v-else>
         {{ props.user.name?.charAt(0) || 'C' }}

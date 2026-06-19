@@ -207,7 +207,7 @@ const canDeleteImage = (img: IGalleryImage) => {
       <div class="flex flex-col max-w-full max-h-[90vh]" @click.stop>
         <div class="relative max-h-[80vh] flex items-center justify-center">
           <img :src="activeLightboxImage.image_url" class="max-h-[80vh] w-full object-contain" />
-          <a :href="activeLightboxImage.image_url" download target="_blank"
+          <a v-if="props.isAdmin" :href="activeLightboxImage.image_url" download target="_blank"
             class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2.5 rounded-full backdrop-blur-md transition-colors cursor-pointer border border-white/20 flex items-center justify-center shadow-lg"
             title="Baixar imagem">
             <Download class="w-5 h-5" />
