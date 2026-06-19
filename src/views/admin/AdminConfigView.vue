@@ -333,7 +333,7 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 			toast.error("Limite atingido", {
 				description: isPremium
 					? `Limite de ${limit} fotos na galeria pública atingido.`
-					: 'No plano gratuito, a galeria pública é limitada a 50 fotos. Faça o upgrade para fotos ilimitadas!',
+					: "No plano gratuito, a galeria pública é limitada a 50 fotos. Faça o upgrade para fotos ilimitadas!",
 				action: isPremium
 					? undefined
 					: {
@@ -351,8 +351,8 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 		if (currentPrivateCount + filesArray.length > limit) {
 			toast.error("Limite atingido", {
 				description: isPremium
-					? 'No plano Premium, o limite é de 20 fotos privadas na página inicial.'
-					: 'No plano gratuito, o limite é de 5 fotos privadas na página inicial. Faça o upgrade para enviar até 20 fotos!',
+					? "No plano Premium, o limite é de 20 fotos privadas na página inicial."
+					: "No plano gratuito, o limite é de 5 fotos privadas na página inicial. Faça o upgrade para enviar até 20 fotos!",
 				action: isPremium
 					? undefined
 					: {

@@ -18,18 +18,21 @@ declare module "qrcode-vue";
 export {};
 
 declare global {
-  interface Window {
-    YT: {
-      Player: new (elementId: string, options: Record<string, unknown>) => {
-        playVideo(): void;
-        pauseVideo(): void;
-        destroy(): void;
-      };
-      PlayerState: {
-        PLAYING: number;
-        PAUSED: number;
-        ENDED: number;
-      };
-    };
-  }
+	interface Window {
+		YT: {
+			Player: new (
+				elementId: string,
+				options: Record<string, unknown>,
+			) => {
+				playVideo(): void;
+				pauseVideo(): void;
+				destroy(): void;
+			};
+			PlayerState: {
+				PLAYING: number;
+				PAUSED: number;
+				ENDED: number;
+			};
+		};
+	}
 }

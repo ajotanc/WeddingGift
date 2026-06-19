@@ -226,7 +226,7 @@ const uploadCapturedFile = async (file: File) => {
 		toast.error("Limite atingido", {
 			description: isPremium
 				? `A galeria pública atingiu o limite de ${limit} fotos.`
-				: `No plano gratuito, a galeria pública deste casamento pode receber no máximo 50 fotos.`,
+				: "No plano gratuito, a galeria pública deste casamento pode receber no máximo 50 fotos.",
 		});
 		return;
 	}
@@ -282,7 +282,7 @@ const handleUpload = async (e: Event) => {
 			toast.error("Limite atingido", {
 				description: isPremium
 					? `A galeria pública atingiu o limite de ${limit} fotos.`
-					: `No plano gratuito, a galeria pública deste casamento pode receber no máximo 50 fotos.`,
+					: "No plano gratuito, a galeria pública deste casamento pode receber no máximo 50 fotos.",
 			});
 			return;
 		}

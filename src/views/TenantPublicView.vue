@@ -596,7 +596,9 @@ const initParticles = () => {
 		const x = Math.random() * canvas.width;
 		const y = initY ? Math.random() * canvas.height : -10;
 		const size =
-			effect === "rose-petals" ? Math.random() * 4 + 4 : Math.random() * 2.5 + 1.2; // Smaller, more delicate petals
+			effect === "rose-petals"
+				? Math.random() * 4 + 4
+				: Math.random() * 2.5 + 1.2; // Smaller, more delicate petals
 		const speedX =
 			effect === "rose-petals"
 				? Math.random() * 1.5 - 0.5
@@ -612,7 +614,9 @@ const initParticles = () => {
 		const distanceToTravel = Math.max(50, canvas.height * 1.3 - y);
 		const framesToBottom = distanceToTravel / speedY;
 		const fadeSpeed =
-			effect === "sparkles" ? (opacity / framesToBottom) * (Math.random() * 0.4 + 0.8) : undefined;
+			effect === "sparkles"
+				? (opacity / framesToBottom) * (Math.random() * 0.4 + 0.8)
+				: undefined;
 		const rotation = effect === "rose-petals" ? Math.random() * 360 : undefined;
 		const rotationSpeed =
 			effect === "rose-petals" ? Math.random() * 0.02 - 0.01 : undefined;
@@ -650,7 +654,8 @@ const initParticles = () => {
 				// Soft fade out near the bottom of the screen
 				let drawOpacity = p.opacity;
 				if (p.y > canvas.height * 0.8) {
-					const fadeProgress = (p.y - canvas.height * 0.8) / (canvas.height * 0.2);
+					const fadeProgress =
+						(p.y - canvas.height * 0.8) / (canvas.height * 0.2);
 					drawOpacity = p.opacity * Math.max(0, 1 - fadeProgress);
 				}
 
@@ -671,8 +676,22 @@ const initParticles = () => {
 
 				ctx.beginPath();
 				ctx.moveTo(0, p.size);
-				ctx.bezierCurveTo(-p.size * 1.5, p.size * 0.6, -p.size * 1.5, -p.size * 0.6, 0, -p.size);
-				ctx.bezierCurveTo(p.size * 1.5, -p.size * 0.6, p.size * 1.5, p.size * 0.6, 0, p.size);
+				ctx.bezierCurveTo(
+					-p.size * 1.5,
+					p.size * 0.6,
+					-p.size * 1.5,
+					-p.size * 0.6,
+					0,
+					-p.size,
+				);
+				ctx.bezierCurveTo(
+					p.size * 1.5,
+					-p.size * 0.6,
+					p.size * 1.5,
+					p.size * 0.6,
+					0,
+					p.size,
+				);
 				ctx.closePath();
 
 				ctx.fillStyle = gradient;
@@ -692,7 +711,10 @@ const initParticles = () => {
 				}
 
 				// Twinkle modulation
-				const currentOpacity = Math.max(0, p.opacity * (0.6 + 0.4 * Math.sin(Date.now() / 150 + p.x)));
+				const currentOpacity = Math.max(
+					0,
+					p.opacity * (0.6 + 0.4 * Math.sin(Date.now() / 150 + p.x)),
+				);
 
 				ctx.save();
 				ctx.translate(p.x, p.y);

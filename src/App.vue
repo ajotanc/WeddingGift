@@ -16,11 +16,11 @@ import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 import * as z from "zod";
 import FormGroup from "./components/reusable/FormGroup.vue";
-import SelectTrigger from "./components/ui/select/SelectTrigger.vue";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
+	SelectTrigger,
 	SelectValue,
 } from "./components/ui/select";
 import { useMusicStore } from "./stores/music";
@@ -152,13 +152,17 @@ watch(
 	<Toaster position="top-right" richColors />
 
 	<!-- Monta uma vez, nunca desmonta -->
-	<template v-if="music.isPremium && music.embedUrl">
-		<iframe :src="music.isPlaying ? music.embedUrl : 'about:blank'" class="fixed w-0 h-0 opacity-0 pointer-events-none"
-			allow="autoplay" />
+	<template v-if="music.isPremium && music.videoId">
+		<iframe v-if="music.isPlaying"
+			:src="`https://www.youtube-nocookie.com/embed/${music.videoId}?autoplay=1&loop=1&playlist=${music.videoId}&controls=0`"
+			class="fixed w-0 h-0 opacity-0 pointer-events-none"
+			allow="autoplay"
+			frameborder="0">
+		</iframe>
 
 		<div class="fixed bottom-6 left-6 z-50 flex items-center gap-2">
 			<button @click="music.toggle()"
-				class="bg-white text-primary border-2 border-white p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer outline-none">
+				class="bg-white text-primary p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 border-0 outline-none">
 				<Pause v-if="music.isPlaying" class="w-5 h-5" />
 				<Play v-else class="w-5 h-5" />
 			</button>
