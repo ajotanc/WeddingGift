@@ -17,13 +17,18 @@ import {
 	type ProductType,
 } from "@/services/product.service";
 import { useAuthStore } from "@/stores/auth";
-import type { SerperItem } from "@/types";
 import { toTypedSchema } from "@vee-validate/zod";
 import { ExternalLink, Plus, X } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 import { z } from "zod";
+
+interface SerperItem {
+	title?: string;
+	link: string;
+	source?: string;
+}
 
 const { confirm } = useConfirm();
 const { tenant, products } = useTenant();
@@ -460,7 +465,8 @@ const deleteProduct = async (product: IProduct) => {
 				</div>
 
 				<FormGroup label="Imagem do Produto">
-					<FileUpload v-model="pImageBase64" @file-selected="(file) => pImageFile = file" :maxSizeMb="1" accept="image/*" />
+					<FileUpload v-model="pImageBase64" @file-selected="(file) => pImageFile = file" :maxSizeMb="1"
+						accept="image/*" />
 				</FormGroup>
 
 				<FormGroup label="Links Externos (Lojas)">
@@ -542,7 +548,8 @@ const deleteProduct = async (product: IProduct) => {
 				</div>
 
 				<FormGroup label="Imagem Inspiracional">
-					<FileUpload v-model="qImageBase64" @file-selected="(file) => qImageFile = file" :maxSizeMb="1" accept="image/*" />
+					<FileUpload v-model="qImageBase64" @file-selected="(file) => qImageFile = file" :maxSizeMb="1"
+						accept="image/*" />
 				</FormGroup>
 			</div>
 			<div class="pt-4 border-t border-slate-100 flex gap-3">

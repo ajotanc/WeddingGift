@@ -35,6 +35,8 @@ export interface ITenant extends Models.Row {
 	show_gallery?: boolean;
 	show_faq?: boolean;
 	show_schedule?: boolean;
+	show_dress_code?: boolean;
+	dress_code_text?: string | null;
 	music_url?: string | null;
 	ambient_effect?: "none" | "rose-petals" | "sparkles" | null;
 	products?: IProduct[];
@@ -47,6 +49,7 @@ export interface ITenant extends Models.Row {
 	mp_user_id: string | null;
 	mp_access_token: string | null;
 	mp_refresh_token: string | null;
+	is_premium: boolean;
 }
 
 export const TenantService = {

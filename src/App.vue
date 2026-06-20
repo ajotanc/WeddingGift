@@ -7,6 +7,7 @@ import Confirm from "@/components/ui/confirm/Confirm.vue";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { useTenant } from "@/composables/useTenant";
 import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -29,10 +30,12 @@ import { useMusicStore } from "./stores/music";
 const authStore = useAuthStore();
 const route = useRoute();
 const music = useMusicStore();
+const { tenant: currentTenant } = useTenant();
 
 const isPageLoadingTheme = computed(() => {
 	if (route.params.slug) {
-		return !authStore.tenant || authStore.tenant.slug !== route.params.slug;
+		const activeTenant = currentTenant.value || authStore.tenant;
+		return !activeTenant || activeTenant.slug !== route.params.slug;
 	}
 	return false;
 });
@@ -121,8 +124,8 @@ const onSubmitFeedback = handleSubmit(async (values) => {
 });
 // Reativamente e de forma centralizada atualiza o título do documento
 watch(
-	[() => authStore.tenant, () => route.path],
-	([tenant, path]) => {
+	[currentTenant, () => authStore.tenant, () => route.path],
+	([t, authTenant, path]) => {
 		// 1. Títulos estáticos definidos na rota
 		if (route.meta?.title) {
 			document.title = route.meta.title as string;
@@ -130,13 +133,14 @@ watch(
 		}
 
 		// 2. Títulos dinâmicos baseados nos dados do casamento (tenant)
-		if (tenant) {
+		const activeTenant = t || authTenant;
+		if (activeTenant) {
 			if (path.includes("/gallery")) {
-				document.title = `Wedding Gift • ${tenant.couple_name} • Galeria`;
+				document.title = `Wedding Gift • ${activeTenant.couple_name} • Galeria`;
 			} else if (path.includes("/admin")) {
-				document.title = `Wedding Gift • ${tenant.couple_name} • Painel`;
+				document.title = `Wedding Gift • ${activeTenant.couple_name} • Painel`;
 			} else {
-				document.title = `Wedding Gift • ${tenant.couple_name}`;
+				document.title = `Wedding Gift • ${activeTenant.couple_name}`;
 			}
 		} else {
 			// Título fallback padrão

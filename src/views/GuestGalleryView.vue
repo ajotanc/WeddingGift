@@ -219,7 +219,7 @@ const uploadCapturedFile = async (file: File) => {
 	const publicImagesCount = gallery.value.filter(
 		(img) => img.is_public || img.guest,
 	).length;
-	const isPremium = authStore.isPremium;
+	const isPremium = tenant.value?.plan === "premium";
 	const limit = isPremium ? 99999 : 50;
 
 	if (publicImagesCount + 1 > limit) {
@@ -275,7 +275,7 @@ const handleUpload = async (e: Event) => {
 		const publicImagesCount = gallery.value.filter(
 			(img) => img.is_public || img.guest,
 		).length;
-		const isPremium = authStore.isPremium;
+		const isPremium = tenant.value?.is_premium;
 		const limit = isPremium ? 99999 : 50;
 
 		if (publicImagesCount + filesArray.length > limit) {

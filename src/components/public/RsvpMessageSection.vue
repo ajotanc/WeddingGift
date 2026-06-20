@@ -1,24 +1,35 @@
 <script setup lang="ts">
 import FormGroup from "@/components/reusable/FormGroup.vue";
 import { Button } from "@/components/ui/button";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Input } from "@/components/ui/input";
+import {
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+} from "@/components/ui/carousel";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { generateThankYouMessage } from "@/lib/ai";
 import { ConsentService } from "@/services/consent.service";
 import type { IGuest } from "@/services/guest.service";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type IRsvp, RsvpService } from "@/services/rsvp.service";
-import { useAuthStore, type IUser } from "@/stores/auth";
+import type { ITenant } from "@/services/tenant.service";
+import { type IUser, useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
 import dayjs from "dayjs";
 import Autoplay from "embla-carousel-autoplay";
 import { useForm } from "vee-validate";
-import { toast } from "vue-sonner";
 import { computed, ref, watch } from "vue";
+import { toast } from "vue-sonner";
 import * as z from "zod";
-import type { ITenant } from "@/services/tenant.service";
 
 const props = defineProps<{
 	tenant: ITenant | null;
@@ -52,12 +63,23 @@ const isEditingRsvp = ref(false);
 
 const rsvpSchema = toTypedSchema(
 	z.object({
-		totalAdults: z.number().min(1, "No mínimo 1 adulto"),
-		totalChildren: z.number().min(0),
+		totalAdults: z
+			.union([
+				z.number(),
+				z.string().transform((val) => (val === "" ? 0 : Number(val))),
+			])
+			.pipe(z.number().min(1, "No mínimo 1 adulto")),
+		totalChildren: z
+			.union([
+				z.number(),
+				z.string().transform((val) => (val === "" ? 0 : Number(val))),
+			])
+			.pipe(z.number().min(0, "No mínimo 0 crianças")),
 		status: z.enum(["confirmed", "declined"]),
 		acceptedTerms: z
 			.boolean()
 			.refine((val) => val === true, "Você deve aceitar os termos"),
+		dietaryRestrictions: z.string().optional(),
 	}),
 );
 
@@ -68,6 +90,7 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
 		totalChildren: 0,
 		status: "confirmed",
 		acceptedTerms: false,
+		dietaryRestrictions: "",
 	},
 });
 
@@ -75,6 +98,24 @@ const [totalAdults] = defineField("totalAdults");
 const [totalChildren] = defineField("totalChildren");
 const [status] = defineField("status");
 const [acceptedTerms] = defineField("acceptedTerms");
+const [dietaryRestrictions] = defineField("dietaryRestrictions");
+
+const companionsList = ref<string[]>([]);
+
+const totalGuests = computed(() => {
+	return Number(totalAdults.value || 0) + Number(totalChildren.value || 0);
+});
+
+watch(totalGuests, (newTotal) => {
+	const needed = Math.max(0, newTotal - 1);
+	if (companionsList.value.length < needed) {
+		while (companionsList.value.length < needed) {
+			companionsList.value.push("");
+		}
+	} else if (companionsList.value.length > needed) {
+		companionsList.value = companionsList.value.slice(0, needed);
+	}
+});
 
 // Whenever existingRsvp changes or editing starts, populate form
 watch(
@@ -87,8 +128,12 @@ watch(
 					totalChildren: rsvp.total_children || 0,
 					status: (rsvp.status as "confirmed" | "declined") || "confirmed",
 					acceptedTerms: true,
+					dietaryRestrictions: rsvp.dietary_restrictions || "",
 				},
 			});
+			companionsList.value = rsvp.companions_names
+				? [...rsvp.companions_names]
+				: [];
 		} else {
 			resetForm({
 				values: {
@@ -96,8 +141,10 @@ watch(
 					totalChildren: 0,
 					status: "confirmed",
 					acceptedTerms: false,
+					dietaryRestrictions: "",
 				},
 			});
+			companionsList.value = [];
 		}
 	},
 	{ immediate: true },
@@ -117,11 +164,17 @@ const submitRsvp = handleSubmit(async (values) => {
 
 		const payload = {
 			tenant: props.tenant.$id,
-			total_adults: values.totalAdults,
-			total_children: values.totalChildren,
+			total_adults: values.status === "confirmed" ? values.totalAdults : 0,
+			total_children: values.status === "confirmed" ? values.totalChildren : 0,
 			status: values.status,
 			guest: authStore.guest as IGuest,
 			message: thankYouMessage,
+			dietary_restrictions:
+				values.status === "confirmed" ? values.dietaryRestrictions || "" : "",
+			companions_names:
+				values.status === "confirmed"
+					? companionsList.value.filter((name) => name && name.trim() !== "")
+					: [],
 		};
 
 		if (existingRsvp.value) {
@@ -235,8 +288,7 @@ const toggleLike = async (msg: IMessage) => {
 			<!-- Formulário ou Confirmação -->
 			<div v-if="existingRsvp && !isEditingRsvp"
 				class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80 text-center">
-				<div
-					class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+				<div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
 					<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
@@ -244,13 +296,23 @@ const toggleLike = async (msg: IMessage) => {
 				<h3 class="text-2xl font-serif text-slate-900 mb-2">
 					{{ existingRsvp.status === 'confirmed' ? 'Presença Confirmada!' : 'Não Poderá Ir' }}
 				</h3>
-				<p class="text-slate-500 font-light mb-6">
+				<p class="text-slate-500 font-light mb-4">
 					{{ existingRsvp.status === 'confirmed'
-						? `Obrigado por confirmar! Contamos com ${existingRsvp.total_adults} adulto(s)${existingRsvp.total_children > 0 ? ` e ${existingRsvp.total_children} criança(s)` : ''}.`
+						? `Obrigado por confirmar! Contamos com ${existingRsvp.total_adults} adulto(s)${existingRsvp.total_children >
+							0 ? ` e ${existingRsvp.total_children} criança(s)` : ''}.`
 						: 'Sentiremos sua falta!' }}
 				</p>
-				<p v-if="existingRsvp.message"
-					class="italic text-slate-600 font-serif mb-8 p-4 bg-slate-50/50 rounded-xl">
+				<div
+					v-if="existingRsvp.status === 'confirmed' && (existingRsvp.companions_names?.length || existingRsvp.dietary_restrictions)"
+					class="text-sm text-slate-500 mb-6 space-y-1">
+					<p v-if="existingRsvp.companions_names && existingRsvp.companions_names.length > 0">
+						<strong>Acompanhantes:</strong> {{ existingRsvp.companions_names.join(', ') }}
+					</p>
+					<p v-if="existingRsvp.dietary_restrictions">
+						<strong>Restrições Alimentares:</strong> {{ existingRsvp.dietary_restrictions }}
+					</p>
+				</div>
+				<p v-if="existingRsvp.message" class="italic text-slate-600 font-serif mb-8 p-4 bg-slate-50/50 rounded-xl">
 					"{{ existingRsvp.message }}"
 				</p>
 				<Button variant="outline" @click="isEditingRsvp = true">
@@ -258,7 +320,7 @@ const toggleLike = async (msg: IMessage) => {
 				</Button>
 			</div>
 
-			<div v-else-if="!authStore.isPremium && rsvps.length >= 20 && !existingRsvp"
+			<div v-else-if="!tenant?.is_premium && rsvps.length >= 20 && !existingRsvp"
 				class="bg-amber-50/70 p-8 rounded-3xl border border-amber-100 text-center shadow-[0_8px_30px_rgb(0,0,0,0.01)]">
 				<div
 					class="w-12 h-12 bg-amber-100/80 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -279,7 +341,7 @@ const toggleLike = async (msg: IMessage) => {
 			<form v-else @submit.prevent="submitRsvp"
 				class="space-y-6 bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80">
 				<div class="space-y-5">
-					<div class="grid grid-cols-2 gap-5">
+					<div v-if="status === 'confirmed'" class="grid grid-cols-2 gap-5 animate-in fade-in duration-300">
 						<FormGroup label="Adultos" :error="errors.totalAdults">
 							<Input v-model.number="totalAdults" type="number" min="1"
 								class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
@@ -290,27 +352,43 @@ const toggleLike = async (msg: IMessage) => {
 						</FormGroup>
 					</div>
 					<FormGroup label="Você irá ao evento?">
-						<div class="relative w-full">
-							<select v-model="status"
-								class="w-full h-12 px-4 bg-slate-50/50 border border-slate-200 rounded-xl text-base font-light text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer">
-								<option value="confirmed">Sim, estarei lá!</option>
-								<option value="declined">Não poderei ir</option>
-							</select>
-
-							<div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-								</svg>
+						<Select v-model="status">
+							<SelectTrigger
+								class="w-full h-12 px-4 bg-slate-50/50 border border-slate-200 rounded-xl text-base font-light text-slate-600 focus:ring-2 focus:ring-primary/20 text-left">
+								<SelectValue placeholder="Você irá ao evento?" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="confirmed">Sim, estarei lá!</SelectItem>
+								<SelectItem value="declined">Não poderei ir</SelectItem>
+							</SelectContent>
+						</Select>
+					</FormGroup>
+					<div v-if="status === 'confirmed' && totalGuests > 1" class="space-y-3">
+						<FormGroup label="Nomes dos Acompanhantes">
+							<div class="space-y-2">
+								<div v-for="(companion, idx) in companionsList" :key="idx" class="flex items-center gap-2">
+									<Input v-model="companionsList[idx]" :placeholder="`Nome do acompanhante ${idx + 1}`"
+										class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
+								</div>
 							</div>
-						</div>
+						</FormGroup>
+					</div>
+					<FormGroup v-if="status === 'confirmed'" label="Restrições Alimentares" :error="errors.dietaryRestrictions">
+						<Input v-model="dietaryRestrictions" placeholder="Ex: Vegano, intolerante a glúten, alergias..."
+							class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
 					</FormGroup>
 				</div>
-				
+
 				<div class="space-y-1">
 					<div class="flex items-start gap-2.5 py-1">
-						<input type="checkbox" id="accept-rsvp-terms" v-model="acceptedTerms" class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer" required />
-						<label for="accept-rsvp-terms" class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
-							Autorizo o tratamento de meus dados em conformidade com os <a href="/termos" target="_blank" class="underline text-primary font-medium">Termos de Uso</a> e <a href="/privacidade" target="_blank" class="underline text-primary font-medium">Política de Privacidade</a> (LGPD).
+						<input type="checkbox" id="accept-rsvp-terms" v-model="acceptedTerms"
+							class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+							required />
+						<label for="accept-rsvp-terms"
+							class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
+							Autorizo o tratamento de meus dados em conformidade com os <a href="/terms" target="_blank"
+								class="underline text-primary font-medium">Termos de Uso</a> e <a href="/privacy" target="_blank"
+								class="underline text-primary font-medium">Política de Privacidade</a> (LGPD).
 						</label>
 					</div>
 					<p v-if="errors.acceptedTerms" class="text-xs text-red-500 mt-1">{{ errors.acceptedTerms }}</p>

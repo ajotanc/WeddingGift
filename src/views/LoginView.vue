@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Card } from "@/components/ui/card";
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
+import { Card } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/auth";
 import { onMounted } from "vue";
 import { useRoute } from "vue-router";

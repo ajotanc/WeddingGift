@@ -1,22 +1,39 @@
 <script setup lang="ts">
+import type { IScheduleItem } from "@/services/schedule.service";
 import {
 	Cake,
 	Camera,
 	Clock,
-	GlassWater,
 	Gift,
+	GlassWater,
 	Heart,
 	MapPin,
 	Music,
 	Sparkles,
 	Utensils,
 } from "lucide-vue-next";
-import type { IScheduleItem } from "@/services/schedule.service";
+import type { Component } from "vue";
 
 defineProps<{
 	primaryColor: string;
 	schedules: IScheduleItem[];
 }>();
+
+const ICON_MAP: Record<string, Component> = {
+	clock: Clock,
+	cheers: GlassWater,
+	utensils: Utensils,
+	music: Music,
+	cake: Cake,
+	camera: Camera,
+	sparkles: Sparkles,
+	"map-pin": MapPin,
+	gift: Gift,
+};
+
+const getIcon = (iconName: string) => {
+	return ICON_MAP[iconName] || Heart;
+};
 </script>
 
 <template>
@@ -33,16 +50,7 @@ defineProps<{
 				<!-- Icon Marker -->
 				<div
 					class="absolute -left-[17px] top-1.5 bg-white border-2 border-primary w-8 h-8 rounded-full flex items-center justify-center text-primary shadow-sm">
-					<Clock v-if="item.icon === 'clock'" class="w-4 h-4" />
-					<GlassWater v-else-if="item.icon === 'cheers'" class="w-4 h-4" />
-					<Utensils v-else-if="item.icon === 'utensils'" class="w-4 h-4" />
-					<Music v-else-if="item.icon === 'music'" class="w-4 h-4" />
-					<Cake v-else-if="item.icon === 'cake'" class="w-4 h-4" />
-					<Camera v-else-if="item.icon === 'camera'" class="w-4 h-4" />
-					<Sparkles v-else-if="item.icon === 'sparkles'" class="w-4 h-4" />
-					<MapPin v-else-if="item.icon === 'map-pin'" class="w-4 h-4" />
-					<Gift v-else-if="item.icon === 'gift'" class="w-4 h-4" />
-					<Heart v-else class="w-4 h-4" />
+					<component :is="getIcon(item.icon)" class="w-4 h-4" />
 				</div>
 
 				<!-- Content block -->

@@ -1,32 +1,36 @@
 <script setup lang="ts">
-import { LogOut } from "lucide-vue-next";
-import { DEFAULT_PRIMARY_COLOR, DEFAULT_BACKGROUND_COLOR, DEFAULT_SLATE_COLORS } from "@/lib/defaults";
-import { computed } from "vue";
+import {
+	DEFAULT_BACKGROUND_COLOR,
+	DEFAULT_PRIMARY_COLOR,
+	DEFAULT_SLATE_COLORS,
+} from "@/lib/defaults";
 import type { IUser } from "@/stores/auth";
+import { LogOut } from "lucide-vue-next";
+import { computed } from "vue";
 import type { PropType } from "vue";
 
 const props = defineProps({
-  fill: { type: Boolean, default: false },
-  themeColor: { type: String, default: DEFAULT_PRIMARY_COLOR },
-  user: { type: Object as PropType<IUser>, default: null },
-  label: { type: String, default: "Entrar com Google" },
+	fill: { type: Boolean, default: false },
+	themeColor: { type: String, default: DEFAULT_PRIMARY_COLOR },
+	user: { type: Object as PropType<IUser>, default: null },
+	label: { type: String, default: "Entrar com Google" },
 });
 
 const emit = defineEmits(["click", "logout"]);
 
 const buttonStyle = computed(() => {
-  if (props.fill && !props.user) {
-    return {
-      backgroundColor: props.themeColor,
-      color: DEFAULT_SLATE_COLORS["50"],
-      borderColor: props.themeColor,
-    };
-  }
-  return {
-    backgroundColor: DEFAULT_BACKGROUND_COLOR,
-    color: DEFAULT_SLATE_COLORS["700"],
-    borderColor: DEFAULT_SLATE_COLORS["200"],
-  };
+	if (props.fill && !props.user) {
+		return {
+			backgroundColor: props.themeColor,
+			color: DEFAULT_SLATE_COLORS["50"],
+			borderColor: props.themeColor,
+		};
+	}
+	return {
+		backgroundColor: DEFAULT_BACKGROUND_COLOR,
+		color: DEFAULT_SLATE_COLORS["700"],
+		borderColor: DEFAULT_SLATE_COLORS["200"],
+	};
 });
 </script>
 

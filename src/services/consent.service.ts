@@ -16,7 +16,8 @@ export const ConsentService = {
 		try {
 			const id = ID.unique();
 
-			const user_agent = typeof window !== "undefined" ? window.navigator.userAgent : undefined;
+			const user_agent =
+				typeof window !== "undefined" ? window.navigator.userAgent : undefined;
 
 			const response = await fetch("https://api.ipify.org?format=json");
 			const { ip: ip_address } = await response.json();
@@ -36,7 +37,7 @@ export const ConsentService = {
 					accepted_terms: data.accepted_terms,
 					accepted_terms_at: data.accepted_terms_at,
 					ip_address: ip_address || "0.0.0.0",
-					user_agent
+					user_agent,
 				},
 				permissions,
 			});

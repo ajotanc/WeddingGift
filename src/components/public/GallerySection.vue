@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Button } from "@/components/ui/button";
 import ImageGallery from "@/components/ui/ImageGallery.vue";
+import { Button } from "@/components/ui/button";
 import type { IGalleryImage } from "@/services/gallery.service";
 import { Camera } from "lucide-vue-next";
 
@@ -11,9 +11,7 @@ defineProps<{
 	currentGuestId: string;
 }>();
 
-defineEmits<{
-	(e: "like", img: IGalleryImage): void;
-}>();
+defineEmits<(e: "like", img: IGalleryImage) => void>();
 </script>
 
 <template>

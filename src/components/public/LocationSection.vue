@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LeafletMap from "@/components/ui/LeafletMap.vue";
+import type { IWeatherData } from "@/services/weather.service";
 import {
 	Cloud,
 	CloudDrizzle,
@@ -10,7 +11,6 @@ import {
 	Sun,
 } from "lucide-vue-next";
 import type { Component } from "vue";
-import type { IWeatherData } from "@/services/weather.service";
 
 defineProps<{
 	eventLocation: string;
@@ -23,9 +23,8 @@ defineProps<{
 	isWeatherExpanded: boolean;
 }>();
 
-const emit = defineEmits<{
-	(e: "update:isWeatherExpanded", val: boolean): void;
-}>();
+const emit =
+	defineEmits<(e: "update:isWeatherExpanded", val: boolean) => void>();
 
 const getWeatherIcon = (iconName: string): Component => {
 	const icons: Record<string, Component> = {

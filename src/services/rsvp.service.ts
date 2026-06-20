@@ -13,6 +13,8 @@ export interface IRsvp extends Models.Row {
 	total_children: number;
 	guest: IGuest;
 	message?: string;
+	dietary_restrictions?: string | null;
+	companions_names?: string[];
 }
 
 export const RsvpService = {

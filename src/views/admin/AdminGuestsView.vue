@@ -135,6 +135,8 @@ const exportToExcel = () => {
 		Email: r.guest.email || "Não informado",
 		Adultos: r.total_adults || 0,
 		Crianças: r.total_children || 0,
+		Acompanhantes: r.companions_names ? r.companions_names.join(", ") : "",
+		"Restrições Alimentares": r.dietary_restrictions || "",
 	}));
 
 	const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -211,13 +213,21 @@ const exportToExcel = () => {
               <p class="font-medium text-slate-900">{{ r.guest.name }}</p>
               <p class="text-sm text-slate-500 mt-1">{{ formatPhone(r.guest.phone!, { mask: 'auto' }) }} • {{
                 r.guest?.email || 'Sem email' }}</p>
-              <div class="mt-3 flex gap-2">
+              <div class="mt-3 flex flex-wrap gap-2">
                 <span v-if="r.status === 'confirmed'"
                   class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-medium">Confirmado</span>
                 <span v-else class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-medium">Ausente</span>
                 <span v-if="r.status === 'confirmed'"
                   class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md">{{ r.total_adults }} Adultos, {{
                     r.total_children }} Crianças</span>
+              </div>
+              <div v-if="r.status === 'confirmed' && (r.companions_names?.length || r.dietary_restrictions)" class="mt-3 text-xs space-y-1 text-slate-500 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100/50">
+                <p v-if="r.companions_names && r.companions_names.length > 0">
+                  <span class="font-semibold text-slate-700">Acompanhantes:</span> {{ r.companions_names.join(', ') }}
+                </p>
+                <p v-if="r.dietary_restrictions">
+                  <span class="font-semibold text-slate-700">Restrições Alimentares:</span> {{ r.dietary_restrictions }}
+                </p>
               </div>
             </div>
             <div v-if="r.status === 'confirmed'" class="flex flex-col justify-center">

@@ -5,7 +5,12 @@ export const DEFAULT_TITLE_FONT = "playfair";
 export const DEFAULT_BODY_FONT = "inter";
 
 export const FREE_PRIMARY_COLORS = ["#ec4899", "#2e7d32", "#d4af37", "#1976d2"];
-export const FREE_BACKGROUND_COLORS = ["#ffffff", "#f8fafc", "#fffaf0", "#f5f5f4"];
+export const FREE_BACKGROUND_COLORS = [
+	"#ffffff",
+	"#f8fafc",
+	"#fffaf0",
+	"#f5f5f4",
+];
 
 export const DEFAULT_SLATE_COLORS = {
 	"50": "#f8fafc",

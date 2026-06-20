@@ -22,6 +22,18 @@ const router = createRouter({
 			meta: { title: "Wedding Gift • Login" },
 		},
 		{
+			path: "/terms",
+			name: "terms",
+			component: () => import("@/views/TermsView.vue"),
+			meta: { title: "Wedding Gift • Termos de Uso" },
+		},
+		{
+			path: "/privacy",
+			name: "privacy",
+			component: () => import("@/views/PrivacyView.vue"),
+			meta: { title: "Wedding Gift • Política de Privacidade" },
+		},
+		{
 			path: "/:slug/gallery",
 			name: "guest-gallery",
 			component: () => import("@/views/GuestGalleryView.vue"),

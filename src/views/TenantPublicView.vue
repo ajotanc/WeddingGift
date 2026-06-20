@@ -1,34 +1,35 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import dayjs from "dayjs";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import "dayjs/locale/pt-br";
 import { useTenant } from "@/composables/useTenant";
-import { useAuthStore } from "@/stores/auth";
+import { formatMoney, getProductPrice } from "@/lib/money";
+import { generatePixPayload, sortBy } from "@/lib/utils";
+import { GalleryService } from "@/services/gallery.service";
+import type { IGalleryImage } from "@/services/gallery.service";
 import { type IProduct, ProductService } from "@/services/product.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
-import { GalleryService } from "@/services/gallery.service";
-import type { IGalleryImage } from "@/services/gallery.service";
-import { generatePixPayload, sortBy } from "@/lib/utils";
-import { formatMoney, getProductPrice } from "@/lib/money";
+import { useAuthStore } from "@/stores/auth";
 import { toast } from "vue-sonner";
 
+import GuestProfileModal from "@/components/GuestProfileModal.vue";
+import Modal from "@/components/reusable/Modal.vue";
+import CountdownTimer from "@/components/ui/CountdownTimer.vue";
 // UI Components
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
-import CountdownTimer from "@/components/ui/CountdownTimer.vue";
-import Modal from "@/components/reusable/Modal.vue";
 import QrcodeSvg from "qrcode.vue";
-import GuestProfileModal from "@/components/GuestProfileModal.vue";
 
+import DressCodeSection from "@/components/public/DressCodeSection.vue";
+import FaqSection from "@/components/public/FaqSection.vue";
+import FooterSection from "@/components/public/FooterSection.vue";
+import GallerySection from "@/components/public/GallerySection.vue";
 // Modular Public Section Components
 import HistorySection from "@/components/public/HistorySection.vue";
-import ScheduleSection from "@/components/public/ScheduleSection.vue";
-import GallerySection from "@/components/public/GallerySection.vue";
 import LocationSection from "@/components/public/LocationSection.vue";
 import ProductsSection from "@/components/public/ProductsSection.vue";
 import RsvpMessageSection from "@/components/public/RsvpMessageSection.vue";
-import FaqSection from "@/components/public/FaqSection.vue";
-import FooterSection from "@/components/public/FooterSection.vue";
+import ScheduleSection from "@/components/public/ScheduleSection.vue";
 
 dayjs.locale("pt-br");
 
@@ -107,7 +108,10 @@ const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
 	showPixModal.value = true;
 };
 
-const openLinksModal = async (data: { product: IProduct; quantity?: number }) => {
+const openLinksModal = async (data: {
+	product: IProduct;
+	quantity?: number;
+}) => {
 	if (!currentUser.value) return;
 	if (data.product.links && data.product.links.length > 0) {
 		selectedProduct.value = data.product;
@@ -274,6 +278,8 @@ const activeSections = computed(() => {
 		list.push({ id: "history", label: "Nossa História" });
 	if (tenant.value.show_schedule && tenant.value.schedules?.length)
 		list.push({ id: "schedule", label: "Cronograma" });
+	if (tenant.value.show_dress_code && tenant.value.dress_code_text)
+		list.push({ id: "dresscode", label: "Guia de Trajes" });
 	if (tenant.value.show_gallery)
 		list.push({ id: "gallery", label: "Galeria de Fotos" });
 	if (tenant.value.event_location)
@@ -292,7 +298,8 @@ let observer: IntersectionObserver | null = null;
 const visibleSections = ref<Record<string, boolean>>({});
 
 const setupScrollSpy = () => {
-	if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+	if (typeof window === "undefined" || !("IntersectionObserver" in window))
+		return;
 	if (observer) {
 		observer.disconnect();
 	}
@@ -668,6 +675,9 @@ onUnmounted(() => {
 				<!-- Event Timeline -->
 				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
 					:primary-color="tenant.primary_color" :schedules="getTimelineItems" />
+
+				<!-- Dress Code Guide -->
+				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text" :dress-code-text="tenant.dress_code_text" />
 
 				<!-- Gallery -->
 				<GallerySection v-if="tenant.show_gallery" :images="homePrivateImages"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Heart } from "lucide-vue-next";
-import dayjs from "dayjs";
 import type { ITenant } from "@/services/tenant.service";
+import dayjs from "dayjs";
+import { Heart } from "lucide-vue-next";
 
 defineProps<{
 	tenant: ITenant;

@@ -32,13 +32,6 @@ import {
 	loadGoogleFont,
 	useTenant,
 } from "@/composables/useTenant";
-import { sortBy } from "@/lib/utils";
-import { FaqService } from "@/services/faq.service";
-import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
-import { ScheduleService } from "@/services/schedule.service";
-import { StorageService } from "@/services/storage.service";
-import { TenantService } from "@/services/tenant.service";
-import { useAuthStore } from "@/stores/auth";
 import {
 	DEFAULT_BACKGROUND_COLOR,
 	DEFAULT_BODY_FONT,
@@ -48,6 +41,13 @@ import {
 	FREE_BACKGROUND_COLORS,
 	FREE_PRIMARY_COLORS,
 } from "@/lib/defaults";
+import { sortBy } from "@/lib/utils";
+import { FaqService } from "@/services/faq.service";
+import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
+import { ScheduleService } from "@/services/schedule.service";
+import { StorageService } from "@/services/storage.service";
+import { TenantService } from "@/services/tenant.service";
+import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
 import dayjs from "dayjs";
 import {
@@ -169,6 +169,8 @@ const zodSchema = z.object({
 	show_gallery: z.boolean().optional(),
 	show_faq: z.boolean().optional(),
 	show_schedule: z.boolean().optional(),
+	show_dress_code: z.boolean().optional(),
+	dress_code_text: z.string().optional(),
 	primary_color: z.string(),
 	background_image: z
 		.string()
@@ -227,6 +229,8 @@ const { handleSubmit, errors, setValues, defineField } =
 			show_gallery: false,
 			show_faq: false,
 			show_schedule: false,
+			show_dress_code: false,
+			dress_code_text: "",
 			primary_color: DEFAULT_PRIMARY_COLOR,
 			background_color: DEFAULT_BACKGROUND_COLOR,
 			text_color: DEFAULT_TEXT_COLOR,
@@ -253,6 +257,8 @@ const [show_countdown] = defineField("show_countdown");
 const [show_gallery] = defineField("show_gallery");
 const [show_faq] = defineField("show_faq");
 const [show_schedule] = defineField("show_schedule");
+const [show_dress_code] = defineField("show_dress_code");
+const [dress_code_text] = defineField("dress_code_text");
 const [primary_color] = defineField("primary_color");
 const [background_image] = defineField("background_image");
 const [logo_url] = defineField("logo_url");
@@ -353,11 +359,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-						label: "Upgrade",
-						onClick: () => {
-							activeTab.value = "subscription";
+							label: "Upgrade",
+							onClick: () => {
+								activeTab.value = "subscription";
+							},
 						},
-					},
 			});
 			return;
 		}
@@ -372,11 +378,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-						label: "Upgrade",
-						onClick: () => {
-							activeTab.value = "subscription";
+							label: "Upgrade",
+							onClick: () => {
+								activeTab.value = "subscription";
+							},
 						},
-					},
 			});
 			return;
 		}
@@ -719,6 +725,7 @@ const loadSettings = () => {
 		show_gallery.value = tenant.value.show_gallery ?? false;
 		show_faq.value = tenant.value.show_faq ?? false;
 		show_schedule.value = tenant.value.show_schedule ?? false;
+		show_dress_code.value = tenant.value.show_dress_code ?? false;
 		setValues({
 			groom_name: tenant.value.groom_name || "",
 			bride_name: tenant.value.bride_name || "",
@@ -735,12 +742,14 @@ const loadSettings = () => {
 			primary_color: tenant.value.primary_color || DEFAULT_PRIMARY_COLOR,
 			background_image: tenant.value.background_image || "",
 			logo_url: tenant.value.logo_url || "",
-			background_color: tenant.value.background_color || DEFAULT_BACKGROUND_COLOR,
+			background_color:
+				tenant.value.background_color || DEFAULT_BACKGROUND_COLOR,
 			text_color: tenant.value.text_color || DEFAULT_TEXT_COLOR,
 			title_font: tenant.value.title_font || DEFAULT_TITLE_FONT,
 			body_font: tenant.value.body_font || DEFAULT_BODY_FONT,
 			music_url: tenant.value.music_url || "",
 			ambient_effect: tenant.value.ambient_effect || "none",
+			dress_code_text: tenant.value.dress_code_text || "",
 		});
 	}
 };
@@ -1032,6 +1041,24 @@ const connectToMarketPago = () => {
 								<label for="show_schedule">
 									{{ show_schedule ? 'Ativo' : 'Inativo' }}
 								</label>
+							</div>
+						</FormGroup>
+
+						<FormGroup label="Exibir Guia de Trajes">
+							<div class="flex items-center gap-2">
+								<Switch v-model="show_dress_code" id="show_dress_code" />
+								<label for="show_dress_code">
+									{{ show_dress_code ? 'Ativo' : 'Inativo' }}
+								</label>
+							</div>
+						</FormGroup>
+
+						<FormGroup v-if="show_dress_code" label="Orientações de Trajes" class="md:col-span-2">
+							<p class="text-xs text-slate-500 mb-1">Escreva as informações sobre o traje sugerido (ex: Esporte Fino,
+								paleta de cores recomendada, etc.). Ele aparecerá na página inicial para os convidados.</p>
+							<div class="border border-slate-200 rounded-xl overflow-hidden bg-white">
+								<QuillEditor theme="snow" v-model:content="dress_code_text" contentType="html"
+									class="min-h-[200px] text-base font-sans" />
 							</div>
 						</FormGroup>
 

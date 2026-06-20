@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import FormGroup from "@/components/reusable/FormGroup.vue";
+import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
-import { DEFAULT_PRIMARY_COLOR } from "@/lib/defaults";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from "@/components/ui/input-group";
+import { DEFAULT_PRIMARY_COLOR } from "@/lib/defaults";
 import { useAuthStore } from "@/stores/auth";
-import { ref, onMounted } from "vue";
-import { toast } from "vue-sonner";
 import dayjs from "dayjs";
+import { onMounted, ref } from "vue";
+import { toast } from "vue-sonner";
 
 const authStore = useAuthStore();
 const loading = ref(false);
@@ -143,8 +143,8 @@ const registerTenant = async () => {
 							required />
 						<label for="accept-terms"
 							class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
-							Li e concordo com os <a href="/termos" target="_blank" class="underline text-primary font-medium">Termos
-								de Uso</a> e a <a href="/privacidade" target="_blank"
+							Li e concordo com os <a href="/terms" target="_blank" class="underline text-primary font-medium">Termos
+								de Uso</a> e a <a href="/privacy" target="_blank"
 								class="underline text-primary font-medium">Política de Privacidade</a>, e autorizo o tratamento de meus
 							dados em conformidade com a LGPD.
 						</label>
