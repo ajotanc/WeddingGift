@@ -38,7 +38,19 @@ export interface ITenant extends Models.Row {
 	show_dress_code?: boolean;
 	dress_code_text?: string | null;
 	music_url?: string | null;
-	ambient_effect?: "none" | "rose-petals" | "sparkles" | null;
+	ambient_effect?:
+		| "none"
+		| "rose-petals"
+		| "sparkles"
+		| "snow"
+		| "hearts"
+		| "butterflies"
+		| "gold-dust"
+		| "confetti"
+		| "shooting-stars"
+		| "fireflies"
+		| "balloons"
+		| null;
 	products?: IProduct[];
 	messages?: IMessage[];
 	rsvps?: IRsvp[];

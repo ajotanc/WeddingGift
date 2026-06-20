@@ -201,7 +201,19 @@ const zodSchema = z.object({
 	body_font: z.string().optional().nullable(),
 	music_url: z.string().optional().nullable(),
 	ambient_effect: z
-		.enum(["none", "rose-petals", "sparkles"])
+		.enum([
+			"none",
+			"rose-petals",
+			"sparkles",
+			"snow",
+			"hearts",
+			"butterflies",
+			"gold-dust",
+			"confetti",
+			"shooting-stars",
+			"fireflies",
+			"balloons",
+		])
 		.optional()
 		.nullable(),
 });
@@ -912,7 +924,7 @@ const connectToMarketPago = () => {
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
 					:class="activeTab === 'faq' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
 					<HelpCircle class="w-4 h-4" />
-					FAQ (Dúvidas)
+					FAQ
 				</button>
 				<button type="button" @click="activeTab = 'schedule'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
@@ -1224,6 +1236,14 @@ const connectToMarketPago = () => {
 											<SelectItem value="none">Nenhum efeito</SelectItem>
 											<SelectItem value="rose-petals">Pétalas de Rosas</SelectItem>
 											<SelectItem value="sparkles">Brilhos Dourados</SelectItem>
+											<SelectItem value="snow">Neve Caindo</SelectItem>
+											<SelectItem value="hearts">Corações Flutuantes</SelectItem>
+											<SelectItem value="butterflies">Borboletas Flutuantes</SelectItem>
+											<SelectItem value="gold-dust">Poeira de Ouro</SelectItem>
+											<SelectItem value="confetti">Confetes Festivos</SelectItem>
+											<SelectItem value="shooting-stars">Constelação e Estrelas Cadentes</SelectItem>
+											<SelectItem value="fireflies">Vaga-lumes Românticos</SelectItem>
+											<SelectItem value="balloons">Balões Festivos</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>

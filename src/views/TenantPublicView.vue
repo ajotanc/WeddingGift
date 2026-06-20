@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import "dayjs/locale/pt-br";
 import { useTenant } from "@/composables/useTenant";
+import { EFFECT_CONFIGS, type Particle } from "@/lib/effect";
 import { formatMoney, getProductPrice } from "@/lib/money";
 import { generatePixPayload, sortBy } from "@/lib/utils";
 import { GalleryService } from "@/services/gallery.service";
@@ -30,6 +31,7 @@ import LocationSection from "@/components/public/LocationSection.vue";
 import ProductsSection from "@/components/public/ProductsSection.vue";
 import RsvpMessageSection from "@/components/public/RsvpMessageSection.vue";
 import ScheduleSection from "@/components/public/ScheduleSection.vue";
+import { Button } from "@/components/ui/button";
 
 dayjs.locale("pt-br");
 
@@ -232,11 +234,11 @@ const weatherError = ref(false);
 const isWeatherExpanded = ref(false);
 
 const loadWeather = async () => {
-	if (
-		!tenant.value?.event_latitude ||
-		!tenant.value?.event_longitude ||
-		!tenant.value?.event_date
-	) {
+	const lat = tenant.value?.event_latitude;
+	const lng = tenant.value?.event_longitude;
+	const date = tenant.value?.event_date;
+
+	if (!lat || !lng || !date) {
 		return;
 	}
 
@@ -244,11 +246,7 @@ const loadWeather = async () => {
 	weatherError.value = false;
 
 	try {
-		const res = await WeatherService.getForecast(
-			tenant.value.event_latitude,
-			tenant.value.event_longitude,
-			tenant.value.event_date,
-		);
+		const res = await WeatherService.getForecast(lat, lng, date);
 		weatherData.value = res;
 	} catch (e) {
 		console.error("Error loading weather forecast:", e);
@@ -259,9 +257,13 @@ const loadWeather = async () => {
 };
 
 watch(
-	tenant,
-	(newTenant) => {
-		if (newTenant) {
+	[
+		() => tenant.value?.event_latitude,
+		() => tenant.value?.event_longitude,
+		() => tenant.value?.event_date,
+	],
+	([lat, lng, date]) => {
+		if (lat && lng && date) {
 			loadWeather();
 		}
 	},
@@ -379,19 +381,15 @@ const scrollToSection = (id: string) => {
 // --- Premium Ambient Particle Effects ---
 const effectCanvas = ref<HTMLCanvasElement | null>(null);
 let animationFrameId: number | null = null;
-let particles: Array<{
-	x: number;
-	y: number;
-	size: number;
-	speedX: number;
-	speedY: number;
-	opacity: number;
-	fadeSpeed?: number;
-	rotation?: number;
-	rotationSpeed?: number;
-}> = [];
+let cleanupEffect: (() => void) | null = null;
+
+let particles: Particle[] = [];
 
 const initParticles = () => {
+	if (cleanupEffect) {
+		cleanupEffect();
+	}
+
 	const canvas = effectCanvas.value;
 	if (!canvas) return;
 	const ctx = canvas.getContext("2d");
@@ -407,37 +405,28 @@ const initParticles = () => {
 	const effect = tenant.value?.ambient_effect;
 	if (!effect || effect === "none") return;
 
-	const maxParticles = effect === "rose-petals" ? 25 : 60;
+	const config = EFFECT_CONFIGS[effect];
+	if (!config) return;
+
+	const maxParticles = config.maxParticles;
 	particles = [];
 
 	const createParticle = (initY = false) => {
 		const x = Math.random() * canvas.width;
-		const y = initY ? Math.random() * canvas.height : -10;
-		const size =
-			effect === "rose-petals"
-				? Math.random() * 4 + 4
-				: Math.random() * 2.5 + 1.2;
-		const speedX =
-			effect === "rose-petals"
-				? Math.random() * 1.5 - 0.5
-				: Math.random() * 0.6 - 0.3;
-		const speedY =
-			effect === "rose-petals"
-				? Math.random() * 1.2 + 0.8
-				: Math.random() * 0.7 + 0.5;
-		const opacity =
-			effect === "rose-petals"
-				? Math.random() * 0.4 + 0.5
-				: Math.random() * 0.5 + 0.5;
-		const distanceToTravel = Math.max(50, canvas.height * 1.3 - y);
-		const framesToBottom = distanceToTravel / speedY;
-		const fadeSpeed =
-			effect === "sparkles"
-				? (opacity / framesToBottom) * (Math.random() * 0.4 + 0.8)
-				: undefined;
-		const rotation = effect === "rose-petals" ? Math.random() * 360 : undefined;
-		const rotationSpeed =
-			effect === "rose-petals" ? Math.random() * 0.02 - 0.01 : undefined;
+		const y = config.createY(canvas.height, initY);
+		const size = config.size();
+		const speedX = config.speedX();
+		const speedY = config.speedY();
+		const opacity = config.opacity();
+
+		const fadeSpeed = config.fadeSpeed
+			? config.fadeSpeed(opacity, speedY, y, canvas.height)
+			: undefined;
+
+		const rotation = config.rotation ? config.rotation() : undefined;
+		const rotationSpeed = config.rotationSpeed
+			? config.rotationSpeed()
+			: undefined;
 
 		return {
 			x,
@@ -462,109 +451,11 @@ const initParticles = () => {
 		for (let i = 0; i < particles.length; i++) {
 			const p = particles[i];
 
-			if (effect === "rose-petals") {
-				p.y += p.speedY;
-				p.x += p.speedX + Math.sin(p.y / 30) * 0.3;
-				if (p.rotation !== undefined && p.rotationSpeed !== undefined) {
-					p.rotation += p.rotationSpeed;
-				}
+			config.updatePhysics(p, canvas.height);
+			config.draw(ctx, p, canvas.height);
 
-				let drawOpacity = p.opacity;
-				if (p.y > canvas.height * 0.8) {
-					const fadeProgress =
-						(p.y - canvas.height * 0.8) / (canvas.height * 0.2);
-					drawOpacity = p.opacity * Math.max(0, 1 - fadeProgress);
-				}
-
-				ctx.save();
-				ctx.translate(p.x, p.y);
-				if (p.rotation !== undefined) {
-					ctx.rotate(p.rotation);
-				}
-				const wobble = Math.sin(Date.now() / 250 + p.y / 80) * 0.4 + 0.6;
-				ctx.scale(wobble, 1);
-
-				const gradient = ctx.createLinearGradient(0, p.size, 0, -p.size);
-				gradient.addColorStop(0, `rgba(224, 30, 90, ${drawOpacity})`);
-				gradient.addColorStop(0.5, `rgba(244, 143, 177, ${drawOpacity})`);
-				gradient.addColorStop(1, `rgba(252, 228, 236, ${drawOpacity * 0.9})`);
-
-				ctx.beginPath();
-				ctx.moveTo(0, p.size);
-				ctx.bezierCurveTo(
-					-p.size * 1.5,
-					p.size * 0.6,
-					-p.size * 1.5,
-					-p.size * 0.6,
-					0,
-					-p.size,
-				);
-				ctx.bezierCurveTo(
-					p.size * 1.5,
-					-p.size * 0.6,
-					p.size * 1.5,
-					p.size * 0.6,
-					0,
-					p.size,
-				);
-				ctx.closePath();
-
-				ctx.fillStyle = gradient;
-				ctx.shadowBlur = p.size * 0.4;
-				ctx.shadowColor = `rgba(244, 143, 177, ${drawOpacity * 0.4})`;
-				ctx.fill();
-				ctx.restore();
-
-				if (p.y > canvas.height + 10 || p.x < -10 || p.x > canvas.width + 10) {
-					particles[i] = createParticle(false);
-				}
-			} else if (effect === "sparkles") {
-				p.y += p.speedY;
-				p.x += p.speedX;
-				if (p.fadeSpeed !== undefined) {
-					p.opacity -= p.fadeSpeed;
-				}
-
-				const currentOpacity = Math.max(
-					0,
-					p.opacity * (0.6 + 0.4 * Math.sin(Date.now() / 150 + p.x)),
-				);
-
-				ctx.save();
-				ctx.translate(p.x, p.y);
-				ctx.beginPath();
-				for (let j = 0; j < 4; j++) {
-					const angle = (j * Math.PI) / 2;
-					const x1 = Math.cos(angle) * p.size * 2.2;
-					const y1 = Math.sin(angle) * p.size * 2.2;
-
-					const nextAngle = angle + Math.PI / 4;
-					const x2 = Math.cos(nextAngle) * p.size * 0.5;
-					const y2 = Math.sin(nextAngle) * p.size * 0.5;
-
-					if (j === 0) {
-						ctx.moveTo(x1, y1);
-					} else {
-						ctx.lineTo(x1, y1);
-					}
-					ctx.lineTo(x2, y2);
-				}
-				ctx.closePath();
-
-				ctx.fillStyle = `rgba(253, 224, 71, ${currentOpacity})`;
-				ctx.shadowBlur = p.size * 2;
-				ctx.shadowColor = `rgba(250, 204, 21, ${currentOpacity})`;
-				ctx.fill();
-				ctx.restore();
-
-				if (
-					p.y > canvas.height + 10 ||
-					p.opacity <= 0 ||
-					p.x < -10 ||
-					p.x > canvas.width + 10
-				) {
-					particles[i] = createParticle(false);
-				}
+			if (config.shouldReset(p, canvas.width, canvas.height)) {
+				particles[i] = createParticle(false);
 			}
 		}
 
@@ -573,15 +464,18 @@ const initParticles = () => {
 
 	animate();
 
-	onUnmounted(() => {
+	cleanupEffect = () => {
 		window.removeEventListener("resize", resizeCanvas);
-		if (animationFrameId) cancelAnimationFrame(animationFrameId);
-	});
+		if (animationFrameId) {
+			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null;
+		}
+	};
 };
 
 watch([() => tenant.value?.ambient_effect, effectCanvas], () => {
-	if (animationFrameId) {
-		cancelAnimationFrame(animationFrameId);
+	if (cleanupEffect) {
+		cleanupEffect();
 	}
 	if (
 		effectCanvas.value &&
@@ -600,13 +494,18 @@ onUnmounted(() => {
 	if (observer) {
 		observer.disconnect();
 	}
+	if (cleanupEffect) {
+		cleanupEffect();
+	}
 });
 </script>
 
 <template>
 	<main class="min-h-screen font-sans text-slate-600"
 		:style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
-		<div v-if="loading" class="fixed inset-0 flex flex-col items-center justify-center p-6 text-center z-[999] animate-in fade-in-0 duration-500" :style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
+		<div v-if="loading"
+			class="fixed inset-0 flex flex-col items-center justify-center p-6 text-center z-[999] animate-in fade-in-0 duration-500"
+			:style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
 			<div class="relative flex items-center justify-center mb-6">
 				<!-- Pulse decoration -->
 				<div class="absolute w-16 h-16 rounded-full bg-pink-100 animate-ping duration-1000"></div>
@@ -614,7 +513,8 @@ onUnmounted(() => {
 				<div class="w-12 h-12 rounded-full border-4 border-slate-100 border-t-primary animate-spin"></div>
 			</div>
 			<h2 class="font-serif text-2xl md:text-3xl text-slate-900 tracking-wide mb-2">Carregando experiência</h2>
-			<p class="text-slate-400 text-sm font-light tracking-wider animate-pulse">Preparando todos os detalhes com carinho...</p>
+			<p class="text-slate-400 text-sm font-light tracking-wider animate-pulse">Preparando todos os detalhes com
+				carinho...</p>
 		</div>
 		<div v-else-if="error" class="text-center p-20 text-red-500 font-medium">{{ error }}</div>
 		<template v-else-if="tenant">
@@ -677,7 +577,8 @@ onUnmounted(() => {
 					:primary-color="tenant.primary_color" :schedules="getTimelineItems" />
 
 				<!-- Dress Code Guide -->
-				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text" :dress-code-text="tenant.dress_code_text" />
+				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
+					:dress-code-text="tenant.dress_code_text" />
 
 				<!-- Gallery -->
 				<GallerySection v-if="tenant.show_gallery" :images="homePrivateImages"
@@ -712,8 +613,8 @@ onUnmounted(() => {
 
 				<template v-else>
 					<!-- Products -->
-					<ProductsSection :products="products" :tenant="tenant" :current-user="currentUser"
-						@open-pix="openPixModal" @open-links="openLinksModal" />
+					<ProductsSection :products="products" :tenant="tenant" :current-user="currentUser" @open-pix="openPixModal"
+						@open-links="openLinksModal" />
 
 					<!-- RSVP & Message Wall -->
 					<RsvpMessageSection :tenant="tenant" :rsvps="rsvps" :messages="messages" :current-user="currentUser" />
