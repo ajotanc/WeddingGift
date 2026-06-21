@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import DOMPurify from "dompurify";
 import { Shirt } from "lucide-vue-next";
+import { computed } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	dressCodeText: string;
 }>();
+
+const sanitizedDressCodeText = computed(() =>
+	DOMPurify.sanitize(props.dressCodeText),
+);
 </script>
 
 <template>
@@ -20,7 +26,7 @@ defineProps<{
 
 		<div class="bg-white/80 backdrop-blur p-8 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-shadow duration-300 hover:shadow-md">
 			<div class="text-slate-600 font-light text-base md:text-lg leading-relaxed text-left quill-content whitespace-pre-line"
-				v-html="dressCodeText"></div>
+				v-html="sanitizedDressCodeText"></div>
 		</div>
 	</section>
 </template>

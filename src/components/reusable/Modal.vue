@@ -7,18 +7,24 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 
-const props = defineProps<{
-	open: boolean;
-	title?: string;
-	description?: string;
-}>();
+const props = withDefaults(
+	defineProps<{
+		open: boolean;
+		title?: string;
+		description?: string;
+		preventAutofocus?: boolean;
+	}>(),
+	{
+		preventAutofocus: true,
+	},
+);
 
 const emit = defineEmits<(e: "update:open", v: boolean) => void>();
 </script>
 
 <template>
 	<Dialog :open="props.open" @update:open="emit('update:open', $event)">
-		<DialogContent aria-describedby="modal-description">
+		<DialogContent aria-describedby="modal-description" @open-auto-focus="(e) => { if (props.preventAutofocus) e.preventDefault(); }">
 			<DialogHeader v-if="props.title || props.description">
 				<DialogTitle v-if="props.title">{{ props.title }}</DialogTitle>
 

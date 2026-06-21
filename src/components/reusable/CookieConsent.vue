@@ -42,7 +42,7 @@ const declineCookies = () => {
 				<div class="space-y-2">
 					<h4 class="font-serif text-lg font-semibold text-primary leading-tight">Valorizamos sua privacidade 🍪</h4>
 					<p class="text-sm font-light text-zinc-500 leading-relaxed">
-						Utilizamos cookies para assegurar o funcionamento correto e seguro da plataforma. Ao continuar navegando, você aceita nossos 
+						Utilizamos cookies essenciais para assegurar o funcionamento correto e seguro da plataforma. Ao clicar em "Aceitar", você concorda com nossos 
 						<a href="/terms" target="_blank" class="underline hover:opacity-85 font-medium transition-opacity">Termos de Uso</a> 
 						e nossa 
 						<a href="/privacy" target="_blank" class="underline hover:opacity-85 font-medium transition-opacity">Política de Privacidade</a>.

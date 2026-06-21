@@ -6,9 +6,11 @@ import { StorageService } from "./storage.service";
 export type ProductType = "physical" | "quota";
 
 export interface IProductLink extends Models.Row {
-	product: string;
+	title: string;
 	store: string;
+	price: string | null;
 	url: string;
+	thumbnail: string;
 }
 
 export interface IProduct extends Models.Row {

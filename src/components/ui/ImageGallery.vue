@@ -85,6 +85,31 @@ const canDeleteImage = (img: IGalleryImage) => {
 	if (!props.currentGuestId) return false;
 	return img.guest?.$id === props.currentGuestId;
 };
+
+const isDownloading = ref(false);
+
+const downloadImage = async (url: string, id: string) => {
+	isDownloading.value = true;
+	try {
+		const response = await fetch(url);
+		const blob = await response.blob();
+		const blobUrl = URL.createObjectURL(blob);
+
+		const a = document.createElement("a");
+		a.href = blobUrl;
+		a.download = `photo-${id}.webp`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(blobUrl);
+	} catch (error) {
+		console.error("Erro ao baixar a imagem:", error);
+		// Fallback: abrir em uma nova aba se o fetch falhar
+		window.open(url, "_blank");
+	} finally {
+		isDownloading.value = false;
+	}
+};
 </script>
 
 <template>
@@ -207,11 +232,11 @@ const canDeleteImage = (img: IGalleryImage) => {
       <div class="flex flex-col max-w-full max-h-[90vh]" @click.stop>
         <div class="relative max-h-[80vh] flex items-center justify-center">
           <img :src="activeLightboxImage.image_url" class="max-h-[80vh] w-full object-contain" />
-          <a v-if="props.isAdmin" :href="activeLightboxImage.image_url" download target="_blank"
-            class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2.5 rounded-full backdrop-blur-md transition-colors cursor-pointer border border-white/20 flex items-center justify-center shadow-lg"
-            title="Baixar imagem">
+          <button v-if="props.isAdmin" type="button" @click.stop="downloadImage(activeLightboxImage.image_url, activeLightboxImage.$id)"
+            class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2.5 rounded-full backdrop-blur-md transition-colors cursor-pointer border border-white/20 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50"
+            title="Baixar imagem" :disabled="isDownloading">
             <Download class="w-5 h-5" />
-          </a>
+          </button>
         </div>
 
         <p v-if="activeLightboxImage.caption"

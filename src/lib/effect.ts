@@ -325,7 +325,7 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 
 			// Slowly oscillate flight path and add organic minor heading changes
 			p.rotation += Math.sin(Date.now() / 600 + (p.fadeSpeed || 0) * 2) * 0.015;
-			p.rotation += (Math.random() * 0.05 - 0.025);
+			p.rotation += Math.random() * 0.05 - 0.025;
 
 			// Clamp tilt so they always fly generally upwards (max ~80 degrees left/right)
 			const maxTilt = Math.PI / 2.2;
@@ -333,7 +333,7 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			if (p.rotation > maxTilt) p.rotation = maxTilt;
 
 			// Base speed magnitude
-			const speedMag = 0.5 + (p.size * 0.04);
+			const speedMag = 0.5 + p.size * 0.04;
 			p.speedX = Math.sin(p.rotation) * speedMag;
 			p.speedY = -Math.cos(p.rotation) * speedMag;
 
@@ -351,16 +351,19 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			ctx.rotate(angle);
 
 			// Flap wings dynamically and elegantly (slow graceful flap using static offset)
-			const flap = Math.abs(Math.sin(Date.now() / (750 + p.size * 25) + (p.fadeSpeed || 0) * 1.5));
+			const flap = Math.abs(
+				Math.sin(Date.now() / (750 + p.size * 25) + (p.fadeSpeed || 0) * 1.5),
+			);
 
 			const size = p.size;
 			const colors = [
 				"rgba(186, 104, 200, ", // Orchid purple
-				"rgba(240, 98, 146, ",  // Warm rose pink
-				"rgba(79, 195, 247, ",  // Sky blue
-				"rgba(255, 183, 77, ",  // Warm orange/monarch
+				"rgba(240, 98, 146, ", // Warm rose pink
+				"rgba(79, 195, 247, ", // Sky blue
+				"rgba(255, 183, 77, ", // Warm orange/monarch
 			];
-			const colorIndex = p.fadeSpeed !== undefined ? Math.floor(p.fadeSpeed) % colors.length : 0;
+			const colorIndex =
+				p.fadeSpeed !== undefined ? Math.floor(p.fadeSpeed) % colors.length : 0;
 			const baseColor = colors[colorIndex];
 
 			// Helper function to draw wings on a side
@@ -368,14 +371,20 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 				ctx.beginPath();
 				ctx.moveTo(0, -scaleSize * 0.15);
 				ctx.bezierCurveTo(
-					side * scaleSize * 1.5, -scaleSize * 1.6,
-					side * scaleSize * 2.0, -scaleSize * 0.5,
-					side * scaleSize * 0.4, -scaleSize * 0.1
+					side * scaleSize * 1.5,
+					-scaleSize * 1.6,
+					side * scaleSize * 2.0,
+					-scaleSize * 0.5,
+					side * scaleSize * 0.4,
+					-scaleSize * 0.1,
 				);
 				ctx.bezierCurveTo(
-					side * scaleSize * 1.3, scaleSize * 0.4,
-					side * scaleSize * 0.9, scaleSize * 1.4,
-					0, scaleSize * 0.3
+					side * scaleSize * 1.3,
+					scaleSize * 0.4,
+					side * scaleSize * 0.9,
+					scaleSize * 1.4,
+					0,
+					scaleSize * 0.3,
 				);
 				ctx.closePath();
 				ctx.fill();
@@ -389,7 +398,7 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 					{ x: side * scaleSize * 1.3, y: -scaleSize * 0.9 },
 					{ x: side * scaleSize * 1.5, y: -scaleSize * 0.4 },
 					{ x: side * scaleSize * 1.1, y: scaleSize * 0.1 },
-					{ x: side * scaleSize * 0.8, y: scaleSize * 0.6 }
+					{ x: side * scaleSize * 0.8, y: scaleSize * 0.6 },
 				];
 				for (const dot of dots) {
 					ctx.beginPath();
@@ -409,8 +418,12 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 
 			// Inner colorful wing center with radial gradient for transparency/depth
 			const gradLeft = ctx.createRadialGradient(
-				0, 0, size * 0.1,
-				-size * 0.8, -size * 0.4, size * 1.2
+				0,
+				0,
+				size * 0.1,
+				-size * 0.8,
+				-size * 0.4,
+				size * 1.2,
 			);
 			gradLeft.addColorStop(0, `rgba(255, 255, 255, ${p.opacity})`);
 			gradLeft.addColorStop(0.2, `rgba(255, 250, 200, ${p.opacity})`);
@@ -418,8 +431,12 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			gradLeft.addColorStop(1, `${baseColor}${p.opacity * 0.7})`);
 
 			const gradRight = ctx.createRadialGradient(
-				0, 0, size * 0.1,
-				size * 0.8, -size * 0.4, size * 1.2
+				0,
+				0,
+				size * 0.1,
+				size * 0.8,
+				-size * 0.4,
+				size * 1.2,
 			);
 			gradRight.addColorStop(0, `rgba(255, 255, 255, ${p.opacity})`);
 			gradRight.addColorStop(0.2, `rgba(255, 250, 200, ${p.opacity})`);
@@ -473,12 +490,14 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 				p.rotation += p.rotationSpeed;
 			}
 			// Shimmer/twinkle effect
-			p.opacity = 0.2 + Math.abs(Math.sin(Date.now() / 700 + (p.rotation || 0) * 8)) * 0.6;
+			p.opacity =
+				0.2 +
+				Math.abs(Math.sin(Date.now() / 700 + (p.rotation || 0) * 8)) * 0.6;
 		},
-		shouldReset: (p, w, h) => p.y < -20 || p.x < -20 || p.x > w + 20,
+		shouldReset: (p, w, _h) => p.y < -20 || p.x < -20 || p.x > w + 20,
 		draw: (ctx, p, h) => {
 			let drawOpacity = p.opacity;
-			
+
 			// Smoothly fade out as particles reach the top of the screen (top 20%)
 			if (p.y < h * 0.2) {
 				const fadeProgress = p.y / (h * 0.2);
@@ -489,7 +508,7 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			ctx.translate(p.x, p.y);
 
 			const r = p.size;
-			const isSparkle = (Math.floor(p.size * 100) % 3 === 0); // Deterministic type based on size
+			const isSparkle = Math.floor(p.size * 100) % 3 === 0; // Deterministic type based on size
 
 			// Use soft champagne-gold shadow glow
 			ctx.shadowColor = `rgba(253, 224, 71, ${drawOpacity * 0.5})`;
@@ -570,13 +589,14 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			}
 
 			const colors = [
-				"rgba(250, 204, 21, ",  // Gold
+				"rgba(250, 204, 21, ", // Gold
 				"rgba(244, 143, 177, ", // Rose Gold / Pink
 				"rgba(203, 213, 225, ", // Silver / Slate
 				"rgba(254, 243, 199, ", // Champagne
-				"rgba(96, 165, 250, ",  // Pastel Blue
+				"rgba(96, 165, 250, ", // Pastel Blue
 			];
-			const colorIndex = p.fadeSpeed !== undefined ? Math.floor(p.fadeSpeed) % colors.length : 0;
+			const colorIndex =
+				p.fadeSpeed !== undefined ? Math.floor(p.fadeSpeed) % colors.length : 0;
 			const baseColor = colors[colorIndex];
 
 			ctx.fillStyle = `${baseColor}${drawOpacity})`;
@@ -675,10 +695,15 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			}
 			p.x += Math.cos(p.rotation || 0) * (p.size * 0.22);
 			// Smooth flight wobble without using changing position variables in phase
-			p.y += Math.sin(p.rotation || 0) * (p.size * 0.22) + Math.sin(Date.now() / 500 + p.size * 23.7) * 0.1;
+			p.y +=
+				Math.sin(p.rotation || 0) * (p.size * 0.22) +
+				Math.sin(Date.now() / 500 + p.size * 23.7) * 0.1;
 
 			// Pulse opacity slowly and independently using static offset
-			p.opacity = 0.15 + Math.abs(Math.sin(Date.now() / (1200 + p.size * 250) + (p.size * 47.3))) * 0.75;
+			p.opacity =
+				0.15 +
+				Math.abs(Math.sin(Date.now() / (1200 + p.size * 250) + p.size * 47.3)) *
+					0.75;
 
 			const w = window.innerWidth;
 			if (p.x < -15) p.x = w + 15;
@@ -694,7 +719,14 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 			ctx.shadowBlur = p.size * 4;
 			ctx.shadowColor = `rgba(163, 230, 53, ${p.opacity * 0.8})`;
 
-			const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4.5);
+			const glow = ctx.createRadialGradient(
+				p.x,
+				p.y,
+				0,
+				p.x,
+				p.y,
+				p.size * 4.5,
+			);
 			glow.addColorStop(0, `rgba(255, 255, 220, ${p.opacity})`); // bright core
 			glow.addColorStop(0.3, `rgba(190, 242, 100, ${p.opacity * 0.7})`); // lime core
 			glow.addColorStop(0.8, `rgba(163, 230, 53, ${p.opacity * 0.25})`); // soft green halo
@@ -739,7 +771,8 @@ export const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 				"rgba(187, 247, 208, ", // Pastel Green
 				"rgba(231, 229, 228, ", // Warm Silver
 			];
-			const colorIndex = p.rotation !== undefined ? Math.floor(p.rotation) % colors.length : 0;
+			const colorIndex =
+				p.rotation !== undefined ? Math.floor(p.rotation) % colors.length : 0;
 			const baseColor = colors[colorIndex];
 
 			ctx.beginPath();

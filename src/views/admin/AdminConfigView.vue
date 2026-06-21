@@ -158,6 +158,9 @@ const zodSchema = z.object({
 		.min(3, "Mínimo de 3 caracteres")
 		.regex(/^[a-z0-9-]+$/, "Apenas letras minúsculas, números e hifens"),
 	pix_key: z.string().min(5, "Chave PIX inválida"),
+	pix_consent: z.boolean().refine((val) => val === true, {
+		message: "Você precisa autorizar a exibição pública da sua chave PIX.",
+	}),
 	couple_history: z.string().optional(),
 	quote: z.string().optional(),
 	event_date: z.string().nullable().optional(),
@@ -230,6 +233,7 @@ const { handleSubmit, errors, setValues, defineField } =
 			bride_name: "",
 			slug: "",
 			pix_key: "",
+			pix_consent: false,
 			couple_history: "",
 			quote: "",
 			event_date: null,
@@ -258,6 +262,7 @@ const [groom_name] = defineField("groom_name");
 const [bride_name] = defineField("bride_name");
 const [slug] = defineField("slug");
 const [pix_key] = defineField("pix_key");
+const [pix_consent] = defineField("pix_consent");
 const [couple_history] = defineField("couple_history");
 const [quote] = defineField("quote");
 const [event_date] = defineField("event_date");
@@ -743,6 +748,7 @@ const loadSettings = () => {
 			bride_name: tenant.value.bride_name || "",
 			slug: tenant.value.slug || "",
 			pix_key: tenant.value.pix_key || "",
+			pix_consent: !!tenant.value.pix_key,
 			couple_history: tenant.value.couple_history || "",
 			quote: tenant.value.quote || "",
 			event_date: tenant.value.event_date || null,
@@ -838,8 +844,10 @@ const saveSettings = handleSubmit(async (values) => {
 			`${values.bride_name || ""} & ${values.groom_name || ""}`.trim();
 		const urlChanged = tenant.value.slug !== values.slug;
 
+		const { pix_consent, ...restValues } = values;
+
 		const payload = {
-			...values,
+			...restValues,
 			couple_name: coupleName,
 		};
 
@@ -961,6 +969,24 @@ const connectToMarketPago = () => {
 						</FormGroup>
 						<FormGroup label="Chave PIX" :error="errors.pix_key">
 							<Input v-model="pix_key" placeholder="CPF, Email ou Telefone" class="bg-slate-50/50" />
+							<div class="mt-2.5 p-3.5 bg-amber-50/40 border border-amber-100 rounded-xl space-y-2">
+								<div class="text-[10px] text-amber-800 font-light leading-normal flex items-start gap-1.5">
+									<span class="font-bold shrink-0 mt-0.5">⚠️ Recomendação LGPD:</span>
+									<span>
+										Para proteger sua privacidade, recomendamos fortemente o uso de uma <strong>chave aleatória (EVP)</strong>. 
+										Evite usar chaves com dados pessoais (CPF, e-mail, telefone), pois a chave será exibida publicamente na página de presentes.
+									</span>
+								</div>
+								<div class="flex items-start gap-2 pt-1.5 border-t border-amber-100/50">
+									<input type="checkbox" id="pix_consent" v-model="pix_consent"
+										class="w-3.5 h-3.5 mt-0.5 rounded border-amber-300 text-amber-600 focus:ring-amber-50/20 accent-amber-600 cursor-pointer" />
+									<label for="pix_consent"
+										class="text-[11px] text-amber-900 font-normal leading-tight cursor-pointer select-none">
+										Eu autorizo a exibição pública desta chave PIX no site do casamento em conformidade com a LGPD.
+									</label>
+								</div>
+								<p v-if="errors.pix_consent" class="text-[11px] text-red-500 font-medium">{{ errors.pix_consent }}</p>
+							</div>
 						</FormGroup>
 						<FormGroup label="Link Personalizado" :error="errors.slug">
 							<InputGroup

@@ -1,0 +1,10 @@
+{
+	"name": "ai-helper",
+	"version": "1.0.0",
+	"description": "Appwrite function to proxy Gemini and Serper API requests safely from the client",
+	"main": "src/main.js",
+	"type": "module",
+	"dependencies": {
+		"axios": "^1.6.0"
+	}
+}

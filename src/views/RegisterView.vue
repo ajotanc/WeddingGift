@@ -26,6 +26,7 @@ const form = ref({
 	pix_key: "",
 	primary_color: DEFAULT_PRIMARY_COLOR,
 	acceptedTerms: false,
+	confirmedAge: false,
 });
 
 onMounted(() => {
@@ -45,10 +46,10 @@ const generateSlug = () => {
 };
 
 const registerTenant = async () => {
-	if (!form.value.acceptedTerms) {
+	if (!form.value.acceptedTerms || !form.value.confirmedAge) {
 		toast.error("Erro", {
 			description:
-				"Você deve aceitar os Termos de Uso e a Política de Privacidade para continuar.",
+				"Você deve aceitar os termos e confirmar ter 18 anos ou mais para continuar.",
 		});
 		return;
 	}
@@ -71,6 +72,8 @@ const registerTenant = async () => {
 				background_image: null,
 				accepted_terms: true,
 				accepted_terms_at: dayjs().toISOString(),
+				confirmed_age: true,
+				confirmed_age_at: dayjs().toISOString(),
 			}),
 		);
 
@@ -123,6 +126,11 @@ const registerTenant = async () => {
 					<FormGroup label="Sua Chave PIX">
 						<Input v-model="form.pix_key" required placeholder="Para receber as cotas direto na conta"
 							class="bg-slate-50/50" />
+						<div class="mt-2 p-2.5 bg-amber-50/30 border border-amber-100/50 rounded-xl">
+							<p class="text-[10px] text-amber-700 font-light leading-relaxed">
+								🔒 <strong>Segurança e LGPD:</strong> Para sua privacidade, recomendamos utilizar uma <strong>chave aleatória (EVP)</strong>. Evite usar dados pessoais como CPF, e-mail ou telefone, pois esta chave ficará visível publicamente na sua lista de presentes.
+							</p>
+						</div>
 						<p class="text-[10px] text-slate-400 mt-1 font-light">Nós não cobramos taxas sobre os presentes em dinheiro.
 						</p>
 					</FormGroup>
@@ -137,17 +145,29 @@ const registerTenant = async () => {
 						</div>
 					</FormGroup>
 
-					<div class="flex items-start gap-2.5 py-2">
-						<input type="checkbox" id="accept-terms" v-model="form.acceptedTerms"
-							class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer"
-							required />
-						<label for="accept-terms"
-							class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
-							Li e concordo com os <a href="/terms" target="_blank" class="underline text-primary font-medium">Termos
-								de Uso</a> e a <a href="/privacy" target="_blank"
-								class="underline text-primary font-medium">Política de Privacidade</a>, e autorizo o tratamento de meus
-							dados em conformidade com a LGPD.
-						</label>
+					<div class="space-y-3 py-2">
+						<div class="flex items-start gap-2.5">
+							<input type="checkbox" id="accept-terms" v-model="form.acceptedTerms"
+								class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+								required />
+							<label for="accept-terms"
+								class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
+								Li e concordo com os <a href="/terms" target="_blank" class="underline text-primary font-medium">Termos
+									de Uso</a> e a <a href="/privacy" target="_blank"
+									class="underline text-primary font-medium">Política de Privacidade</a>, e autorizo o tratamento de meus
+								dados em conformidade com a LGPD.
+							</label>
+						</div>
+
+						<div class="flex items-start gap-2.5">
+							<input type="checkbox" id="confirm-age" v-model="form.confirmedAge"
+								class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+								required />
+							<label for="confirm-age"
+								class="text-xs text-slate-500 font-light leading-relaxed cursor-pointer select-none">
+								Declaro e confirmo que tenho <strong>18 anos ou mais</strong> de idade.
+							</label>
+						</div>
 					</div>
 
 					<GoogleAuthButton type="submit" :label="loading ? 'Criando Conta...' : 'Continuar com Google'"

@@ -10,7 +10,7 @@ export default defineConfig({
         VitePWA({
             registerType: "autoUpdate",
             manifest: {
-                name: "Wedding Gift SaaS",
+                name: "Wedding Gift",
                 short_name: "WeddingGift",
                 theme_color: "#ffffff",
                 icons: [

@@ -5,7 +5,7 @@ import PlanLimitAlert from "@/components/reusable/PlanLimitAlert.vue";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { useTenant } from "@/composables/useTenant";
-import { generateThankYouMessage } from "@/lib/ai";
+import { useThankYouGenerator } from "@/composables/useThankYouGenerator";
 import type { IGuest } from "@/services/guest.service";
 import { MessageService } from "@/services/message.service";
 import { useAuthStore } from "@/stores/auth";
@@ -66,30 +66,28 @@ const deleteMsg = async (id: string) => {
 };
 
 // Gemini AI
-const aiThanks = ref("");
 const showThanksModal = ref(false);
-const generatingThanks = ref(false);
+const {
+	message: aiThanks,
+	isGenerating: generatingThanks,
+	generationError,
+	generateThankYou,
+} = useThankYouGenerator();
 
 const guestPhone = ref<string | undefined>(undefined);
 
 const generateThanks = async (guest: IGuest) => {
 	showThanksModal.value = true;
-	generatingThanks.value = true;
-	aiThanks.value = "";
-
 	guestPhone.value = guest.phone;
 
-	try {
-		aiThanks.value = await generateThankYouMessage(
-			guest.name,
-			tenant.value?.couple_name || "nós",
-		);
-	} catch (err) {
-		console.error("Erro ao gerar agradecimento:", err);
+	await generateThankYou({
+		guestName: guest.name,
+		coupleName: tenant.value?.couple_name || "nós",
+	});
+
+	if (generationError.value) {
 		aiThanks.value =
 			"Houve um erro ao gerar a mensagem. Tente novamente mais tarde.";
-	} finally {
-		generatingThanks.value = false;
 	}
 };
 
@@ -271,8 +269,11 @@ const exportToExcel = () => {
         <div v-if="generatingThanks" class="text-slate-500 py-6 animate-pulse font-light">A IA do Gemini está
           escrevendo...</div>
         <div v-else>
-          <p class="bg-slate-50 p-6 rounded-2xl text-slate-800 text-left italic mb-6 border border-slate-100">"{{
+          <p class="bg-slate-50 p-6 rounded-2xl text-slate-800 text-left italic mb-2 border border-slate-100">"{{
             aiThanks }}"</p>
+          <p class="text-[11px] text-slate-400 mb-6 text-left">
+            ✨ Mensagem sugerida por IA — revise antes de enviar
+          </p>
           <div class="flex gap-3">
             <Button @click="copyThanks" variant="outline" class="flex-1 shadow-sm">
               <Copy class="w-4 h-4 mr-2" /> Copiar

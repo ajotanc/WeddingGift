@@ -18,6 +18,8 @@ export interface IUserPreferences extends Models.Preferences {
 	photo_url?: string;
 	accepted_terms?: boolean;
 	accepted_terms_at?: string;
+	confirmed_age?: boolean;
+	confirmed_age_at?: string;
 	fetched_avatar?: boolean;
 }
 
@@ -100,26 +102,30 @@ export const useAuthStore = defineStore("auth", {
 						const data = JSON.parse(pending) as ITenant & {
 							accepted_terms?: boolean;
 							accepted_terms_at?: string;
+							confirmed_age?: boolean;
+							confirmed_age_at?: string;
 						};
 						await TenantService.create(data, sessionUser.$id);
 						localStorage.removeItem("pending_tenant");
 
-						// Save LGPD consent status in User Preferences
+						// Save LGPD consent status and age confirmation in User Preferences
 						if (data.accepted_terms) {
 							try {
+								const prefsPayload = {
+									...sessionUser.prefs,
+									accepted_terms: true,
+									accepted_terms_at: data.accepted_terms_at,
+									confirmed_age: data.confirmed_age || true,
+									confirmed_age_at:
+										data.confirmed_age_at || data.accepted_terms_at,
+								};
+
 								await account.updatePrefs({
-									prefs: {
-										...sessionUser.prefs,
-										accepted_terms: true,
-										accepted_terms_at: data.accepted_terms_at,
-									},
+									prefs: prefsPayload,
 								});
+
 								if (this.user) {
-									this.user.prefs = {
-										...sessionUser.prefs,
-										accepted_terms: true,
-										accepted_terms_at: data.accepted_terms_at,
-									};
+									this.user.prefs = prefsPayload as IUserPreferences;
 								}
 
 								await ConsentService.log({

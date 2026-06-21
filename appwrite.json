@@ -1,0 +1,1079 @@
+{
+	"projectId": "6a2c9368003c950fb71f",
+	"projectName": "Wedding Gift",
+	"settings": {
+		"services": {
+			"account": true,
+			"avatars": true,
+			"databases": true,
+			"locale": true,
+			"health": true,
+			"storage": true,
+			"teams": true,
+			"users": true,
+			"sites": true,
+			"functions": true,
+			"graphql": true,
+			"messaging": true
+		},
+		"auth": {
+			"methods": {
+				"jwt": true,
+				"phone": false,
+				"invites": false,
+				"anonymous": false,
+				"email-otp": false,
+				"magic-url": true,
+				"email-password": true
+			},
+			"security": {
+				"duration": 31536000,
+				"limit": 0,
+				"sessionsLimit": 10,
+				"passwordHistory": 0,
+				"passwordDictionary": false,
+				"personalDataCheck": false,
+				"sessionAlerts": false,
+				"mockNumbers": []
+			}
+		}
+	},
+	"databases": [
+		{
+			"$id": "6a2cb37d0034ac2b40c6",
+			"name": "DBWG",
+			"enabled": true
+		}
+	],
+	"collections": [
+		{
+			"$id": "tenants",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")",
+				"read(\"guests\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "tenants",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "slug",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "couple_name",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "groom_name",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "bride_name",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "couple_history",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 2048,
+					"default": null
+				},
+				{
+					"key": "pix_key",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "status",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+
+				{
+					"key": "event_date",
+					"type": "datetime",
+					"required": false,
+					"array": false,
+					"format": "",
+					"default": null
+				},
+				{
+					"key": "event_time",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 5,
+					"default": null
+				},
+				{
+					"key": "event_location",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+
+				{
+					"key": "primary_color",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 7,
+					"default": null
+				},
+				{
+					"key": "background_color",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 7,
+					"default": null
+				},
+				{
+					"key": "text_color",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 7,
+					"default": null
+				},
+				{
+					"key": "background_image",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "guest_limit",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "show_countdown",
+					"type": "boolean",
+					"required": false,
+					"array": false,
+					"default": null
+				},
+				{
+					"key": "products",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "products",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "tenant",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "messages",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "messages",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "tenant",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "rsvps",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "rsvps",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "tenant",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "quote",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "logo_url",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "show_gallery",
+					"type": "boolean",
+					"required": false,
+					"array": false,
+					"default": null
+				},
+				{
+					"key": "show_faq",
+					"type": "boolean",
+					"required": false,
+					"array": false,
+					"default": null
+				},
+				{
+					"key": "faqs",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "faqs",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "tenant",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "gallery",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "gallery",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "tenant",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "schedules",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "schedules",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "tenant",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "show_schedule",
+					"type": "boolean",
+					"required": false,
+					"array": false,
+					"default": null
+				},
+				{
+					"key": "event_latitude",
+					"type": "double",
+					"required": false,
+					"array": false,
+					"min": -1.7976931348623157e308,
+					"max": 1.7976931348623157e308,
+					"default": null
+				},
+				{
+					"key": "event_longitude",
+					"type": "double",
+					"required": false,
+					"array": false,
+					"min": -1.7976931348623157e308,
+					"max": 1.7976931348623157e308,
+					"default": null
+				},
+				{
+					"key": "plan",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "premium_until",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "title_font",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "body_font",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "music_url",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "ambient_effect",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "show_dress_code",
+					"type": "boolean",
+					"required": false,
+					"array": false,
+					"default": null
+				},
+				{
+					"key": "dress_code_text",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 2048,
+					"default": null
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "products",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "products",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "type",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "name",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "price",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "desired_quantity",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "claimed_quantity",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "image_url",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "category",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "links",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "product_links",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "product",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "products",
+					"onDelete": "cascade",
+					"side": "child"
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "product_links",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "product_links",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "store",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "url",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "product",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "products",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "links",
+					"onDelete": "cascade",
+					"side": "child"
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "messages",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "messages",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "content",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 2048,
+					"default": null
+				},
+				{
+					"key": "guest",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "guests",
+					"relationType": "manyToOne",
+					"twoWay": false,
+					"twoWayKey": "6a30004c00257a940193",
+					"onDelete": "cascade",
+					"side": "parent"
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "messages",
+					"onDelete": "cascade",
+					"side": "child"
+				},
+				{
+					"key": "likes",
+					"type": "string",
+					"required": false,
+					"array": true,
+					"size": 255,
+					"default": null
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "guests",
+			"$permissions": [
+				"read(\"guests\")",
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "guests",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "name",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "email",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "phone",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 25,
+					"default": null
+				},
+				{
+					"key": "photo_url",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "rsvps",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "rsvps",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "name",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "email",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "phone",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 25,
+					"default": null
+				},
+				{
+					"key": "status",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "total_adults",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "total_children",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "rsvps",
+					"onDelete": "cascade",
+					"side": "child"
+				},
+				{
+					"key": "message",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "guest",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "guests",
+					"relationType": "manyToOne",
+					"twoWay": false,
+					"twoWayKey": "6a30a15f0008af2d1feb",
+					"onDelete": "setNull",
+					"side": "parent"
+				},
+				{
+					"key": "dietary_restrictions",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "companions_names",
+					"type": "string",
+					"required": false,
+					"array": true,
+					"size": 255,
+					"default": null
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "purchases",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "purchases",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "price_paid",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "quantity",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "method",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "product",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "products",
+					"relationType": "manyToOne",
+					"twoWay": false,
+					"twoWayKey": "6a304ef600111b5e867f",
+					"onDelete": "setNull",
+					"side": "parent"
+				},
+				{
+					"key": "guest",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "guests",
+					"relationType": "manyToOne",
+					"twoWay": false,
+					"twoWayKey": "6a304f100009958c2a11",
+					"onDelete": "setNull",
+					"side": "parent"
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "manyToOne",
+					"twoWay": false,
+					"twoWayKey": "6a304f3100115ac47e39",
+					"onDelete": "setNull",
+					"side": "parent"
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "faqs",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "faqs",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "question",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "answer",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "order",
+					"type": "integer",
+					"required": false,
+					"array": false,
+					"min": -9223372036854775808,
+					"max": 9223372036854775807,
+					"default": null
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "faqs",
+					"onDelete": "cascade",
+					"side": "child"
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "gallery",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "gallery",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "image_url",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "likes",
+					"type": "string",
+					"required": false,
+					"array": true,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "gallery",
+					"onDelete": "cascade",
+					"side": "child"
+				},
+				{
+					"key": "is_public",
+					"type": "boolean",
+					"required": false,
+					"array": false,
+					"default": null
+				},
+				{
+					"key": "caption",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "guest",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "guests",
+					"relationType": "manyToOne",
+					"twoWay": false,
+					"twoWayKey": "6a336252002a8505a8f1",
+					"onDelete": "setNull",
+					"side": "parent"
+				}
+			],
+			"indexes": []
+		},
+		{
+			"$id": "schedules",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")"
+			],
+			"databaseId": "6a2cb37d0034ac2b40c6",
+			"name": "schedules",
+			"enabled": true,
+			"documentSecurity": true,
+			"attributes": [
+				{
+					"key": "title",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "description",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 1024,
+					"default": null
+				},
+				{
+					"key": "hour",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 5,
+					"default": null
+				},
+				{
+					"key": "icon",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 255,
+					"default": null
+				},
+				{
+					"key": "tenant",
+					"type": "relationship",
+					"required": false,
+					"array": false,
+					"relatedCollection": "tenants",
+					"relationType": "oneToMany",
+					"twoWay": true,
+					"twoWayKey": "schedules",
+					"onDelete": "cascade",
+					"side": "child"
+				}
+			],
+			"indexes": []
+		}
+	],
+	"buckets": [
+		{
+			"$id": "6a2cb3ce000355dc24e5",
+			"$permissions": [
+				"create(\"users\")",
+				"read(\"users\")",
+				"update(\"users\")",
+				"delete(\"users\")",
+				"read(\"guests\")"
+			],
+			"fileSecurity": false,
+			"name": "General",
+			"enabled": true,
+			"maximumFileSize": 30000000,
+			"allowedFileExtensions": [],
+			"compression": "none",
+			"encryption": true,
+			"antivirus": true
+		}
+	],
+	"functions": [
+		{
+			"$id": "6a344d440006be211283",
+			"name": "mercado-pago-webhook",
+			"runtime": "node-16.0",
+			"specification": "s-0.5vcpu-512mb",
+			"execute": ["any"],
+			"events": [],
+			"scopes": ["users.read"],
+			"schedule": "",
+			"timeout": 15,
+			"enabled": true,
+			"logging": true,
+			"entrypoint": "src/main.js",
+			"commands": "npm install",
+			"path": "functions/mercado-pago-webhook"
+		},
+		{
+			"$id": "cascade-delete",
+			"name": "cascade-delete",
+			"runtime": "node-16.0",
+			"specification": "s-0.5vcpu-512mb",
+			"execute": [],
+			"events": ["users.*.delete"],
+			"scopes": ["users.read", "documents.write", "documents.delete"],
+			"schedule": "",
+			"timeout": 15,
+			"enabled": true,
+			"logging": true,
+			"entrypoint": "src/main.js",
+			"commands": "npm install",
+			"path": "functions/cascade-delete"
+		},
+		{
+			"$id": "ai-helper",
+			"name": "ai-helper",
+			"runtime": "node-16.0",
+			"specification": "s-0.5vcpu-512mb",
+			"execute": ["users"],
+			"events": [],
+			"scopes": [],
+			"schedule": "",
+			"timeout": 15,
+			"enabled": true,
+			"logging": true,
+			"entrypoint": "src/main.js",
+			"commands": "npm install",
+			"path": "functions/ai-helper"
+		}
+	]
+}

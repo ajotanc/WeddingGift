@@ -6,7 +6,15 @@
 		"useIgnoreFile": false
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"ignore": [
+			"dist/**",
+			"node_modules/**",
+			"functions/**",
+			"**/*.tsbuildinfo",
+			".antigravity/**",
+			"vite.config.js.timestamp-*"
+		]
 	},
 	"formatter": {
 		"enabled": true,

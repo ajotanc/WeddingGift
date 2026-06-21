@@ -16,7 +16,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { generateThankYouMessage } from "@/lib/ai";
+import { useThankYouGenerator } from "@/composables/useThankYouGenerator";
 import { ConsentService } from "@/services/consent.service";
 import type { IGuest } from "@/services/guest.service";
 import { type IMessage, MessageService } from "@/services/message.service";
@@ -40,6 +40,7 @@ const props = defineProps<{
 
 const authStore = useAuthStore();
 const { confirm } = useConfirm();
+const { message: aiThanks, generateThankYou } = useThankYouGenerator();
 
 const carouselPlugins = [
 	Autoplay({
@@ -102,12 +103,8 @@ const [dietaryRestrictions] = defineField("dietaryRestrictions");
 
 const companionsList = ref<string[]>([]);
 
-const totalGuests = computed(() => {
-	return Number(totalAdults.value || 0) + Number(totalChildren.value || 0);
-});
-
-watch(totalGuests, (newTotal) => {
-	const needed = Math.max(0, newTotal - 1);
+watch(totalAdults, (newAdults) => {
+	const needed = Math.max(0, Number(newAdults || 0) - 1);
 	if (companionsList.value.length < needed) {
 		while (companionsList.value.length < needed) {
 			companionsList.value.push("");
@@ -156,10 +153,11 @@ const submitRsvp = handleSubmit(async (values) => {
 	try {
 		let thankYouMessage = "";
 		if (values.status === "confirmed") {
-			thankYouMessage = await generateThankYouMessage(
-				authStore.guest.name || "Convidado",
-				props.tenant.couple_name,
-			);
+			await generateThankYou({
+				guestName: authStore.guest.name || "Convidado",
+				coupleName: props.tenant.couple_name,
+			});
+			thankYouMessage = aiThanks.value;
 		}
 
 		const payload = {
@@ -312,8 +310,11 @@ const toggleLike = async (msg: IMessage) => {
 						<strong>Restrições Alimentares:</strong> {{ existingRsvp.dietary_restrictions }}
 					</p>
 				</div>
-				<p v-if="existingRsvp.message" class="italic text-slate-600 font-serif mb-8 p-4 bg-slate-50/50 rounded-xl">
+				<p v-if="existingRsvp.message" class="italic text-slate-600 font-serif mb-2 p-4 bg-slate-50/50 rounded-xl">
 					"{{ existingRsvp.message }}"
+				</p>
+				<p v-if="existingRsvp.message" class="text-[10px] text-slate-400 mb-8 mt-1">
+					✨ Mensagem gerada por IA
 				</p>
 				<Button variant="outline" @click="isEditingRsvp = true">
 					Alterar Resposta
@@ -363,10 +364,10 @@ const toggleLike = async (msg: IMessage) => {
 							</SelectContent>
 						</Select>
 					</FormGroup>
-					<div v-if="status === 'confirmed' && totalGuests > 1" class="space-y-3">
+					<div v-if="status === 'confirmed' && Number(totalAdults || 0) > 1" class="space-y-3">
 						<FormGroup label="Nomes dos Acompanhantes">
 							<div class="space-y-2">
-								<div v-for="(companion, idx) in companionsList" :key="idx" class="flex items-center gap-2">
+								<div v-for="(_companion, idx) in companionsList" :key="idx" class="flex items-center gap-2">
 									<Input v-model="companionsList[idx]" :placeholder="`Nome do acompanhante ${idx + 1}`"
 										class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-primary/20 bg-slate-50/50 h-12" />
 								</div>

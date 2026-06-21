@@ -12,7 +12,6 @@ import type { IScheduleItem } from "@/services/schedule.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
 import { useAuthStore } from "@/stores/auth";
 import { useMusicStore } from "@/stores/music";
-import dayjs from "dayjs";
 import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
