@@ -1,4 +1,52 @@
 import axios from "axios";
+import { Client, Databases } from "node-appwrite";
+
+const PII_FIELDS = new Set([
+	"password",
+	"pix_key",
+	"token",
+	"mp_access_token",
+	"mp_refresh_token",
+]);
+
+function sanitizeLogs(obj) {
+	if (!obj || typeof obj !== "object") return obj;
+	const sanitized = Array.isArray(obj) ? [] : {};
+	for (const [key, value] of Object.entries(obj)) {
+		if (PII_FIELDS.has(key)) {
+			sanitized[key] = "[REDACTED_PII]";
+		} else if (typeof value === "object" && value !== null) {
+			sanitized[key] = sanitizeLogs(value);
+		} else {
+			sanitized[key] = value;
+		}
+	}
+	return sanitized;
+}
+
+function createLogger({ log, error, userId, action }) {
+	const requestId = Math.random().toString(36).substring(2, 11);
+
+	const formatLog = (level, message, metadata = {}) => {
+		const payload = {
+			level,
+			timestamp: new Date().toISOString(),
+			requestId,
+			userId: userId || "anonymous",
+			action: action || "unknown",
+			message,
+			...sanitizeLogs(metadata),
+		};
+		return JSON.stringify(payload);
+	};
+
+	return {
+		info: (message, metadata) => log(formatLog("INFO", message, metadata)),
+		warn: (message, metadata) => log(formatLog("WARN", message, metadata)),
+		error: (message, metadata) => error(formatLog("ERROR", message, metadata)),
+		fatal: (message, metadata) => error(formatLog("FATAL", message, metadata)),
+	};
+}
 
 export default async ({ req, res, log, error }) => {
 	// 1. Só aceitar POST — qualquer outro método é rejeitado
@@ -7,8 +55,6 @@ export default async ({ req, res, log, error }) => {
 	}
 
 	// 2. Defesa em profundidade: confirmar que existe um usuário autenticado
-	//    associado a esta execução (a permissão da Function já deveria bloquear
-	//    chamadas anônimas, mas checamos de novo aqui)
 	const userId = req.headers["x-appwrite-user-id"];
 	if (!userId) {
 		return res.json({ message: "Não autenticado" }, 401);
@@ -28,6 +74,7 @@ export default async ({ req, res, log, error }) => {
 	}
 
 	const payload = body.payload || body;
+	const sysLogger = createLogger({ log, error, userId, action });
 
 	// --- Rota: search-products ---
 	if (action === "serper-search") {
@@ -123,7 +170,7 @@ export default async ({ req, res, log, error }) => {
 		// Chamar a Serper API com timeout, sem nunca expor a chave ao cliente
 		const apiKey = process.env.SERPER_API_KEY;
 		if (!apiKey) {
-			error(
+			sysLogger.error(
 				"SERPER_API_KEY não configurada nas variáveis de ambiente da Function",
 			);
 			return res.json(
@@ -192,28 +239,30 @@ export default async ({ req, res, log, error }) => {
 				};
 			});
 
+			sysLogger.info("Busca por produtos executada com sucesso", { query });
 			return res.json({ links });
 		} catch (err) {
 			if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
-				log("Timeout ao consultar a Serper API");
+				sysLogger.warn("Timeout ao consultar a Serper API", { query });
 				return res.json(
 					{ message: "A busca demorou demais, tente novamente" },
 					504,
 				);
 			}
 
-			error(`Erro inesperado: ${err.message}`);
+			sysLogger.error("Erro inesperado na Serper API", {
+				error: err.message,
+				stack: err.stack,
+			});
 			return res.json({ message: "Erro interno ao buscar produtos" }, 500);
 		}
 	}
 
 	// --- Rota: generate-thank-you ---
 	if (action === "ai-thanks") {
-		const MAX_FIELD_LENGTH = 80;
-		const REQUEST_TIMEOUT_MS = 12000;
-
 		const guestName = sanitizeField(payload.guestName);
 		const coupleName = sanitizeField(payload.coupleName);
+		const REQUEST_TIMEOUT_MS = 12000;
 
 		if (!guestName || !coupleName) {
 			return res.json(
@@ -224,7 +273,7 @@ export default async ({ req, res, log, error }) => {
 
 		const apiKey = process.env.GEMINI_API_KEY;
 		if (!apiKey) {
-			error(
+			sysLogger.error(
 				"GEMINI_API_KEY não configurada nas variáveis de ambiente da Function",
 			);
 			return res.json(
@@ -261,16 +310,105 @@ export default async ({ req, res, log, error }) => {
 			const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
 			if (!text) {
+				sysLogger.warn("Gemini API retornou resposta vazia");
 				return res.json(
 					{ message: "Não foi possível gerar a mensagem agora" },
 					502,
 				);
 			}
 
+			sysLogger.info("Mensagem de agradecimento gerada com IA com sucesso");
 			return res.json({ text: text.trim(), generatedByAI: true });
 		} catch (err) {
-			error(`Erro ao chamar a Gemini API: ${err.message}`);
+			sysLogger.error("Erro na Gemini API", {
+				error: err.message,
+				stack: err.stack,
+			});
 			return res.json({ message: "Erro interno ao gerar a mensagem" }, 500);
+		}
+	}
+
+	// --- Rota: claim-product (Proteção BOLA/IDOR para incrementação de presentes) ---
+	if (action === "claim-product") {
+		const productId = payload.productId;
+		const claimedQty = Number(payload.claimed_quantity);
+
+		if (!productId || Number.isNaN(claimedQty) || claimedQty < 0) {
+			sysLogger.warn("Tentativa de claim com parâmetros inválidos", {
+				productId,
+				claimedQty,
+			});
+			return res.json({ error: "Parâmetros de produto inválidos" }, 400);
+		}
+
+		const client = new Client()
+			.setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
+			.setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
+			.setKey(
+				process.env.APPWRITE_API_KEY || req.headers["x-appwrite-key"] || "",
+			);
+		const databases = new Databases(client);
+
+		const DATABASE_ID = process.env.DATABASE_ID || "6a2cb37d0034ac2b40c6";
+		const TABLE_PRODUCTS = "products";
+
+		try {
+			// 1. Obter o produto atual de forma segura
+			const product = await databases.getDocument(
+				DATABASE_ID,
+				TABLE_PRODUCTS,
+				productId,
+			);
+
+			if (!product) {
+				sysLogger.warn("Produto não encontrado", { productId });
+				return res.json({ error: "Produto não encontrado" }, 404);
+			}
+
+			// 2. Validação BOLA/IDOR: Garantir que a quantidade reivindicada só cresça, e não ultrapasse o desejado
+			if (claimedQty < product.claimed_quantity) {
+				sysLogger.warn("Tentativa de redução de quantidade não autorizada", {
+					productId,
+					current: product.claimed_quantity,
+					attempted: claimedQty,
+				});
+				return res.json({ error: "Quantidade reservada inválida" }, 400);
+			}
+
+			if (claimedQty > product.desired_quantity) {
+				sysLogger.warn("Tentativa de reserva acima do limite desejado", {
+					productId,
+					desired: product.desired_quantity,
+					attempted: claimedQty,
+				});
+				return res.json({ error: "A quantidade desejada foi excedida" }, 400);
+			}
+
+			// 3. Executar o update pelo backend com permissões de administrador do Appwrite
+			const updatedProduct = await databases.updateDocument(
+				DATABASE_ID,
+				TABLE_PRODUCTS,
+				productId,
+				{
+					claimed_quantity: claimedQty,
+				},
+			);
+
+			sysLogger.info("Presente reservado com sucesso no servidor", {
+				productId,
+				quantity: claimedQty,
+			});
+			return res.json({ product: updatedProduct });
+		} catch (err) {
+			sysLogger.error("Erro ao registrar reserva de presente no servidor", {
+				productId,
+				error: err.message,
+				stack: err.stack,
+			});
+			return res.json(
+				{ error: "Erro interno do servidor ao registrar presente" },
+				500,
+			);
 		}
 	}
 

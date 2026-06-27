@@ -1,4 +1,4 @@
-import { DATABASE_ID, getProductPermissions, tables } from "@/lib/appwrite";
+import { DATABASE_ID, getProductPermissions, tables, functions } from "@/lib/appwrite";
 import { TABLE_PRODUCTS, TABLE_PRODUCT_LINKS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 import { StorageService } from "./storage.service";
@@ -212,15 +212,26 @@ export const ProductService = {
 		rowId: string,
 		data: Partial<IProduct>,
 	): Promise<IProduct> {
-		const existing = await ProductService.get(rowId);
-		const ownerId = existing?.tenant || data.tenant || "";
-
-		return await tables.updateRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PRODUCTS,
-			rowId,
-			data,
-			permissions: getProductPermissions(ownerId),
+		const res = await functions.createExecution({
+			functionId: "ai-helper",
+			body: JSON.stringify({
+				action: "claim-product",
+				payload: {
+					productId: rowId,
+					claimed_quantity: data.claimed_quantity,
+				},
+			}),
 		});
+
+		if (res.status === "failed") {
+			throw new Error("Erro ao atualizar o presente no servidor.");
+		}
+
+		const parsed = JSON.parse(res.responseBody || "{}");
+		if (parsed.error) {
+			throw new Error(parsed.error);
+		}
+
+		return parsed.product as IProduct;
 	},
 };

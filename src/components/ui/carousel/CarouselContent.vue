@@ -4,28 +4,21 @@ import type { WithClassAsProps } from "./interface";
 import { useCarousel } from "./useCarousel";
 
 defineOptions({
-	inheritAttrs: false,
+  inheritAttrs: false,
 });
 
 const props = defineProps<WithClassAsProps>();
 
-const { orientation } = useCarousel();
+const { carouselRef, orientation } = useCarousel();
 </script>
 
 <template>
-  <div
-    data-slot="carousel-content"
-    class="overflow-hidden"
-  >
-    <div
-      :class="
-        cn(
-          'flex',
-          orientation === 'horizontal' ? '-ml-4' : '-mt-4 flex-col',
-          props.class,
-        )"
-      v-bind="$attrs"
-    >
+  <div ref="carouselRef" data-slot="carousel-content" class="overflow-hidden">
+    <div :class="cn(
+      'flex',
+      orientation === 'horizontal' ? '-ml-4' : '-mt-4 flex-col',
+      props.class,
+    )" v-bind="$attrs">
       <slot />
     </div>
   </div>

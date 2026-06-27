@@ -49,7 +49,7 @@ export const getTenantPermissions = (ownerId: string) => [
 export const getProductPermissions = (ownerId: string) => [
 	Permission.read(Role.any()),
 	Permission.write(Role.user(ownerId)),
-	Permission.update(Role.any()), // Allow guests to update claimed_quantity
+	Permission.update(Role.user(ownerId)), // Restricted to owner to prevent BOLA (guest increments must go through secure backend proxy)
 	Permission.delete(Role.user(ownerId)),
 ];
 

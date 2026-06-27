@@ -64,11 +64,12 @@ export const WeatherService = {
 				return null;
 			}
 
-			const timeIndex = data.daily.time.indexOf(dateStr);
+			const formattedDate = eventDate.format("YYYY-MM-DD");
+			const timeIndex = data.daily.time.indexOf(formattedDate);
 
 			// Se der -1, significa que a API não tem previsão para essa data específica
 			if (timeIndex === -1) {
-				console.warn(`Data ${dateStr} não encontrada na resposta da API.`);
+				console.warn(`Data ${formattedDate} não encontrada na resposta da API.`);
 				return null;
 			}
 
