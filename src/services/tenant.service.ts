@@ -39,18 +39,18 @@ export interface ITenant extends Models.Row {
 	dress_code_text?: string | null;
 	music_url?: string | null;
 	ambient_effect?:
-		| "none"
-		| "rose-petals"
-		| "sparkles"
-		| "snow"
-		| "hearts"
-		| "butterflies"
-		| "gold-dust"
-		| "confetti"
-		| "shooting-stars"
-		| "fireflies"
-		| "balloons"
-		| null;
+	| "none"
+	| "rose-petals"
+	| "sparkles"
+	| "snow"
+	| "hearts"
+	| "butterflies"
+	| "gold-dust"
+	| "confetti"
+	| "shooting-stars"
+	| "fireflies"
+	| "balloons"
+	| null;
 	products?: IProduct[];
 	messages?: IMessage[];
 	rsvps?: IRsvp[];
@@ -91,14 +91,14 @@ export const TenantService = {
 		return res.rows[0];
 	},
 
-	async get(id: string): Promise<ITenant> {
+	async get(id: string): Promise<ITenant | null> {
 		const res = await tables.getRow<ITenant>({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
 			rowId: id,
 		});
 
-		if (!res) return {} as ITenant;
+		if (!res) return null;
 		return res;
 	},
 

@@ -145,59 +145,69 @@ const getDonutColor = (d: { color: string }) => d.color;
     <!-- Top Summary Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <!-- Card: Arrecadado via PIX (Cotas) -->
-      <div class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col justify-between">
+      <div class="group bg-white p-6 rounded-2xl border border-slate-100/80 hover:border-primary/20 shadow-[0_16px_36px_rgba(0,0,0,0.02)] transition-all duration-300 flex flex-col justify-between"
+        :style="{'--tw-shadow': '0 16px 36px rgba(0,0,0,0.015)'}">
         <div>
           <div class="flex items-center justify-between mb-4">
-            <span class="text-sm font-semibold text-slate-400">Total Arrecadado</span>
-            <div class="bg-emerald-100/60 p-2.5 rounded-2xl">
-              <Wallet class="w-5 h-5 text-emerald-600" />
+            <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 group-hover:text-primary/70 transition-colors">Total Arrecadado</span>
+            <div class="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
+              <Wallet class="w-4 h-4" />
             </div>
           </div>
-          <p class="text-3xl font-serif font-bold text-slate-900 mb-4">{{ formatMoney(totalRaisedPixQuota) }}</p>
+          <p class="text-3xl font-serif font-medium text-slate-900 mb-4">{{ formatMoney(totalRaisedPixQuota) }}</p>
         </div>
         <div>
           <Progress :model-value="quotaProgress" class="h-1.5 mb-2 bg-slate-100" />
           <div class="flex justify-between text-[11px] text-slate-400 font-medium">
-            <span>{{ quotaProgress.toFixed(0) }}% da meta de cotas</span>
+            <span>{{ quotaProgress.toFixed(0) }}% da meta</span>
             <span>Meta: {{ formatMoney(totalQuotaGoal) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Card: Presentes Confirmados -->
-      <div class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      <div class="group bg-white p-6 rounded-2xl border border-slate-100/80 hover:border-primary/20 shadow-[0_16px_36px_rgba(0,0,0,0.02)] transition-all duration-300 flex flex-col justify-between"
+        :style="{'--tw-shadow': '0 16px 36px rgba(0,0,0,0.015)'}">
         <div class="flex items-center justify-between mb-4">
-          <span class="text-sm font-semibold text-slate-400">Presentes Recebidos</span>
-          <div class="bg-violet-100/60 p-2.5 rounded-2xl">
-            <Gift class="w-5 h-5 text-violet-600" />
+          <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 group-hover:text-primary/70 transition-colors">Presentes Recebidos</span>
+          <div class="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
+            <Gift class="w-4 h-4" />
           </div>
         </div>
-        <p class="text-3xl font-serif font-bold text-slate-900">{{ purchases.length }}</p>
-        <p class="text-xs text-slate-400 mt-2 font-medium">Total acumulado de cotas e presentes físicos.</p>
+        <div>
+          <p class="text-3xl font-serif font-medium text-slate-900 mb-2">{{ purchases.length }}</p>
+          <p class="text-xs text-slate-400 font-light leading-relaxed mt-4">Total acumulado de cotas e presentes físicos.</p>
+        </div>
       </div>
 
       <!-- Card: Convidados Confirmados -->
-      <div class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      <div class="group bg-white p-6 rounded-2xl border border-slate-100/80 hover:border-primary/20 shadow-[0_16px_36px_rgba(0,0,0,0.02)] transition-all duration-300 flex flex-col justify-between"
+        :style="{'--tw-shadow': '0 16px 36px rgba(0,0,0,0.015)'}">
         <div class="flex items-center justify-between mb-4">
-          <span class="text-sm font-semibold text-slate-400">Presenças Confirmadas</span>
-          <div class="bg-sky-100/60 p-2.5 rounded-2xl">
-            <Users class="w-5 h-5 text-sky-600" />
+          <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 group-hover:text-primary/70 transition-colors">Presenças Confirmadas</span>
+          <div class="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
+            <Users class="w-4 h-4" />
           </div>
         </div>
-        <p class="text-3xl font-serif font-bold text-slate-900">{{ confirmedGuests }} pessoas</p>
-        <p class="text-xs text-slate-400 mt-2 font-medium">Adultos e crianças confirmados no RSVP.</p>
+        <div>
+          <p class="text-3xl font-serif font-medium text-slate-900 mb-2">{{ confirmedGuests }} pessoas</p>
+          <p class="text-xs text-slate-400 font-light leading-relaxed mt-4">Adultos e crianças confirmados no RSVP.</p>
+        </div>
       </div>
 
       <!-- Card: Mural de Recados -->
-      <div class="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      <div class="group bg-white p-6 rounded-2xl border border-slate-100/80 hover:border-primary/20 shadow-[0_16px_36px_rgba(0,0,0,0.02)] transition-all duration-300 flex flex-col justify-between"
+        :style="{'--tw-shadow': '0 16px 36px rgba(0,0,0,0.015)'}">
         <div class="flex items-center justify-between mb-4">
-          <span class="text-sm font-semibold text-slate-400">Recados Recebidos</span>
-          <div class="bg-orange-100/60 p-2.5 rounded-2xl">
-            <MessageSquare class="w-5 h-5 text-orange-600" />
+          <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 group-hover:text-primary/70 transition-colors">Recados Recebidos</span>
+          <div class="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
+            <MessageSquare class="w-4 h-4" />
           </div>
         </div>
-        <p class="text-3xl font-serif font-bold text-slate-900">{{ messages.length }} mensagens</p>
-        <p class="text-xs text-slate-400 mt-2 font-medium">Carinho enviado pelos seus convidados.</p>
+        <div>
+          <p class="text-3xl font-serif font-medium text-slate-900 mb-2">{{ messages.length }} mensagens</p>
+          <p class="text-xs text-slate-400 font-light leading-relaxed mt-4">Carinho enviado pelos seus convidados.</p>
+        </div>
       </div>
     </div>
 

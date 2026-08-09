@@ -166,15 +166,24 @@ watch(
 			frameborder="0">
 		</iframe>
 
-		<div class="fixed bottom-6 left-6 z-50 flex items-center gap-2">
+		<div class="fixed bottom-6 left-6 z-50 flex items-center gap-3">
 			<button @click="music.toggle()"
-				class="bg-white text-primary p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 border-0 outline-none">
+				:style="{ color: currentTenant?.primary_color || '#ec4899' }"
+				class="bg-white/80 backdrop-blur-md border border-slate-200/30 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
 				<Pause v-if="music.isPlaying" class="w-5 h-5" />
 				<Play v-else class="w-5 h-5" />
 			</button>
 
+			<!-- Premium visual soundwave animation on play -->
+			<div v-if="music.isPlaying" 
+				class="bg-white/80 backdrop-blur-md border border-slate-200/30 px-3 py-2.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex items-end gap-1 h-[42px] pointer-events-none">
+				<div class="w-[3px] rounded-full animate-soundwave-1" :style="{ backgroundColor: currentTenant?.primary_color || '#ec4899' }"></div>
+				<div class="w-[3px] rounded-full animate-soundwave-2" :style="{ backgroundColor: currentTenant?.primary_color || '#ec4899' }"></div>
+				<div class="w-[3px] rounded-full animate-soundwave-3" :style="{ backgroundColor: currentTenant?.primary_color || '#ec4899' }"></div>
+			</div>
+
 			<div v-if="!music.isPlaying"
-				class="bg-white/90 backdrop-blur-sm border border-slate-100 px-3 py-1.5 rounded-xl shadow-md text-xs font-light text-slate-500">
+				class="bg-white/80 backdrop-blur-md border border-slate-200/30 px-3.5 py-2 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-xs font-light text-slate-500">
 				Tocar música de fundo? 🎵
 			</div>
 		</div>

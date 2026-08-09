@@ -69,7 +69,9 @@ export const WeatherService = {
 
 			// Se der -1, significa que a API não tem previsão para essa data específica
 			if (timeIndex === -1) {
-				console.warn(`Data ${formattedDate} não encontrada na resposta da API.`);
+				console.warn(
+					`Data ${formattedDate} não encontrada na resposta da API.`,
+				);
 				return null;
 			}
 

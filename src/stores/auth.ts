@@ -52,6 +52,45 @@ export const useAuthStore = defineStore("auth", {
 	actions: {
 		async init() {
 			this.loading = true;
+			
+			// Mock developer auth bypass for UI testing
+			const isMockAuth = typeof window !== "undefined" && (localStorage.getItem("mock_auth") === "true" || window.location.search.includes("mock_auth=true"));
+			if (isMockAuth) {
+				this.user = {
+					$id: "mock-user-123",
+					name: "Convidado de Teste",
+					email: "test@example.com",
+					prefs: {
+						accepted_terms: true,
+						confirmed_age: true,
+					},
+					$createdAt: new Date().toISOString(),
+					$updatedAt: new Date().toISOString(),
+					status: true,
+					emailVerification: true,
+					phoneVerification: true,
+					registration: new Date().toISOString(),
+					passwordUpdate: new Date().toISOString(),
+					phone: "+5511999999999",
+					accessedAt: new Date().toISOString(),
+				} as IUser;
+
+				this.guest = {
+					$id: "mock-guest-123",
+					name: "Convidado de Teste",
+					email: "test@example.com",
+					phone: "+5511999999999",
+					$createdAt: new Date().toISOString(),
+					$updatedAt: new Date().toISOString(),
+					$databaseId: "DBWG",
+					$collectionId: "guests",
+					$permissions: [],
+				} as unknown as IGuest;
+
+				this.loading = false;
+				return;
+			}
+
 			try {
 				const sessionUser = await account.get<IUserPreferences>();
 				this.user = sessionUser;
@@ -99,25 +138,26 @@ export const useAuthStore = defineStore("auth", {
 
 					const pending = localStorage.getItem("pending_tenant");
 					if (pending) {
-						const data = JSON.parse(pending) as ITenant & {
-							accepted_terms?: boolean;
-							accepted_terms_at?: string;
-							confirmed_age?: boolean;
-							confirmed_age_at?: string;
-						};
-						await TenantService.create(data, sessionUser.$id);
+						const data = JSON.parse(pending) as ITenant;
+						const created = await TenantService.create(data, sessionUser.$id);
 						localStorage.removeItem("pending_tenant");
 
 						// Save LGPD consent status and age confirmation in User Preferences
-						if (data.accepted_terms) {
+						const pendingConsent = localStorage.getItem("pending_consent");
+						if (pendingConsent) {
+							const consentData = JSON.parse(pendingConsent) as {
+								accepted_terms: boolean;
+								accepted_terms_at: string;
+								confirmed_age: boolean;
+								confirmed_age_at: string;
+							};
 							try {
 								const prefsPayload = {
 									...sessionUser.prefs,
 									accepted_terms: true,
-									accepted_terms_at: data.accepted_terms_at,
-									confirmed_age: data.confirmed_age || true,
-									confirmed_age_at:
-										data.confirmed_age_at || data.accepted_terms_at,
+									accepted_terms_at: consentData.accepted_terms_at,
+									confirmed_age: consentData.confirmed_age,
+									confirmed_age_at: consentData.confirmed_age_at,
 								};
 
 								await account.updatePrefs({
@@ -132,16 +172,15 @@ export const useAuthStore = defineStore("auth", {
 									user_id: sessionUser.$id,
 									email: sessionUser.email,
 									accepted_terms: true,
-									accepted_terms_at:
-										data.accepted_terms_at || dayjs().toISOString(),
+									accepted_terms_at: consentData.accepted_terms_at,
 								});
 							} catch (e) {
 								console.error("Failed to update user consent preferences:", e);
 							}
+							localStorage.removeItem("pending_consent");
 						}
-
-						const t = await TenantService.get(sessionUser.$id);
-						this.tenant = this.sanitizeTenant(t);
+						
+						this.tenant = this.sanitizeTenant(created);
 						const g = await GuestService.get(sessionUser.$id);
 						this.guest = g?.$id
 							? g
@@ -178,6 +217,7 @@ export const useAuthStore = defineStore("auth", {
 					}
 				}
 			} catch (err) {
+				console.error("Erro crítico no carregamento da sessão (authStore.init):", err);
 				this.user = null;
 				this.tenant = null;
 				this.guest = null;
@@ -224,7 +264,8 @@ export const useAuthStore = defineStore("auth", {
 
 			this.tenant = this.sanitizeTenant(updated);
 		},
-		sanitizeTenant(t: ITenant): ITenant {
+		sanitizeTenant(t: ITenant | null): ITenant | null {
+			if (!t || !t.$id) return null;
 			const copy = { ...t };
 			const isTenantPremium =
 				copy.plan === "premium" &&

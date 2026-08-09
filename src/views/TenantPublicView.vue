@@ -213,7 +213,13 @@ const toggleGalleryLike = async (img: IGalleryImage) => {
 
 const getTimelineItems = computed(() => {
 	if (!tenant.value?.schedules) return [];
-	return sortBy(tenant.value.schedules, "hour");
+	return [...tenant.value.schedules].sort((a, b) => {
+		const parseTime = (t: string) => {
+			const [h, m] = (t || "").split(":").map(Number);
+			return (Number.isNaN(h) ? 0 : h) * 60 + (Number.isNaN(m) ? 0 : m);
+		};
+		return parseTime(a.hour) - parseTime(b.hour);
+	});
 });
 
 const homePrivateImages = computed(() => {
@@ -524,7 +530,7 @@ onUnmounted(() => {
 
 			<!-- Header Hero -->
 			<header id="home" :style="{ backgroundColor: tenant.background_color || 'transparent' }"
-				class="relative flex items-center justify-center w-full h-dvh text-center overflow-hidden px-6">
+				class="relative flex items-center justify-center w-full h-dvh text-center overflow-hidden px-6 md:px-12">
 
 				<!-- Background Image Layer -->
 				<div v-if="tenant.background_image"
@@ -532,53 +538,53 @@ onUnmounted(() => {
 					:style="{ backgroundImage: `url(${tenant.background_image})` }"></div>
 
 				<!-- Blur Overlay Layer (Smooth fade to background_color at bottom) -->
-				<div class="absolute inset-0 bg-white/20"></div>
+				<div class="absolute inset-0 bg-white/10"></div>
 				<div
 					class="absolute inset-0 backdrop-blur-md [-webkit-mask-image:linear-gradient(to_top,black,transparent)] [mask-image:linear-gradient(to_top,black,transparent)]"
 					:style="tenant.background_color ? { background: `linear-gradient(to top, ${tenant.background_color}, transparent)` } : {}"
 					:class="!tenant.background_color ? 'bg-gradient-to-t from-zinc-50 to-transparent' : ''">
 				</div>
 
-				<div class="absolute top-0 left-0 w-full p-4 flex justify-end z-20">
+				<div class="absolute top-6 right-6 p-4 flex justify-end z-30">
 					<GoogleAuthButton @click="currentUser ? showProfileModal = true : requireAuth()" @logout="logout"
 						:user="currentUser || undefined" :fill="false" :themeColor="tenant.primary_color" />
 				</div>
 
-				<div class="relative flex flex-col items-center justify-center max-w-4xl z-10">
+				<div class="relative flex flex-col items-center justify-center max-w-4xl z-10 px-4">
 					<img v-if="tenant.logo_url" :src="tenant.logo_url" :alt="tenant.couple_name"
-						class="w-40 h-40 object-contain mb-4">
+						class="w-32 h-32 md:w-40 md:h-40 object-contain mb-6 transition-all">
 
-					<h1 class="text-3xl font-serif text-slate-900 mb-4 tracking-tight"
-						:class="tenant.logo_url ? 'md:text-6xl' : 'md:text-7xl'">{{ tenant.couple_name }}</h1>
+					<h1 class="text-4xl md:text-7xl font-serif text-[#1E1A17] mb-6 tracking-tight leading-tight select-none">{{ tenant.couple_name }}</h1>
 
-					<p class="text-sm md:text-base text-slate-500 font-light max-w-[500px] leading-tight text-center">{{
+					<p class="text-xs md:text-sm uppercase tracking-[0.25em] font-medium max-w-[500px] leading-relaxed text-center mb-8"
+						:style="{ color: tenant?.primary_color || '#ec4899' }">{{
 						tenant?.quote || "Lista de Presentes & RSVP" }}</p>
 
 					<!-- Event Date & Time Display -->
-					<div v-if="tenant.event_date" class="mt-4 text-slate-600 font-medium text-lg">
-						{{ dayjs(tenant.event_date).format('DD/MM/YYYY') }} às {{ tenant.event_time }}
+					<div v-if="tenant.event_date" class="text-[#2C2421] font-serif italic text-base md:text-xl tracking-wide">
+						{{ dayjs(tenant.event_date).format('DD [de] MMMM [de] YYYY') }} às {{ tenant.event_time }}
 					</div>
 
 					<!-- Countdown -->
-					<div v-if="tenant.event_date && tenant?.show_countdown !== false" class="mt-6">
+					<div v-if="tenant.event_date && tenant?.show_countdown !== false" class="mt-8">
 						<CountdownTimer :eventDate="tenant.event_date" />
 					</div>
-					<div class="w-16 h-px bg-primary/40 mx-auto mt-10"></div>
+					<div class="w-12 h-[1px] mx-auto mt-12" :style="{ backgroundColor: (tenant?.primary_color || '#ec4899') + '73' }"></div>
 				</div>
 			</header>
 
 			<div class="max-w-5xl mx-auto p-6 md:p-12 lg:py-32 space-y-24 md:space-y-32">
 
 				<!-- Couple History -->
-				<HistorySection v-if="tenant.couple_history" :history-text="tenant.couple_history" />
-
-				<!-- Event Timeline -->
-				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
-					:primary-color="tenant.primary_color" :schedules="getTimelineItems" />
-
-				<!-- Dress Code Guide -->
-				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
-					:dress-code-text="tenant.dress_code_text" />
+				<HistorySection v-if="tenant.couple_history" :history-text="tenant.couple_history" :primary-color="tenant.primary_color" />
+ 
+ 				<!-- Event Timeline -->
+ 				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
+ 					:primary-color="tenant.primary_color" :schedules="getTimelineItems" />
+ 
+ 				<!-- Dress Code Guide -->
+ 				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
+ 					:dress-code-text="tenant.dress_code_text" :primary-color="tenant.primary_color" />
 
 				<!-- Gallery -->
 				<GallerySection v-if="tenant.show_gallery" :images="homePrivateImages"
@@ -642,34 +648,38 @@ onUnmounted(() => {
 		<!-- PIX Modal -->
 		<Modal v-model:open="showPixModal"
 			:title="selectedProduct?.type === 'quota' ? 'Pagamento da Cota PIX' : 'Presentear com Valor (PIX)'">
-			<div v-if="selectedProduct" class="space-y-4 pt-4 text-center">
-				<p class="text-slate-600">Escaneie o QR Code abaixo para presentear <strong>{{ tenant?.couple_name }}</strong>.
+			<div v-if="selectedProduct" class="space-y-6 pt-4 text-center">
+				<p class="text-xs uppercase tracking-widest font-bold" :style="{ color: tenant?.primary_color || '#ec4899' }">Transferência PIX</p>
+				<p class="text-sm text-[#5A4F4A] leading-relaxed max-w-xs mx-auto">
+					Escaneie o QR Code abaixo para presentear os noivos <strong>{{ tenant?.couple_name }}</strong> de forma direta e segura.
 				</p>
 
-				<div class="flex justify-center bg-white p-4 rounded-xl border">
-					<qrcode-svg :value="pixPayload.payload" :size="200" level="H" />
+				<div class="flex justify-center bg-white p-5 rounded-2xl border border-[#E8E2DD] max-w-[230px] mx-auto shadow-sm">
+					<qrcode-svg :value="pixPayload.payload" :size="180" level="H" />
 				</div>
 
-				<div class="space-y-2">
-					<p class="text-3xl font-bold text-slate-900">
+				<div class="space-y-2 bg-[#FAF8F6] p-4 rounded-2xl border border-[#E8E2DD]">
+					<p class="text-3xl font-serif font-bold text-[#1E1A17] italic">
 						{{ formatMoney(getProductPrice(selectedProduct, currentQty)) }}
 					</p>
 
-					<div class="flex flex-col gap-1">
-						<p class="text-base font-medium text-slate-900">{{ selectedProduct.name }}</p>
-						<p class="text-sm text-slate-500">
-							Quantidade: {{ currentQty }}
+					<div class="flex flex-col gap-0.5 pt-1">
+						<p class="text-sm font-semibold text-[#1E1A17]">{{ selectedProduct.name }}</p>
+						<p class="text-xs text-slate-400 font-light">
+							Quantidade selecionada: {{ currentQty }}
 							{{ selectedProduct.type === 'quota' ? 'cota(s)' : 'unidade(s)' }}
 						</p>
 					</div>
 				</div>
 
-				<div class="flex gap-3 mt-6">
-					<Button class="flex-1" variant="outline" @click="copyPix">
-						Pix Copia e Cola
+				<div class="flex flex-col sm:flex-row gap-3 mt-6">
+					<Button class="flex-1 rounded-xl text-slate-700 hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5" variant="outline" :style="{ borderColor: (tenant?.primary_color || '#ec4899') + '99', color: tenant?.primary_color || '#ec4899' }" @click="copyPix">
+						Copiar Código Pix
 					</Button>
-					<Button class="flex-1" :disabled="confirmingPurchase" @click="confirmPurchase('pix')">
-						{{ confirmingPurchase ? 'Confirmando...' : 'Já presenteei' }}
+					<Button class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5" 
+						:style="{ backgroundColor: tenant?.primary_color || '#1E1A17', borderColor: tenant?.primary_color || '#1E1A17' }"
+						:disabled="confirmingPurchase" @click="confirmPurchase('pix')">
+						{{ confirmingPurchase ? 'Confirmando...' : 'Confirmar Envio' }}
 					</Button>
 				</div>
 			</div>
@@ -678,27 +688,30 @@ onUnmounted(() => {
 		<!-- Store Links Modal -->
 		<Modal v-model:open="showLinksModal" :title="selectedProduct?.name">
 			<div class="space-y-6 pt-4 text-center">
-
-				<p class="text-slate-500 text-sm">
+				<p class="text-xs uppercase tracking-widest font-bold" :style="{ color: tenant?.primary_color || '#ec4899' }">Comprar na Loja</p>
+				<p class="text-sm text-[#5A4F4A] font-light max-w-xs mx-auto leading-relaxed">
 					Escolha uma das lojas abaixo para adquirir as
-					<strong class="text-slate-900">{{ currentQty }} unidade(s)</strong>.
+					<strong class="text-[#1E1A17]">{{ currentQty }} unidade(s)</strong> de presente.
 				</p>
 
-				<div class="space-y-4">
+				<div class="space-y-3 max-w-xs mx-auto">
 					<a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
-						class="flex items-center justify-center text-center h-11 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group">
-						<span class="text-sm font-medium text-slate-700 group-hover:text-primary transition-colors">{{ link.store
-						}}</span>
+						class="flex items-center justify-center text-center h-12 rounded-xl border border-[#E8E2DD] hover:border-primary hover:bg-slate-50/50 transition-all group px-4">
+						<span class="text-xs font-semibold uppercase tracking-wider text-slate-700 group-hover:text-primary transition-colors">
+							Ir para a {{ link.store }}
+						</span>
 					</a>
 				</div>
 
-				<div class="pt-2 border-t border-slate-100">
-					<p class="text-sm text-slate-500 mb-3 text-center">
-						Após finalizar a compra na loja, confirme abaixo:
+				<div class="pt-4 border-t border-[#E8E2DD]/60 mt-4 max-w-xs mx-auto">
+					<p class="text-xs text-[#5A4F4A] mb-4 text-center leading-relaxed">
+						Após finalizar a sua compra no site da loja, confirme a reserva abaixo:
 					</p>
-					<Button class="w-full" :disabled="confirmingPurchase" @click="confirmPurchase('link')">
+					<Button class="w-full rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5" 
+						:style="{ backgroundColor: tenant?.primary_color || '#1E1A17', borderColor: tenant?.primary_color || '#1E1A17' }"
+						:disabled="confirmingPurchase" @click="confirmPurchase('link')">
 						<span v-if="confirmingPurchase">Confirmando...</span>
-						<span v-else>Já comprei {{ currentQty }} unidade(s)</span>
+						<span v-else>Confirmar Compra</span>
 					</Button>
 				</div>
 			</div>
@@ -707,21 +720,28 @@ onUnmounted(() => {
 		<!-- Guest Profile Modal -->
 		<GuestProfileModal v-model:open="showProfileModal" :tenantPurchases="purchases" />
 
-		<!-- Teleport Floating Dots -->
+		<!-- Teleport Floating Index Navigation -->
 		<Teleport to="body">
-			<!-- Floating Vertical Navigation (Dots) -->
+			<!-- Floating Vertical Navigation (Editorial Index) -->
 			<div v-if="activeSections.length > 1"
-				class="fixed right-2 md:right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 md:gap-2 items-end pointer-events-none">
-				<button v-for="section in activeSections" :key="section.id" @click="scrollToSection(section.id)"
-					class="group relative flex items-center justify-end p-1.5 md:p-2 pointer-events-auto cursor-pointer focus:outline-none bg-transparent border-0 outline-none">
-					<span
-						class="absolute right-8 text-xs font-semibold px-2.5 py-1.5 bg-white/95 text-slate-800 border border-slate-100 rounded-xl shadow-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none font-sans">
-						{{ section.label }}
-					</span>
-					<span class="w-2 h-2 rounded-full transition-all duration-300 border shadow-sm" :style="currentSection === section.id
-						? { backgroundColor: tenant?.primary_color, borderColor: tenant?.primary_color, transform: 'scale(1.4)' }
-						: { backgroundColor: 'white', borderColor: '#cbd5e1' }">
-					</span>
+				class="fixed right-3 md:right-8 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4 items-end pointer-events-none">
+				<button v-for="(section, idx) in activeSections" :key="section.id" @click="scrollToSection(section.id)"
+					class="group flex items-center gap-3 pointer-events-auto cursor-pointer focus:outline-none bg-transparent border-0 outline-none select-none">
+					<!-- Horizontal slide-hover tag -->
+					<div class="flex items-center gap-2.5 opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none">
+						<span class="text-[9px] font-bold tracking-widest font-sans text-slate-400">
+							{{ String(idx + 1).padStart(2, '0') }}
+						</span>
+						<span class="text-[10px] font-bold tracking-wider uppercase font-sans px-3 py-1.5 bg-white border border-[#E8E2DD]/85 rounded-xl shadow-md text-slate-800">
+							{{ section.label }}
+						</span>
+					</div>
+					<!-- Fine vertical bar indicator -->
+					<div class="w-1 h-7 rounded-full transition-all duration-300 shadow-sm"
+						:style="currentSection === section.id
+							? { backgroundColor: tenant?.primary_color || '#ec4899', transform: 'scaleY(1.3)' }
+							: { backgroundColor: '#E8E2DD' }">
+					</div>
 				</button>
 			</div>
 		</Teleport>

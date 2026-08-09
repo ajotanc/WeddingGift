@@ -1,4 +1,9 @@
-import { DATABASE_ID, getProductPermissions, tables, functions } from "@/lib/appwrite";
+import {
+	DATABASE_ID,
+	functions,
+	getProductPermissions,
+	tables,
+} from "@/lib/appwrite";
 import { TABLE_PRODUCTS, TABLE_PRODUCT_LINKS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 import { StorageService } from "./storage.service";

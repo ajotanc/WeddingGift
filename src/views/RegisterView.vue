@@ -70,6 +70,12 @@ const registerTenant = async () => {
 				primary_color: form.value.primary_color,
 				background_color: "#ffffff",
 				background_image: null,
+			}),
+		);
+
+		localStorage.setItem(
+			"pending_consent",
+			JSON.stringify({
 				accepted_terms: true,
 				accepted_terms_at: dayjs().toISOString(),
 				confirmed_age: true,

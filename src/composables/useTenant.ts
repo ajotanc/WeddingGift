@@ -101,7 +101,7 @@ export const FONTS_REGISTRY: Record<string, IFontDefinition> = {
 
 export const FONT_ALIASES: Record<string, string> = {
 	serif: "playfair",
-	sans: "inter",
+	sans: "outfit",
 };
 
 export function loadGoogleFont(fontKey: string) {
@@ -252,7 +252,7 @@ export function useTenant() {
 			FONTS_REGISTRY[resolvedTitleKey]?.cssFamily ||
 			'"Playfair Display", serif';
 		const bodyFamily =
-			FONTS_REGISTRY[resolvedBodyKey]?.cssFamily || '"Inter", sans-serif';
+			FONTS_REGISTRY[resolvedBodyKey]?.cssFamily || '"Outfit", sans-serif';
 
 		document.documentElement.style.setProperty("--font-title", titleFamily);
 		document.documentElement.style.setProperty("--font-body", bodyFamily);
