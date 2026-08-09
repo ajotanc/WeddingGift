@@ -70,6 +70,7 @@ export default defineConfig(({ mode }) => {
 			},
 			host: true,
 			allowedHosts: [
+				".ajotanc.com.br",
 				".ngrok-free.app",
 				".ngrok.io",
 				".ngrok-free.dev",

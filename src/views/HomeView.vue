@@ -62,7 +62,7 @@ const handleLogout = async () => {
           </template>
           <template v-else>
             <Button @click="goLogin" variant="ghost" class="text-[#5A4F4A] hover:text-[#1E1A17] hover:bg-[#FAF8F6]/40 rounded-full font-medium">Entrar</Button>
-            <Button @click="goRegister" class="bg-[#1E1A17] hover:bg-[#2C2421] text-white shadow-sm rounded-full font-medium px-6">Criar Lista Grátis</Button>
+            <Button @click="goRegister" disabled class="bg-[#1E1A17] hover:bg-[#2C2421] text-white shadow-sm rounded-full font-medium px-6">Criar Lista Grátis</Button>
           </template>
         </div>
       </div>
@@ -84,10 +84,10 @@ const handleLogout = async () => {
             Crie um site de casamento de alta costura. Receba presentes em dinheiro diretamente na sua conta via PIX e gerencie convidados e RSVPs de forma sofisticada e sem burocracias.
           </p>
           <div class="pt-4 flex flex-col sm:flex-row gap-4 max-w-md">
-            <Button size="lg" class="text-sm px-8 h-13 bg-[#1E1A17] hover:bg-[#2C2421] text-white shadow-md rounded-full flex-1 font-semibold uppercase tracking-wider transition-all" @click="goRegister">
+            <Button size="lg" class="text-sm px-8 h-13 bg-[#1E1A17] hover:bg-[#2C2421] text-white shadow-md rounded-full flex-1 font-semibold uppercase tracking-wider transition-all" @click="goRegister" disabled>
               Começar Agora
             </Button>
-            <Button size="lg" variant="outline" class="text-sm px-8 h-13 border-[#C5A880]/60 hover:bg-[#FAF8F6] text-[#2C2421] rounded-full flex-1 font-semibold uppercase tracking-wider transition-all" @click="goRegister">
+            <Button size="lg" variant="outline" class="text-sm px-8 h-13 border-[#C5A880]/60 hover:bg-[#FAF8F6] text-[#2C2421] rounded-full flex-1 font-semibold uppercase tracking-wider transition-all" @click="$router.push('/emilly-alerson')">
               Ver Exemplo
             </Button>
           </div>
