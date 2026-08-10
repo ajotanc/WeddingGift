@@ -52,7 +52,7 @@ export const useAuthStore = defineStore("auth", {
 	actions: {
 		async init() {
 			this.loading = true;
-			
+
 			// Mock developer auth bypass for UI testing
 			const isMockAuth = typeof window !== "undefined" && (localStorage.getItem("mock_auth") === "true" || window.location.search.includes("mock_auth=true"));
 			if (isMockAuth) {
@@ -179,16 +179,16 @@ export const useAuthStore = defineStore("auth", {
 							}
 							localStorage.removeItem("pending_consent");
 						}
-						
+
 						this.tenant = this.sanitizeTenant(created);
 						const g = await GuestService.get(sessionUser.$id);
 						this.guest = g?.$id
 							? g
 							: ({
-									$id: sessionUser.$id,
-									email: sessionUser.email,
-									name: sessionUser.name,
-								} as IGuest);
+								$id: sessionUser.$id,
+								email: sessionUser.email,
+								name: sessionUser.name,
+							} as IGuest);
 						return;
 					}
 
@@ -204,10 +204,10 @@ export const useAuthStore = defineStore("auth", {
 						this.guest = g?.$id
 							? g
 							: ({
-									$id: sessionUser.$id,
-									email: sessionUser.email,
-									name: sessionUser.name,
-								} as IGuest);
+								$id: sessionUser.$id,
+								email: sessionUser.email,
+								name: sessionUser.name,
+							} as IGuest);
 					} catch (e) {
 						this.guest = {
 							$id: sessionUser.$id,

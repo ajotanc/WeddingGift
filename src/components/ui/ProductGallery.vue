@@ -6,15 +6,15 @@ import { computed, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
-	ChevronLeft,
-	ChevronRight,
-	ChevronsLeft,
-	ChevronsRight,
-	ChevronsUpDown,
-	Edit2,
-	Heart,
-	Trash2,
-	Gift,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronsUpDown,
+  Edit2,
+  Heart,
+  Trash2,
+  Gift,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
@@ -23,42 +23,42 @@ import { Input } from "@/components/ui/input";
 
 import { Card } from "@/components/ui/card";
 import {
-	Pagination,
-	PaginationContent,
-	PaginationEllipsis,
-	PaginationFirst,
-	PaginationItem,
-	PaginationLast,
-	PaginationNext,
-	PaginationPrevious,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationItem,
+  PaginationLast,
+  PaginationNext,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 
 const props = defineProps<{
-	products: IProduct[];
-	tenant: ITenant | null;
-	mode: "public" | "admin";
-	currentUser?: Record<string, unknown> | null;
+  products: IProduct[];
+  tenant: ITenant | null;
+  mode: "public" | "admin";
+  currentUser?: Record<string, unknown> | null;
 }>();
 
 const emit = defineEmits<{
-	(e: "open-pix", product: IProduct, quantity: number): void;
-	(e: "open-links", product: IProduct, quantity: number): void;
-	(e: "edit", product: IProduct): void;
-	(e: "delete", product: IProduct): void;
+  (e: "open-pix", product: IProduct, quantity: number): void;
+  (e: "open-links", product: IProduct, quantity: number): void;
+  (e: "edit", product: IProduct): void;
+  (e: "delete", product: IProduct): void;
 }>();
 
 // --- Estado de Filtros ---
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
-	const cats = new Set(
-		props.products.map((p) => p.category).filter((c): c is string => !!c),
-	);
-	return Array.from(cats).sort();
+  const cats = new Set(
+    props.products.map((p) => p.category).filter((c): c is string => !!c),
+  );
+  return Array.from(cats).sort();
 });
 
 const filteredProducts = computed(() => {
-	if (selectedCategory.value === "all") return props.products;
-	return props.products.filter((p) => p.category === selectedCategory.value);
+  if (selectedCategory.value === "all") return props.products;
+  return props.products.filter((p) => p.category === selectedCategory.value);
 });
 
 // --- Estado de Paginação ---
@@ -66,13 +66,13 @@ const currentPage = ref(1);
 const itemsPerPage = ref(6);
 
 watch(selectedCategory, () => {
-	currentPage.value = 1;
+  currentPage.value = 1;
 });
 
 const paginatedProducts = computed(() => {
-	const start = (currentPage.value - 1) * itemsPerPage.value;
-	const end = start + itemsPerPage.value;
-	return filteredProducts.value.slice(start, end);
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredProducts.value.slice(start, end);
 });
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
@@ -80,66 +80,61 @@ const quotaQuantities = ref<Record<string, number>>({});
 
 // Métodos auxiliares para calcular limites individuais de cada produto na lista
 const isProductSoldOut = (product: IProduct) => {
-	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
+  return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
 };
 
 const getRemainingQuantity = (product: IProduct) => {
-	return Math.max(
-		0,
-		(product.desired_quantity || 1) - (product.claimed_quantity || 0),
-	);
+  return Math.max(
+    0,
+    (product.desired_quantity || 1) - (product.claimed_quantity || 0),
+  );
 };
 
 const getLocalQuantity = (productId: string) => {
-	return quotaQuantities.value[productId] || 1;
+  return quotaQuantities.value[productId] || 1;
 };
 
 const setLocalQuantity = (productId: string, val: number, maxQty: number) => {
-	quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
+  quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
 };
 
 // --- Handlers de Ação de Envio ---
 const handleOpenPix = (product: IProduct) => {
-	const qty = getLocalQuantity(product.$id);
-	emit("open-pix", product, qty);
+  const qty = getLocalQuantity(product.$id);
+  emit("open-pix", product, qty);
 };
 
 const handleOpenLinks = (product: IProduct) => {
-	const qty = getLocalQuantity(product.$id);
-	emit("open-links", product, qty);
+  const qty = getLocalQuantity(product.$id);
+  emit("open-links", product, qty);
 };
 
 // TIPAGEM ESTRITA SEM ANY/UNKNOWN USANDO INTERFACES NATIVAS DO DOM
 const updateItemsPerPage = (event: Event) => {
-	const target = event.target as HTMLSelectElement;
-	if (target) {
-		itemsPerPage.value = Number.parseInt(target.value, 10);
-	}
+  const target = event.target as HTMLSelectElement;
+  if (target) {
+    itemsPerPage.value = Number.parseInt(target.value, 10);
+  }
 };
 </script>
 
 <template>
   <div class="space-y-12">
     <div v-if="categories.length > 0" class="flex flex-col items-center mb-10">
-      <div class="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 px-4 py-2 border-b border-slate-100 max-w-2xl mx-auto overflow-x-auto md:flex-wrap scrollbar-none">
-        <button 
-          @click="selectedCategory = 'all'"
+      <div
+        class="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 px-4 py-2 border-b border-slate-100 max-w-2xl mx-auto overflow-x-auto md:flex-wrap scrollbar-none">
+        <button @click="selectedCategory = 'all'"
           class="text-xs uppercase tracking-widest font-semibold pb-2 transition-all cursor-pointer relative bg-transparent border-0 outline-none"
-          :class="selectedCategory === 'all' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'"
-        >
+          :class="selectedCategory === 'all' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'">
           Todas
-          <span v-if="selectedCategory === 'all'" class="absolute bottom-0 left-0 right-0 h-0.5" :style="{ backgroundColor: tenant?.primary_color || '#ec4899' }"></span>
+          <span v-if="selectedCategory === 'all'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></span>
         </button>
-        
-        <button 
-          v-for="cat in categories" 
-          :key="cat"
-          @click="selectedCategory = cat"
+
+        <button v-for="cat in categories" :key="cat" @click="selectedCategory = cat"
           class="text-xs uppercase tracking-widest font-semibold pb-2 transition-all cursor-pointer relative bg-transparent border-0 outline-none"
-          :class="selectedCategory === cat ? 'text-primary' : 'text-slate-400 hover:text-slate-600'"
-        >
+          :class="selectedCategory === cat ? 'text-primary' : 'text-slate-400 hover:text-slate-600'">
           {{ cat }}
-          <span v-if="selectedCategory === cat" class="absolute bottom-0 left-0 right-0 h-0.5" :style="{ backgroundColor: tenant?.primary_color || '#ec4899' }"></span>
+          <span v-if="selectedCategory === cat" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></span>
         </button>
       </div>
     </div>
@@ -152,19 +147,21 @@ const updateItemsPerPage = (event: Event) => {
       <Card v-for="product in paginatedProducts" :key="product.$id"
         class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100/70 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
 
-        <div class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100/50 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
+        <div
+          class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100/50 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
           <div v-if="product.type === 'physical' && product?.image_url"
             class="p-4 w-full h-full flex items-center justify-center">
             <img :src="product.image_url" alt="Produto"
-              class="max-h-full object-contain mix-blend-multiply drop-shadow-sm transition-transform duration-500 group-hover:scale-[1.03]" />
+              class="max-h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.03]" />
           </div>
-          <div v-else class="p-4 w-full h-full flex flex-col items-center justify-center text-slate-300 select-none bg-slate-50/50">
-            <div class="w-14 h-14 rounded-full border flex items-center justify-center mb-2 bg-white shadow-sm"
-                 :style="{ borderColor: (tenant?.primary_color || '#ec4899') + '33', color: tenant?.primary_color || '#ec4899' }">
+          <div v-else
+            class="p-4 w-full h-full flex flex-col items-center justify-center text-slate-300 select-none bg-slate-50/50">
+            <div
+              class="w-14 h-14 rounded-full border flex items-center justify-center mb-2 bg-white shadow-sm border-primary/20 text-primary">
               <Gift v-if="product.type === 'quota'" class="w-6 h-6 stroke-[1.25]" />
               <Heart v-else class="w-6 h-6 stroke-[1.25] fill-current" />
             </div>
-            <span class="text-[9px] uppercase tracking-widest font-bold text-slate-400 font-sans">Presente Especial</span>
+            <span class="text-[9px] uppercase tracking-widest font-bold text-slate-400">Presente Especial</span>
           </div>
 
           <!-- Glassmorphic premium overlay for sold out -->
@@ -172,59 +169,58 @@ const updateItemsPerPage = (event: Event) => {
             class="absolute inset-0 bg-slate-900/5 backdrop-blur-[1px] flex items-center justify-center p-4">
             <div
               class="relative overflow-hidden bg-white/95 border border-slate-200/50 px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm">
-              <Heart class="w-3 h-3 fill-current animate-pulse"
-                :style="{ color: tenant?.primary_color || '#ec4899' }" />
+              <Heart class="w-3 h-3 fill-current animate-pulse text-primary" />
               <span class="text-[10px] font-bold tracking-wider text-slate-700 uppercase">Presenteado!</span>
             </div>
           </div>
         </div>
 
-        <div class="flex flex-col flex-1 pt-4">
+        <div class="flex flex-col flex-1">
           <div class="mb-2.5 flex items-center gap-2 flex-wrap">
             <span v-if="product.category"
-              class="bg-slate-100/80 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
+              class="bg-slate-100/80 border border-slate-300 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
               {{ product.category }}
             </span>
 
             <template v-if="product.type === 'quota'">
-              <span class="text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest"
-                :style="{ color: tenant?.primary_color, backgroundColor: (tenant?.primary_color || '#000000') + '0d' }">Cota</span>
               <span
-                class="bg-slate-100/80 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
+                class="text-[9px] border border-primary/50 font-bold px-2.5 py-1 rounded-md uppercase tracking-widest text-primary bg-primary/10">Cota</span>
+              <span
+                class="bg-slate-100/80 border border-slate-300 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
                 {{ product.claimed_quantity || 0 }}/{{ product.desired_quantity }}
               </span>
             </template>
             <template v-else>
-              <span class="text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest"
-                :style="{ color: tenant?.primary_color, backgroundColor: (tenant?.primary_color || '#000000') + '0d' }">
+              <span
+                class="text-[9px] border border-primary/50 font-bold px-2.5 py-1 rounded-md uppercase tracking-widest text-primary bg-primary/10">
                 {{ (product.desired_quantity && product.desired_quantity === 1 ? 'Único' :
                   `${product.claimed_quantity || 0}/${product.desired_quantity}`) }}
               </span>
             </template>
           </div>
 
-          <h3 class="font-serif text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300">
+          <h3 class="text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300">
             {{ product.name }}
           </h3>
 
           <div class="mt-auto pt-2">
             <p v-if="product.type === 'quota' || getRemainingQuantity(product) > 1"
-              class="font-serif italic font-medium text-2xl mt-1" :style="{ color: tenant?.primary_color }">
+              class="font-extrabold text-2xl mt-1 text-primary">
               {{ formatMoney(getProductPrice(product, getLocalQuantity(product.$id))) }}
-              <span v-if="product.type === 'quota'" class="text-xs font-normal text-slate-400 font-sans not-italic">/ {{
+              <span v-if="product.type === 'quota'" class="text-xs font-normal text-slate-400">/ {{
                 formatMoney(product.price) }}</span>
               <span v-else-if="getRemainingQuantity(product) > 1 && getLocalQuantity(product.$id) > 1"
-                class="text-xs font-normal text-slate-400 font-sans not-italic">
+                class="text-xs font-extrabold text-slate-400">
                 ({{ getLocalQuantity(product.$id) }}x {{ formatMoney(product.price) }})
               </span>
             </p>
-            <p v-else class="font-serif italic font-medium text-2xl mt-1" :style="{ color: tenant?.primary_color }">
+            <p v-else class="font-extrabold text-2xl mt-1 text-primary">
               {{ formatMoney(product.price) }}
             </p>
 
             <div v-if="isProductSoldOut(product)"
               class="mt-4 w-full py-2.5 rounded-xl border border-dashed border-slate-200 text-center transition-all bg-slate-50/50 cursor-not-allowed">
-              <span class="text-xs font-serif italic text-slate-400">Garantido com carinho</span>
+              <span class="text-xs italic text-slate-400">Garantido com carinho</span>
             </div>
 
             <template v-if="mode === 'public' && !isProductSoldOut(product)">
@@ -244,22 +240,20 @@ const updateItemsPerPage = (event: Event) => {
                 </div>
 
                 <template v-if="product.type === 'quota'">
-                  <Button :style="{ backgroundColor: tenant?.primary_color, borderColor: tenant?.primary_color }" 
-                    class="w-full text-white hover:brightness-105 active:scale-[0.98] transition-all rounded-xl py-2.5 text-xs font-semibold uppercase tracking-wider"
+                  <Button
+                    class="w-full text-white hover:brightness-105 active:scale-[0.98] transition-all rounded-xl py-2.5 text-xs font-semibold uppercase tracking-wider bg-primary border-primary"
                     @click="handleOpenPix(product)">
                     Presentear com PIX
                   </Button>
                 </template>
                 <template v-else-if="product.type === 'physical'">
                   <Button v-if="product.links && product.links.length > 0" variant="outline"
-                    :style="{ color: tenant?.primary_color, borderColor: tenant?.primary_color + '40' }"
-                    class="hover:bg-slate-50 transition-all rounded-xl py-2.5 text-xs font-semibold uppercase tracking-wider"
+                    class="hover:bg-slate-50 transition-all rounded-xl py-2.5 text-xs font-semibold uppercase tracking-wider text-primary border-primary/30"
                     @click="handleOpenLinks(product)">
                     Comprar na Loja
                   </Button>
-                  <Button v-if="product.price" 
-                    :style="{ backgroundColor: tenant?.primary_color, borderColor: tenant?.primary_color }" 
-                    class="w-full text-white hover:brightness-105 active:scale-[0.98] transition-all rounded-xl py-2.5 text-xs font-semibold uppercase tracking-wider"
+                  <Button v-if="product.price"
+                    class="w-full text-white hover:brightness-105 active:scale-[0.98] transition-all rounded-xl py-2.5 text-xs font-semibold uppercase tracking-wider bg-primary border-primary"
                     @click="handleOpenPix(product)">
                     Presentear com PIX
                   </Button>
@@ -289,7 +283,7 @@ const updateItemsPerPage = (event: Event) => {
     <!-- SEÇÃO DO SELETOR DE PAGINAÇÃO EDITORIAL -->
     <div v-if="filteredProducts.length > itemsPerPage || mode === 'admin'"
       class="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6">
-      
+
       <!-- Only show items per page in admin mode -->
       <div v-if="mode === 'admin'" class="flex items-center gap-3">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Itens por página</span>
@@ -310,7 +304,7 @@ const updateItemsPerPage = (event: Event) => {
         v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
         <PaginationContent v-slot="{ items }" class="gap-1 flex items-center">
           <PaginationPrevious
-            class="w-9 h-9 p-0 rounded-xl border border-[#E8E2DD]/80 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 disabled:opacity-40"
+            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 disabled:opacity-40"
             :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)">
             <ChevronLeft class="w-4 h-4" />
           </PaginationPrevious>
@@ -318,8 +312,8 @@ const updateItemsPerPage = (event: Event) => {
           <template v-for="(item, index) in items">
             <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
               :is-active="item.value === page" @click="currentPage = item.value"
-              class="w-9 h-9 p-0 rounded-xl font-serif text-sm transition-all cursor-pointer flex items-center justify-center border"
-              :style="item.value === page ? { borderColor: tenant?.primary_color || '#C5A880', color: tenant?.primary_color || '#C5A880', fontWeight: 'bold', backgroundColor: (tenant?.primary_color || '#C5A880') + '0a' } : { borderColor: '#E8E2DD', color: '#5A4F4A' }">
+              class="w-9 h-9 p-0 rounded-xl text-sm transition-all cursor-pointer flex items-center justify-center border"
+              :class="item.value === page ? 'border-primary text-primary font-bold bg-primary/10' : 'border-slate-200 text-slate-600'">
               {{ item.value }}
             </PaginationItem>
             <PaginationEllipsis v-else :key="item.type" :index="index"
@@ -327,7 +321,7 @@ const updateItemsPerPage = (event: Event) => {
           </template>
 
           <PaginationNext
-            class="w-9 h-9 p-0 rounded-xl border border-[#E8E2DD]/80 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 disabled:opacity-40"
+            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 disabled:opacity-40"
             :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
             @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)">
             <ChevronRight class="w-4 h-4" />

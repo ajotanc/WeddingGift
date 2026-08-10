@@ -34,27 +34,27 @@ const declineCookies = () => {
 		leave-from-class="transform translate-y-0 opacity-100 scale-100"
 		leave-to-class="transform translate-y-8 opacity-0 scale-95"
 	>
-		<div v-if="isVisible" class="fixed bottom-6 left-6 z-[999] max-w-md w-[calc(100%-3rem)] p-7 bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-zinc-100 flex flex-col gap-5">
+		<div v-if="isVisible" class="fixed bottom-6 left-6 z-[999] max-w-md w-[calc(100%-3rem)] p-7 bg-[#FAF8F6]/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-[#E8E2DD] flex flex-col gap-5">
 			<div class="flex items-start gap-4">
-				<div class="p-3 bg-primary/10 text-primary rounded-2xl shrink-0">
+				<div class="p-3 bg-[#C5A880]/10 text-[#8C6D45] rounded-2xl shrink-0">
 					<Cookie class="w-6 h-6 animate-pulse" />
 				</div>
 				<div class="space-y-2">
-					<h4 class="font-serif text-lg font-semibold text-primary leading-tight">Valorizamos sua privacidade 🍪</h4>
-					<p class="text-sm font-light text-zinc-500 leading-relaxed">
+					<h4 class="font-serif text-lg font-semibold text-[#1E1A17] leading-tight">Valorizamos sua privacidade 🍪</h4>
+					<p class="text-sm font-light text-[#5A4F4A] leading-relaxed">
 						Utilizamos cookies essenciais para assegurar o funcionamento correto e seguro da plataforma. Ao clicar em "Aceitar", você concorda com nossos 
-						<a href="/terms" target="_blank" class="underline hover:opacity-85 font-medium transition-opacity">Termos de Uso</a> 
+						<a href="/terms" target="_blank" class="underline text-[#C5A880] hover:text-[#8C6D45] font-medium transition-colors">Termos de Uso</a> 
 						e nossa 
-						<a href="/privacy" target="_blank" class="underline hover:opacity-85 font-medium transition-opacity">Política de Privacidade</a>.
+						<a href="/privacy" target="_blank" class="underline text-[#C5A880] hover:text-[#8C6D45] font-medium transition-colors">Política de Privacidade</a>.
 					</p>
 				</div>
 			</div>
 			
-			<div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
-				<button @click="declineCookies" class="text-xs font-semibold text-zinc-400 hover:text-zinc-600 transition-colors px-2 py-2 cursor-pointer border-0 bg-transparent outline-none">
+			<div class="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2DD]">
+				<button @click="declineCookies" class="text-xs font-semibold text-slate-400 hover:text-[#1E1A17] transition-colors px-2 py-2 cursor-pointer border-0 bg-transparent outline-none">
 					Recusar
 				</button>
-				<Button size="sm" @click="acceptCookies" class="rounded-xl px-5 py-2.5 text-xs font-semibold shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
+				<Button size="sm" @click="acceptCookies" class="bg-[#1E1A17] hover:bg-[#2C2421] text-white rounded-full px-5 py-2.5 text-xs font-semibold shadow-md transition-all duration-200 cursor-pointer border-0">
 					Aceitar e Continuar
 				</Button>
 			</div>

@@ -14,20 +14,48 @@ export default defineConfig(({ mode }) => {
 			nodePolyfills(),
 			VitePWA({
 				registerType: "autoUpdate",
+				injectRegister: "auto",
+				includeAssets: ["favicon.ico", "images/es.webp", "images/pwa/*.png"],
+				devOptions: {
+					enabled: true,
+					type: "module",
+				},
+				workbox: {
+					globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
+					navigateFallback: "/index.html",
+					navigateFallbackDenylist: [/^\/v1/, /^\/api/],
+				},
 				manifest: {
 					name: env.VITE_PROJECT_NAME,
 					short_name: env.VITE_PROJECT_NAME,
-					theme_color: "#ffffff",
+					start_url: "/",
+					scope: "/",
+					theme_color: "#c5a880",
+					display: "standalone",
+					description: `${env.VITE_PROJECT_NAME} - Wedding Gift`,
+					background_color: "#FAF8F6",
+					lang: "pt-BR",
 					icons: [
 						{
-							src: "/pwa-192x192.png",
+              src: "images/pwa/pwa-64x64.png",
+							sizes: "64x64",
+							type: "image/png",
+						},
+						{
+              src: "images/pwa/pwa-192x192.png",
 							sizes: "192x192",
 							type: "image/png",
 						},
 						{
-							src: "/pwa-512x512.png",
+              src: "images/pwa/pwa-512x512.png",
 							sizes: "512x512",
 							type: "image/png",
+						},
+						{
+              src: "images/pwa/maskable-icon-512x512.png",
+							sizes: "512x512",
+							type: "image/png",
+							purpose: "any maskable",
 						},
 					],
 				},

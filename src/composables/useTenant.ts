@@ -1,4 +1,4 @@
-import { hexToHsl, hslToHex } from "@/lib/colors";
+import { hexToHsl, hexToRgbChannels, hslToHex } from "@/lib/colors";
 import { DEFAULT_SLATE_COLORS } from "@/lib/defaults";
 import { sortBy } from "@/lib/utils";
 import type { IFaq } from "@/services/faq.service";
@@ -181,54 +181,57 @@ export function useTenant() {
 		textColor?: string | null,
 	) => {
 		if (color) {
-			document.documentElement.style.setProperty("--color-primary", color);
+			document.documentElement.style.setProperty(
+				"--color-primary",
+				hexToRgbChannels(color),
+			);
 		}
 		if (textColor) {
 			try {
 				const { h, s } = hexToHsl(textColor);
 				document.documentElement.style.setProperty(
 					"--color-slate-950",
-					hslToHex({ h, s, l: 8 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 8 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-900",
-					hslToHex({ h, s, l: 12 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 12 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-800",
-					hslToHex({ h, s, l: 20 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 20 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-700",
-					hslToHex({ h, s, l: 30 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 30 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-600",
-					textColor,
+					hexToRgbChannels(textColor),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-500",
-					hslToHex({ h, s, l: 55 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 55 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-400",
-					hslToHex({ h, s, l: 70 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 70 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-300",
-					hslToHex({ h, s, l: 82 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 82 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-200",
-					hslToHex({ h, s, l: 90 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 90 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-100",
-					hslToHex({ h, s, l: 95 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 95 })),
 				);
 				document.documentElement.style.setProperty(
 					"--color-slate-50",
-					hslToHex({ h, s, l: 98 }),
+					hexToRgbChannels(hslToHex({ h, s, l: 98 })),
 				);
 			} catch (e) {
 				console.error("Invalid text color format", e);
@@ -237,7 +240,7 @@ export function useTenant() {
 			for (const [shade, hex] of Object.entries(DEFAULT_SLATE_COLORS)) {
 				document.documentElement.style.setProperty(
 					`--color-slate-${shade}`,
-					hex,
+					hexToRgbChannels(hex),
 				);
 			}
 		}

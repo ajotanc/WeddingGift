@@ -4,4 +4,5 @@ allowBuilds:
   esbuild: true
   maplibre-gl: true
   protobufjs: true
+  sharp: true
   vue-demi: true

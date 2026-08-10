@@ -168,10 +168,10 @@ export default async ({ req, res, log, error }) => {
 		}
 
 		// Chamar a Serper API com timeout, sem nunca expor a chave ao cliente
-		const apiKey = process.env.SERPER_API_KEY;
+		const apiKey = process.env.VITE_SERPAPI_KEY;
 		if (!apiKey) {
 			sysLogger.error(
-				"SERPER_API_KEY não configurada nas variáveis de ambiente da Function",
+				"VITE_SERPAPI_KEY não configurada nas variáveis de ambiente da Function",
 			);
 			return res.json(
 				{ message: "Serviço de busca indisponível no momento" },
@@ -271,10 +271,10 @@ export default async ({ req, res, log, error }) => {
 			);
 		}
 
-		const apiKey = process.env.GEMINI_API_KEY;
+		const apiKey = process.env.VITE_GEMINI_API_KEY;
 		if (!apiKey) {
 			sysLogger.error(
-				"GEMINI_API_KEY não configurada nas variáveis de ambiente da Function",
+				"VITE_GEMINI_API_KEY não configurada nas variáveis de ambiente da Function",
 			);
 			return res.json(
 				{ message: "Serviço de geração de texto indisponível" },

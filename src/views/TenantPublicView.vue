@@ -305,6 +305,12 @@ const activeSections = computed(() => {
 let observer: IntersectionObserver | null = null;
 const visibleSections = ref<Record<string, boolean>>({});
 
+const handleScroll = () => {
+	if (typeof window !== "undefined" && window.scrollY < 200) {
+		currentSection.value = "home";
+	}
+};
+
 const setupScrollSpy = () => {
 	if (typeof window === "undefined" || !("IntersectionObserver" in window))
 		return;
@@ -312,21 +318,29 @@ const setupScrollSpy = () => {
 		observer.disconnect();
 	}
 
+	window.removeEventListener("scroll", handleScroll);
+	window.addEventListener("scroll", handleScroll, { passive: true });
+
 	observer = new IntersectionObserver(
 		(entries) => {
 			for (const entry of entries) {
 				visibleSections.value[entry.target.id] = entry.isIntersecting;
 			}
 
+			if (window.scrollY < 200) {
+				currentSection.value = "home";
+				return;
+			}
+
 			const intersecting = activeSections.value.filter(
 				(s) => visibleSections.value[s.id],
 			);
 			if (intersecting.length > 0) {
-				currentSection.value = intersecting[intersecting.length - 1].id;
+				currentSection.value = intersecting[0].id;
 			}
 		},
 		{
-			rootMargin: "-200px 0px -50% 0px",
+			rootMargin: "-100px 0px -40% 0px",
 			threshold: 0,
 		},
 	);
@@ -371,7 +385,13 @@ const customSmoothScroll = (targetY: number, duration = 800) => {
 	window.requestAnimationFrame(step);
 };
 
-const scrollToSection = (id: string) => {
+const scrollToSection = (id: string, event?: MouseEvent) => {
+	if (event) {
+		(event.currentTarget as HTMLElement)?.blur();
+	}
+	if (document.activeElement instanceof HTMLElement) {
+		document.activeElement.blur();
+	}
 	if (id === "home") {
 		customSmoothScroll(0, 800);
 		return;
@@ -507,14 +527,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<main class="min-h-screen font-sans text-slate-600"
+	<main class="min-h-screen font-sans text-slate-600 relative"
 		:style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
 		<div v-if="loading"
 			class="fixed inset-0 flex flex-col items-center justify-center p-6 text-center z-[999] animate-in fade-in-0 duration-500"
 			:style="{ backgroundColor: tenant?.background_color || '#fafafa' }">
 			<div class="relative flex items-center justify-center mb-6">
 				<!-- Pulse decoration -->
-				<div class="absolute w-16 h-16 rounded-full bg-pink-100 animate-ping duration-1000"></div>
+				<div class="absolute w-16 h-16 rounded-full bg-primary/20 animate-ping duration-1000"></div>
 				<!-- Spinner -->
 				<div class="w-12 h-12 rounded-full border-4 border-slate-100 border-t-primary animate-spin"></div>
 			</div>
@@ -524,7 +544,8 @@ onUnmounted(() => {
 		</div>
 		<div v-else-if="error" class="text-center p-20 text-red-500 font-medium">{{ error }}</div>
 		<template v-else-if="tenant">
-
+			<GoogleAuthButton @click="currentUser ? showProfileModal = true : requireAuth()" @logout="logout"
+				:user="currentUser || undefined" :fill="false" class="button-google" />
 			<!-- Canvas for Visual Effects -->
 			<canvas ref="effectCanvas" class="fixed inset-0 pointer-events-none z-[40]"></canvas>
 
@@ -545,23 +566,20 @@ onUnmounted(() => {
 					:class="!tenant.background_color ? 'bg-gradient-to-t from-zinc-50 to-transparent' : ''">
 				</div>
 
-				<div class="absolute top-6 right-6 p-4 flex justify-end z-30">
-					<GoogleAuthButton @click="currentUser ? showProfileModal = true : requireAuth()" @logout="logout"
-						:user="currentUser || undefined" :fill="false" :themeColor="tenant.primary_color" />
-				</div>
-
 				<div class="relative flex flex-col items-center justify-center max-w-4xl z-10 px-4">
 					<img v-if="tenant.logo_url" :src="tenant.logo_url" :alt="tenant.couple_name"
 						class="w-32 h-32 md:w-40 md:h-40 object-contain mb-6 transition-all">
 
-					<h1 class="text-4xl md:text-7xl font-serif text-[#1E1A17] mb-6 tracking-tight leading-tight select-none">{{ tenant.couple_name }}</h1>
+					<h1 class="text-4xl md:text-7xl font-serif text-slate-900 mb-6 tracking-tight leading-tight select-none">{{
+						tenant.couple_name }}</h1>
 
-					<p class="text-xs md:text-sm uppercase tracking-[0.25em] font-medium max-w-[500px] leading-relaxed text-center mb-8"
-						:style="{ color: tenant?.primary_color || '#ec4899' }">{{
-						tenant?.quote || "Lista de Presentes & RSVP" }}</p>
+					<p
+						class="text-xs text-primary md:text-sm uppercase tracking-[0.25em] font-medium max-w-[500px] leading-relaxed text-center mb-8">
+						{{
+							tenant?.quote || "Lista de Presentes & RSVP" }}</p>
 
 					<!-- Event Date & Time Display -->
-					<div v-if="tenant.event_date" class="text-[#2C2421] font-serif italic text-base md:text-xl tracking-wide">
+					<div v-if="tenant.event_date" class="text-slate-800 font-serif italic text-base md:text-xl tracking-wide">
 						{{ dayjs(tenant.event_date).format('DD [de] MMMM [de] YYYY') }} às {{ tenant.event_time }}
 					</div>
 
@@ -569,22 +587,22 @@ onUnmounted(() => {
 					<div v-if="tenant.event_date && tenant?.show_countdown !== false" class="mt-8">
 						<CountdownTimer :eventDate="tenant.event_date" />
 					</div>
-					<div class="w-12 h-[1px] mx-auto mt-12" :style="{ backgroundColor: (tenant?.primary_color || '#ec4899') + '73' }"></div>
+					<div class="w-12 h-[1px] mx-auto mt-12 bg-primary/50"></div>
 				</div>
 			</header>
 
 			<div class="max-w-5xl mx-auto p-6 md:p-12 lg:py-32 space-y-24 md:space-y-32">
 
 				<!-- Couple History -->
-				<HistorySection v-if="tenant.couple_history" :history-text="tenant.couple_history" :primary-color="tenant.primary_color" />
- 
- 				<!-- Event Timeline -->
- 				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
- 					:primary-color="tenant.primary_color" :schedules="getTimelineItems" />
- 
- 				<!-- Dress Code Guide -->
- 				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
- 					:dress-code-text="tenant.dress_code_text" :primary-color="tenant.primary_color" />
+				<HistorySection v-if="tenant.couple_history" :history-text="tenant.couple_history" />
+
+				<!-- Event Timeline -->
+				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
+					:schedules="getTimelineItems" />
+
+				<!-- Dress Code Guide -->
+				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
+					:dress-code-text="tenant.dress_code_text" />
 
 				<!-- Gallery -->
 				<GallerySection v-if="tenant.show_gallery" :images="homePrivateImages"
@@ -613,7 +631,7 @@ onUnmounted(() => {
 							poderá confirmar sua presença (RSVP), escolher um presente especial de nossa lista e nos enviar uma
 							mensagem de felicitações!
 						</p>
-						<GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color" class="mx-auto" />
+						<GoogleAuthButton @click="requireAuth" :fill="true" class="mx-auto" />
 					</div>
 				</section>
 
@@ -649,22 +667,24 @@ onUnmounted(() => {
 		<Modal v-model:open="showPixModal"
 			:title="selectedProduct?.type === 'quota' ? 'Pagamento da Cota PIX' : 'Presentear com Valor (PIX)'">
 			<div v-if="selectedProduct" class="space-y-6 pt-4 text-center">
-				<p class="text-xs uppercase tracking-widest font-bold" :style="{ color: tenant?.primary_color || '#ec4899' }">Transferência PIX</p>
-				<p class="text-sm text-[#5A4F4A] leading-relaxed max-w-xs mx-auto">
-					Escaneie o QR Code abaixo para presentear os noivos <strong>{{ tenant?.couple_name }}</strong> de forma direta e segura.
+				<p class="text-xs uppercase tracking-widest font-bold text-primary">Transferência PIX</p>
+				<p class="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">
+					Escaneie o QR Code abaixo para presentear os noivos <strong>{{ tenant?.couple_name }}</strong> de forma
+					direta e
+					segura.
 				</p>
 
-				<div class="flex justify-center bg-white p-5 rounded-2xl border border-[#E8E2DD] max-w-[230px] mx-auto shadow-sm">
+				<div class="flex justify-center bg-white p-5 rounded-2xl border border-slate-100 max-w-[230px] mx-auto shadow-sm">
 					<qrcode-svg :value="pixPayload.payload" :size="180" level="H" />
 				</div>
 
-				<div class="space-y-2 bg-[#FAF8F6] p-4 rounded-2xl border border-[#E8E2DD]">
-					<p class="text-3xl font-serif font-bold text-[#1E1A17] italic">
+				<div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+					<p class="text-3xl font-serif font-bold text-slate-900 italic">
 						{{ formatMoney(getProductPrice(selectedProduct, currentQty)) }}
 					</p>
 
 					<div class="flex flex-col gap-0.5 pt-1">
-						<p class="text-sm font-semibold text-[#1E1A17]">{{ selectedProduct.name }}</p>
+						<p class="text-sm font-semibold text-primary">{{ selectedProduct.name }}</p>
 						<p class="text-xs text-slate-400 font-light">
 							Quantidade selecionada: {{ currentQty }}
 							{{ selectedProduct.type === 'quota' ? 'cota(s)' : 'unidade(s)' }}
@@ -673,11 +693,13 @@ onUnmounted(() => {
 				</div>
 
 				<div class="flex flex-col sm:flex-row gap-3 mt-6">
-					<Button class="flex-1 rounded-xl text-slate-700 hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5" variant="outline" :style="{ borderColor: (tenant?.primary_color || '#ec4899') + '99', color: tenant?.primary_color || '#ec4899' }" @click="copyPix">
+					<Button class="flex-1 rounded-xl text-primary border-primary hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5"
+						variant="outline"
+						@click="copyPix">
 						Copiar Código Pix
 					</Button>
-					<Button class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5" 
-						:style="{ backgroundColor: tenant?.primary_color || '#1E1A17', borderColor: tenant?.primary_color || '#1E1A17' }"
+					<Button
+						class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary"
 						:disabled="confirmingPurchase" @click="confirmPurchase('pix')">
 						{{ confirmingPurchase ? 'Confirmando...' : 'Confirmar Envio' }}
 					</Button>
@@ -688,27 +710,28 @@ onUnmounted(() => {
 		<!-- Store Links Modal -->
 		<Modal v-model:open="showLinksModal" :title="selectedProduct?.name">
 			<div class="space-y-6 pt-4 text-center">
-				<p class="text-xs uppercase tracking-widest font-bold" :style="{ color: tenant?.primary_color || '#ec4899' }">Comprar na Loja</p>
-				<p class="text-sm text-[#5A4F4A] font-light max-w-xs mx-auto leading-relaxed">
+				<p class="text-xs text-primary uppercase tracking-widest font-bold">Comprar na Loja</p>
+				<p class="text-sm text-slate-600 font-light max-w-xs mx-auto leading-relaxed">
 					Escolha uma das lojas abaixo para adquirir as
-					<strong class="text-[#1E1A17]">{{ currentQty }} unidade(s)</strong> de presente.
+					<strong class="text-primary">{{ currentQty }} unidade(s)</strong> de presente.
 				</p>
 
 				<div class="space-y-3 max-w-xs mx-auto">
 					<a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
-						class="flex items-center justify-center text-center h-12 rounded-xl border border-[#E8E2DD] hover:border-primary hover:bg-slate-50/50 transition-all group px-4">
-						<span class="text-xs font-semibold uppercase tracking-wider text-slate-700 group-hover:text-primary transition-colors">
+						class="flex items-center justify-center text-center h-12 rounded-xl border border-slate-200 hover:border-primary hover:bg-slate-50/50 transition-all group px-4">
+						<span
+							class="text-xs font-semibold uppercase tracking-wider text-slate-700 group-hover:text-primary transition-colors">
 							Ir para a {{ link.store }}
 						</span>
 					</a>
 				</div>
 
-				<div class="pt-4 border-t border-[#E8E2DD]/60 mt-4 max-w-xs mx-auto">
-					<p class="text-xs text-[#5A4F4A] mb-4 text-center leading-relaxed">
+				<div class="pt-4 border-t border-slate-200/60 mt-4 max-w-xs mx-auto">
+					<p class="text-xs text-slate-600 mb-4 text-center leading-relaxed">
 						Após finalizar a sua compra no site da loja, confirme a reserva abaixo:
 					</p>
-					<Button class="w-full rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5" 
-						:style="{ backgroundColor: tenant?.primary_color || '#1E1A17', borderColor: tenant?.primary_color || '#1E1A17' }"
+					<Button
+						class="w-full rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary"
 						:disabled="confirmingPurchase" @click="confirmPurchase('link')">
 						<span v-if="confirmingPurchase">Confirmando...</span>
 						<span v-else>Confirmar Compra</span>
@@ -725,22 +748,22 @@ onUnmounted(() => {
 			<!-- Floating Vertical Navigation (Editorial Index) -->
 			<div v-if="activeSections.length > 1"
 				class="fixed right-3 md:right-8 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4 items-end pointer-events-none">
-				<button v-for="(section, idx) in activeSections" :key="section.id" @click="scrollToSection(section.id)"
-					class="group flex items-center gap-3 pointer-events-auto cursor-pointer focus:outline-none bg-transparent border-0 outline-none select-none">
+				<button v-for="section in activeSections" :key="section.id" @click="scrollToSection(section.id, $event)"
+					class="group relative flex items-center justify-end pointer-events-auto cursor-pointer focus:outline-none bg-transparent border-0 outline-none select-none">
+
 					<!-- Horizontal slide-hover tag -->
-					<div class="flex items-center gap-2.5 opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none">
-						<span class="text-[9px] font-bold tracking-widest font-sans text-slate-400">
-							{{ String(idx + 1).padStart(2, '0') }}
-						</span>
-						<span class="text-[10px] font-bold tracking-wider uppercase font-sans px-3 py-1.5 bg-white border border-[#E8E2DD]/85 rounded-xl shadow-md text-slate-800">
+					<div
+						class="absolute right-5 top-1/2 -translate-y-1/2 whitespace-nowrap hidden group-hover:flex items-center transition-all duration-200 pointer-events-none z-50">
+						<span
+							class="text-[10px] font-bold tracking-wider uppercase font-sans px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-md text-slate-800">
 							{{ section.label }}
 						</span>
 					</div>
+
 					<!-- Fine vertical bar indicator -->
-					<div class="w-1 h-7 rounded-full transition-all duration-300 shadow-sm"
-						:style="currentSection === section.id
-							? { backgroundColor: tenant?.primary_color || '#ec4899', transform: 'scaleY(1.3)' }
-							: { backgroundColor: '#E8E2DD' }">
+					<div class="w-1.5 h-7 rounded-full transition-all duration-300 shadow-sm" :class="currentSection === section.id
+						? 'bg-primary scale-y-125'
+						: 'bg-slate-200'">
 					</div>
 				</button>
 			</div>
@@ -757,5 +780,12 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
 	opacity: 0;
+}
+
+.button-google {
+	position: absolute;
+	z-index: 1;
+	right: 1rem;
+	top: 1rem;
 }
 </style>

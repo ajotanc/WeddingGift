@@ -26,6 +26,7 @@ import {
 	SelectValue,
 } from "./components/ui/select";
 import { useMusicStore } from "./stores/music";
+import { PROJECT_NAME } from "./lib/defaults";
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -136,15 +137,15 @@ watch(
 		const activeTenant = t || authTenant;
 		if (activeTenant) {
 			if (path.includes("/gallery")) {
-				document.title = `Wedding Gift • ${activeTenant.couple_name} • Galeria`;
+				document.title = `${PROJECT_NAME} • ${activeTenant.couple_name} • Galeria`;
 			} else if (path.includes("/admin")) {
-				document.title = `Wedding Gift • ${activeTenant.couple_name} • Painel`;
+				document.title = `${PROJECT_NAME} • ${activeTenant.couple_name} • Painel`;
 			} else {
-				document.title = `Wedding Gift • ${activeTenant.couple_name}`;
+				document.title = `${PROJECT_NAME} • ${activeTenant.couple_name}`;
 			}
 		} else {
 			// Título fallback padrão
-			document.title = "Wedding Gift SaaS";
+			document.title = PROJECT_NAME;
 		}
 	},
 	{ immediate: true },
@@ -168,22 +169,13 @@ watch(
 
 		<div class="fixed bottom-6 left-6 z-50 flex items-center gap-3">
 			<button @click="music.toggle()"
-				:style="{ color: currentTenant?.primary_color || '#ec4899' }"
-				class="bg-white/80 backdrop-blur-md border border-slate-200/30 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
+				class="text-primary bg-white/80 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
 				<Pause v-if="music.isPlaying" class="w-5 h-5" />
 				<Play v-else class="w-5 h-5" />
 			</button>
 
-			<!-- Premium visual soundwave animation on play -->
-			<div v-if="music.isPlaying" 
-				class="bg-white/80 backdrop-blur-md border border-slate-200/30 px-3 py-2.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex items-end gap-1 h-[42px] pointer-events-none">
-				<div class="w-[3px] rounded-full animate-soundwave-1" :style="{ backgroundColor: currentTenant?.primary_color || '#ec4899' }"></div>
-				<div class="w-[3px] rounded-full animate-soundwave-2" :style="{ backgroundColor: currentTenant?.primary_color || '#ec4899' }"></div>
-				<div class="w-[3px] rounded-full animate-soundwave-3" :style="{ backgroundColor: currentTenant?.primary_color || '#ec4899' }"></div>
-			</div>
-
 			<div v-if="!music.isPlaying"
-				class="bg-white/80 backdrop-blur-md border border-slate-200/30 px-3.5 py-2 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-xs font-light text-slate-500">
+				class="bg-white/80 backdrop-blur-md border border-slate-200/60 px-3.5 py-2 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-xs font-light text-slate-500">
 				Tocar música de fundo? 🎵
 			</div>
 		</div>
@@ -191,8 +183,8 @@ watch(
 
 	<!-- Global Floating Feedback Button -->
 	<button v-if="!isPageLoadingTheme" type="button" @click="openFeedback"
-		class="fixed bottom-6 right-6 z-50 bg-primary text-white p-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 border-0 outline-none">
-		<MessageSquarePlus class="w-5 h-5 text-white" />
+		class="text-primary fixed bottom-6 right-6 z-50 bg-white/80 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
+		<MessageSquarePlus class="w-5 h-5" />
 	</button>
 
 	<!-- Feedback Modal -->
@@ -200,16 +192,16 @@ watch(
 		description="Ajude-nos a melhorar a plataforma enviando o seu feedback.">
 		<form @submit="onSubmitFeedback" class="space-y-4 pt-4">
 			<FormGroup label="Seu Nome" :error="errors.name">
-				<Input v-model="name" placeholder="Ex: João" class="bg-slate-50/50" />
+				<Input v-model="name" placeholder="Ex: João" class="bg-[#FAF8F6]/50 border-[#E8E2DD]" />
 			</FormGroup>
 			<FormGroup label="Seu E-mail" :error="errors.email">
 				<Input v-model="email" type="email" placeholder="joao@example.com"
-					class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50" />
+					class="rounded-xl border-[#E8E2DD] focus-visible:ring-[#C5A880]/20 bg-[#FAF8F6]/50" />
 			</FormGroup>
 			<FormGroup label="Tipo" :error="errors.type">
 				<Select v-model="type">
 					<SelectTrigger
-						class="w-full bg-white border-slate-200 rounded-xl text-sm font-light text-slate-600 focus:ring-primary/20 h-11">
+						class="w-full bg-white border-[#E8E2DD] rounded-xl text-sm font-light text-slate-600 focus:ring-[#C5A880]/20 h-11">
 						<SelectValue placeholder="Selecione um ícone" />
 					</SelectTrigger>
 					<SelectContent>
@@ -222,14 +214,14 @@ watch(
 
 			<FormGroup label="Mensagem" :error="errors.message">
 				<Textarea v-model="message" placeholder="O que você gostaria de nos dizer?"
-					class="rounded-xl border-slate-200 focus-visible:ring-primary/20 bg-slate-50/50 min-h-[100px] resize-none" />
+					class="rounded-xl border-[#E8E2DD] focus-visible:ring-[#C5A880]/20 bg-[#FAF8F6]/50 min-h-[100px] resize-none" />
 			</FormGroup>
 
 			<div class="pt-2 flex justify-end gap-3">
-				<Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-500">
+				<Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-500 hover:text-[#2C2421]">
 					Cancelar
 				</Button>
-				<Button type="submit" :disabled="sending">
+				<Button type="submit" :disabled="sending" class="bg-[#1E1A17] hover:bg-[#2C2421] text-white rounded-full px-6 shadow-sm">
 					{{ sending ? 'Enviando...' : 'Enviar Feedback' }}
 				</Button>
 			</div>

@@ -389,7 +389,7 @@ const deleteGalleryImage = (image: IGalleryImage) => {
 				<!-- Auth state -->
 				<GoogleAuthButton v-if="currentGuest || currentUser"
 					@click="currentUser ? $router.push(`/${$route.params.slug}/admin`) : requireAuth()" @logout="logout"
-					:user="currentUser || undefined" :fill="false" :themeColor="tenant?.primary_color" />
+					:user="currentUser || undefined" :fill="false" />
 			</div>
 
 			<!-- Loading / Error -->
@@ -422,7 +422,7 @@ const deleteGalleryImage = (image: IGalleryImage) => {
 						Para ver as fotos compartilhadas e enviar suas próprias fotos do casamento, faça login com o Google de forma
 						simples e segura.
 					</p>
-					<GoogleAuthButton @click="requireAuth" :fill="true" :themeColor="tenant.primary_color" class="mx-auto" />
+					<GoogleAuthButton @click="requireAuth" :fill="true" class="mx-auto" />
 				</div>
 
 				<!-- Authenticated Content -->

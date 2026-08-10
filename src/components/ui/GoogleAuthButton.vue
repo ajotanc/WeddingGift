@@ -8,6 +8,7 @@ import type { IUser } from "@/stores/auth";
 import { LogOut } from "lucide-vue-next";
 import { computed } from "vue";
 import type { PropType } from "vue";
+import { Button } from "@/components/ui/button";
 
 const props = defineProps({
 	fill: { type: Boolean, default: false },
@@ -35,25 +36,25 @@ const buttonStyle = computed(() => {
 </script>
 
 <template>
-  <button @click="$emit('click')"
-    class="flex items-center gap-3 bg-white/80 backdrop-blur border border-slate-200 p-2 rounded-full shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+  <Button @click="$emit('click')" variant="outline" size="wg"
+    class="flex items-center gap-3 rounded-full shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:brightness-95 hover:bg-[inherit] hover:text-[inherit] hover:border-[inherit] active:translate-y-0"
     :style="props.user ? undefined : buttonStyle">
     <template v-if="props.user">
       <img v-if="props.user.prefs?.photo_url" :src="props.user.prefs?.photo_url" referrerpolicy="no-referrer"
-        class="w-6 h-6 rounded-full" />
-      <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs"
+        class="w-6 h-6 rounded-full shrink-0" />
+      <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"
         v-else>
         {{ props.user.name?.charAt(0) || 'C' }}
       </div>
-      <span class="text-sm font-medium text-slate-700">{{ props.user.name }}</span>
-      <button @click.stop="$emit('logout')"
-        class="p-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Sair">
+      <span class="text-sm font-medium text-slate-700 hidden sm:inline">{{ props.user.name }}</span>
+      <div @click.stop="$emit('logout')"
+        class="p-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0" title="Sair">
         <LogOut class="w-4 h-4" />
-      </button>
+      </div>
     </template>
 
     <template v-else>
-      <div v-if="props.fill" class="bg-white p-1 rounded-full flex items-center justify-center w-7 h-7">
+      <div v-if="props.fill" class="bg-white p-1 rounded-full flex items-center justify-center w-7 h-7 shrink-0">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -69,7 +70,7 @@ const buttonStyle = computed(() => {
             fill="#EA4335" />
         </svg>
       </div>
-      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
         <path
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
           fill="#4285F4" />
@@ -84,7 +85,8 @@ const buttonStyle = computed(() => {
           fill="#EA4335" />
       </svg>
 
-      <span class="text-sm pr-2">{{ props.label }}</span>
+      <span class="text-sm pr-2 truncate">{{ props.label }}</span>
     </template>
-  </button>
+  </Button>
 </template>
+

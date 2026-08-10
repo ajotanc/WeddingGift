@@ -6,11 +6,14 @@ const currentYear = computed(() => new Date().getFullYear());
 </script>
 
 <template>
-	<div class="min-h-screen bg-slate-50 text-slate-600 font-sans antialiased selection:bg-primary selection:text-white">
+	<div class="min-h-screen bg-champagne text-slate-800 font-sans antialiased selection:bg-primary/20 selection:text-primary relative overflow-hidden">
+		<!-- Ambient top glowing color gradient -->
+		<div class="absolute top-0 right-0 left-0 h-[600px] bg-gradient-to-b from-primary/15 via-champagne/5 to-transparent pointer-events-none -z-10"></div>
+
 		<!-- Header -->
-		<header class="bg-white border-b border-slate-100 sticky top-0 z-50 backdrop-blur-md bg-white/95">
+		<header class="bg-champagne/80 border-b border-slate-200/60 sticky top-0 z-50 backdrop-blur-md">
 			<div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-				<router-link to="/" class="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors text-sm font-medium">
+				<router-link to="/" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium">
 					<ArrowLeft class="w-4 h-4" />
 					<span>Voltar ao início</span>
 				</router-link>
@@ -19,31 +22,31 @@ const currentYear = computed(() => new Date().getFullYear());
 		</header>
 
 		<!-- Content -->
-		<main class="max-w-3xl mx-auto px-6 py-12 md:py-20 space-y-12">
+		<main class="max-w-3xl mx-auto px-6 py-12 md:py-20 space-y-12 relative z-10">
 			<!-- Title Section -->
 			<div class="space-y-4 text-center md:text-left">
 				<div class="inline-flex w-12 h-12 bg-primary/10 text-primary rounded-2xl items-center justify-center">
 					<Scale class="w-6 h-6" />
 				</div>
-				<h1 class="text-3xl md:text-4xl font-serif text-slate-900 leading-tight">Termos de Uso</h1>
-				<p class="text-slate-500 font-light text-base md:text-lg max-w-2xl leading-relaxed">
+				<h1 class="text-3xl md:text-4xl font-serif text-slate-900 font-semibold leading-tight tracking-tight">Termos de Uso</h1>
+				<p class="text-slate-600 font-light text-base md:text-lg max-w-2xl leading-relaxed">
 					Ao acessar ou utilizar a nossa plataforma, você concorda com estes termos de serviço. Por favor, leia-os com atenção.
 				</p>
 			</div>
 
 			<!-- Document Body -->
-			<article class="bg-white rounded-3xl p-6 md:p-10 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 text-slate-600 leading-relaxed font-light">
+			<article class="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-xl shadow-primary/5 space-y-8 text-slate-600 leading-relaxed font-light">
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">1. Aceitação dos Termos</h2>
 					<p>
-						Ao se cadastrar ou utilizar os serviços do <strong>Wedding Gift</strong> (incluindo o envio de mensagens, confirmação de presença (RSVP) ou compra de presentes), você expressa seu consentimento livre e expresso aos presentes Termos de Uso. Caso não concorde com qualquer disposição, você não deve utilizar a plataforma.
+						Ao se cadastrar ou utilizar os serviços do <strong class="font-medium text-slate-800">Wedding Gift</strong> (incluindo o envio de mensagens, confirmação de presença (RSVP) ou compra de presentes), você expressa seu consentimento livre e expresso aos presentes Termos de Uso. Caso não concorde com qualquer disposição, você não deve utilizar a plataforma.
 					</p>
 				</section>
 
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">2. Descrição dos Serviços</h2>
 					<p>
-						O <strong>Wedding Gift</strong> funciona como um facilitador digital para eventos de casamento, permitindo a criação de páginas de convites personalizadas, gerenciamento de listas de convidados (RSVP), murais de recados e cotas de presentes integradas via PIX ou links externos.
+						O <strong class="font-medium text-slate-800">Wedding Gift</strong> funciona como um facilitador digital para eventos de casamento, permitindo a criação de páginas de convites personalizadas, gerenciamento de listas de convidados (RSVP), murais de recados e cotas de presentes integradas via PIX ou links externos.
 					</p>
 				</section>
 
@@ -58,10 +61,10 @@ const currentYear = computed(() => new Date().getFullYear());
 					<h2 class="text-xl font-serif text-slate-900 font-medium">4. Lista de Presentes e Transações Financeiras</h2>
 					<ul class="list-disc pl-6 space-y-2">
 						<li>
-							<strong>Cotas de Presente (PIX):</strong> As cotas são pagas diretamente de convidado para a chave PIX do casal cadastrado. O Wedding Gift gera a carga útil (Payload) e o QR Code de pagamento, mas não atua como intermediário financeiro retendo valores.
+							<strong class="font-medium text-slate-800">Cotas de Presente (PIX):</strong> As cotas são pagas diretamente de convidado para a chave PIX do casal cadastrado. O Wedding Gift gera a carga útil (Payload) e o QR Code de pagamento, mas não atua como intermediário financeiro retendo valores.
 						</li>
 						<li>
-							<strong>Links de Lojas Externas:</strong> Para presentes em lojas parceiras, o Wedding Gift redireciona o convidado para o link externo. Toda a compra, entrega e termos associados à transação são de responsabilidade exclusiva da loja terceira escolhida.
+							<strong class="font-medium text-slate-800">Links de Lojas Externas:</strong> Para presentes em lojas parceiras, o Wedding Gift redireciona o convidado para o link externo. Toda a compra, entrega e termos associados à transação são de responsabilidade exclusiva da loja terceira escolhida.
 						</li>
 					</ul>
 				</section>

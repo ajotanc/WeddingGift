@@ -18,3 +18,5 @@ export {
 
 export const DEFAULT_TITLE_FONT = "playfair";
 export const DEFAULT_BODY_FONT = "inter";
+
+export const PROJECT_NAME = import.meta.env.VITE_PROJECT_NAME;

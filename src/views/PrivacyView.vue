@@ -6,11 +6,14 @@ const currentYear = computed(() => new Date().getFullYear());
 </script>
 
 <template>
-	<div class="min-h-screen bg-slate-50 text-slate-600 font-sans antialiased selection:bg-primary selection:text-white">
+	<div class="min-h-screen bg-champagne text-slate-800 font-sans antialiased selection:bg-primary/20 selection:text-primary relative overflow-hidden">
+		<!-- Ambient top glowing color gradient -->
+		<div class="absolute top-0 right-0 left-0 h-[600px] bg-gradient-to-b from-primary/15 via-champagne/5 to-transparent pointer-events-none -z-10"></div>
+
 		<!-- Header -->
-		<header class="bg-white border-b border-slate-100 sticky top-0 z-50 backdrop-blur-md bg-white/95">
+		<header class="bg-champagne/80 border-b border-slate-200/60 sticky top-0 z-50 backdrop-blur-md">
 			<div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-				<router-link to="/" class="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors text-sm font-medium">
+				<router-link to="/" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium">
 					<ArrowLeft class="w-4 h-4" />
 					<span>Voltar ao início</span>
 				</router-link>
@@ -19,24 +22,24 @@ const currentYear = computed(() => new Date().getFullYear());
 		</header>
 
 		<!-- Content -->
-		<main class="max-w-3xl mx-auto px-6 py-12 md:py-20 space-y-12">
+		<main class="max-w-3xl mx-auto px-6 py-12 md:py-20 space-y-12 relative z-10">
 			<!-- Title Section -->
 			<div class="space-y-4 text-center md:text-left">
 				<div class="inline-flex w-12 h-12 bg-primary/10 text-primary rounded-2xl items-center justify-center">
 					<ShieldCheck class="w-6 h-6" />
 				</div>
-				<h1 class="text-3xl md:text-4xl font-serif text-slate-900 leading-tight">Política de Privacidade</h1>
-				<p class="text-slate-500 font-light text-base md:text-lg max-w-2xl leading-relaxed">
+				<h1 class="text-3xl md:text-4xl font-serif text-slate-900 font-semibold leading-tight tracking-tight">Política de Privacidade</h1>
+				<p class="text-slate-600 font-light text-base md:text-lg max-w-2xl leading-relaxed">
 					Entenda como coletamos, utilizamos, armazenamos e protegemos seus dados pessoais de acordo com a Lei Geral de Proteção de Dados (LGPD).
 				</p>
 			</div>
 
 			<!-- Document Body -->
-			<article class="bg-white rounded-3xl p-6 md:p-10 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 text-slate-600 leading-relaxed font-light">
+			<article class="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-xl shadow-primary/5 space-y-8 text-slate-600 leading-relaxed font-light">
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">1. Quem somos</h2>
 					<p>
-						Esta Política de Privacidade descreve como o <strong>WeddingGift</strong> ("WeddingGift", "nós", "nossa plataforma"), coleta, usa, armazena, compartilha e protege dados pessoais de quem utiliza o site e o aplicativo de listas de presentes, RSVP e cotas de lua de mel.
+						Esta Política de Privacidade descreve como o <strong>WeddingGift</strong> ("WeddingGift", "nossa plataforma"), coleta, usa, armazena, compartilha e protege dados pessoais de quem utiliza o site e o aplicativo de listas de presentes, RSVP e cotas de lua de mel.
 					</p>
 					<p>
 						Esta política está em conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD) e, no que for aplicável a usuários fora do Brasil, busca observar também princípios do Regulamento Geral de Proteção de Dados da União Europeia (GDPR).
@@ -86,7 +89,7 @@ const currentYear = computed(() => new Date().getFullYear());
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">3. Por que coletamos esses dados (finalidades e bases legais)</h2>
 					<div class="overflow-x-auto">
-						<table class="w-full text-sm text-left text-slate-500 border-collapse">
+						<table class="w-full text-sm text-left text-slate-600 border-collapse">
 							<thead>
 								<tr class="border-b border-slate-200 text-slate-900">
 									<th class="py-2 font-semibold">Dado</th>
@@ -94,7 +97,7 @@ const currentYear = computed(() => new Date().getFullYear());
 									<th class="py-2 font-semibold">Base legal (LGPD)</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-slate-100">
+							<tbody class="divide-y divide-slate-200">
 								<tr>
 									<td class="py-3 pr-4 font-medium text-slate-900">Nome, e-mail, telefone do convidado (RSVP)</td>
 									<td class="py-3 pr-4">Permitir que o casal organize a recepção</td>
@@ -167,7 +170,7 @@ const currentYear = computed(() => new Date().getFullYear());
 						Não vendemos dados pessoais. Compartilhamos dados apenas com prestadores de serviço estritamente necessários para o funcionamento da plataforma ("operadores" e "suboperadores"):
 					</p>
 					<div class="overflow-x-auto">
-						<table class="w-full text-sm text-left text-slate-500 border-collapse">
+						<table class="w-full text-sm text-left text-slate-600 border-collapse">
 							<thead>
 								<tr class="border-b border-slate-200 text-slate-900">
 									<th class="py-2 font-semibold">Terceiro</th>
@@ -175,7 +178,7 @@ const currentYear = computed(() => new Date().getFullYear());
 									<th class="py-2 font-semibold">Dados envolvidos</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-slate-100">
+							<tbody class="divide-y divide-slate-200">
 								<tr>
 									<td class="py-3 pr-4 font-medium text-slate-900">Google (OAuth / Identity)</td>
 									<td class="py-3 pr-4">Autenticação social</td>

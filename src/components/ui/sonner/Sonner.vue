@@ -9,13 +9,35 @@ import {
 	XIcon,
 } from "lucide-vue-next";
 import type { ToasterProps } from "vue-sonner";
-import { Toaster as Sonner } from "vue-sonner";
+import { Toaster as Sonner, toast } from "vue-sonner";
+import { onMounted, onUnmounted } from "vue";
 
 const props = defineProps<ToasterProps>();
+
+const handleToastClick = (e: MouseEvent) => {
+	const target = e.target as HTMLElement | null;
+	const toastEl = target?.closest("[data-sonner-toast]");
+	if (toastEl) {
+		const toastId = toastEl.getAttribute("data-styled-id") || toastEl.getAttribute("data-id");
+		if (toastId) {
+			toast.dismiss(toastId);
+		} else {
+			toast.dismiss();
+		}
+	}
+};
+
+onMounted(() => {
+	document.addEventListener("click", handleToastClick);
+});
+
+onUnmounted(() => {
+	document.removeEventListener("click", handleToastClick);
+});
 </script>
 
 <template>
-  <Sonner :class="cn('toaster group', props.class)" :style="{
+  <Sonner :class="cn('toaster group [&_[data-sonner-toast]]:cursor-pointer', props.class)" :style="{
     '--normal-bg': 'var(--popover)',
     '--normal-text': 'var(--popover-foreground)',
     '--normal-border': 'var(--border)',

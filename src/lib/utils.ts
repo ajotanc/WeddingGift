@@ -61,3 +61,28 @@ export function sortBy<T>(
 			: strB.localeCompare(strA);
 	});
 }
+
+export const cleanHtml = (html: string) => {
+  if (!html) return "";
+
+  return html
+    .replace(/<br\s*\/?>|<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n\s*\n/g, "\n")
+    .trim();
+};
+
+export const limitWords = (text: string, limit: number) => {
+  if (!text) return "";
+
+  const cleanText = text.replace(/&quot;/g, '"').trim();
+  const words = cleanText.split(/\s+/);
+
+  if (words.length <= limit) return cleanText;
+
+  return `${words.slice(0, limit)
+    .join(" ")
+    .replace(/[.,!?;:]+$/, "")
+    .trim()}...`;
+};

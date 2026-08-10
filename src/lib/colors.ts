@@ -128,12 +128,44 @@ export function hslToHex({ h, s, l }: HSLColor): HexColor {
 	return `#${toHex(r)}${toHex(g)}${toHex(b)}` as HexColor;
 }
 
-export const DEFAULT_PRIMARY_COLOR = "#ec4899";
-export const DEFAULT_TEXT_COLOR = "#475569";
-export const DEFAULT_BACKGROUND_COLOR = "#ffffff";
+/**
+ * Converte uma cor hexadecimal (#RGB ou #RRGGBB) para a string de canais
+ * "R G B" (ex: "197 168 128"), formato exigido pelo Tailwind para permitir
+ * opacidade dinâmica via `rgb(var(--color-x) / <alpha-value>)`.
+ *
+ * @param hex - Cor em formato hexadecimal, com ou sem `#`.
+ * @returns String "R G B" sem vírgulas.
+ * @throws {TypeError} Se a string não representar uma cor hexadecimal válida.
+ *
+ * @example
+ * hexToRgbChannels('#C5A880'); // "197 168 128"
+ */
+export function hexToRgbChannels(hex: string): string {
+	const match = HEX_PATTERN.exec(hex.trim());
 
-export const FREE_PRIMARY_COLORS = ["#ec4899", "#2e7d32", "#d4af37", "#1976d2"];
+	if (!match?.groups) {
+		throw new TypeError(`hexToRgbChannels: cor hexadecimal inválida -> "${hex}"`);
+	}
+
+	const fullHex =
+		match.groups.hex.length === 3
+			? match.groups.hex.replace(/(.)/g, "$1$1")
+			: match.groups.hex;
+
+	const [r, g, b] = [0, 2, 4].map((offset) =>
+		Number.parseInt(fullHex.slice(offset, offset + 2), 16),
+	);
+
+	return `${r} ${g} ${b}`;
+}
+
+export const DEFAULT_PRIMARY_COLOR = "#C5A880";
+export const DEFAULT_TEXT_COLOR = "#5A4F4A";
+export const DEFAULT_BACKGROUND_COLOR = "#FAF8F6";
+
+export const FREE_PRIMARY_COLORS = ["#C5A880", "#ec4899", "#2e7d32", "#d4af37", "#1976d2"];
 export const FREE_BACKGROUND_COLORS = [
+	"#FAF8F6",
 	"#ffffff",
 	"#f8fafc",
 	"#fffaf0",
@@ -141,15 +173,15 @@ export const FREE_BACKGROUND_COLORS = [
 ];
 
 export const DEFAULT_SLATE_COLORS = {
-	"50": "#f8fafc",
-	"100": "#f1f5f9",
-	"200": "#e2e8f0",
-	"300": "#cbd5e1",
-	"400": "#94a3b8",
-	"500": "#64748b",
-	"600": "#475569",
-	"700": "#334155",
-	"800": "#1e293b",
-	"900": "#0f172a",
-	"950": "#020617",
+	"50": "#FAF8F6",
+	"100": "#F5F0EB",
+	"200": "#E8E2DD",
+	"300": "#D4C9BF",
+	"400": "#B8A99A",
+	"500": "#8C7A6B",
+	"600": "#5A4F4A",
+	"700": "#423834",
+	"800": "#2C2421",
+	"900": "#1E1A17",
+	"950": "#120F0D",
 } as const;
