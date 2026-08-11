@@ -100,9 +100,30 @@ const showCheckoutModal = ref(false);
 const selectedPlan = ref<"quarterly" | "semestral">("quarterly");
 const isSimulatingPayment = ref(false);
 
-const openCheckout = (plan: "quarterly" | "semestral") => {
+const isGeneratingCheckout = ref(false);
+
+const openCheckout = async (plan: "quarterly" | "semestral") => {
 	selectedPlan.value = plan;
-	showCheckoutModal.value = true;
+	if (!tenant.value) return;
+
+	isGeneratingCheckout.value = true;
+	try {
+		toast.info("Abrindo o Checkout do Mercado Pago...");
+		const res = await PaymentService.createSubscriptionCheckout({
+			tenantId: tenant.value.$id,
+			plan,
+		});
+		if (res.init_point) {
+			window.location.href = res.init_point;
+		} else {
+			showCheckoutModal.value = true;
+		}
+	} catch (e) {
+		console.error("Erro ao gerar checkout:", e);
+		showCheckoutModal.value = true;
+	} finally {
+		isGeneratingCheckout.value = false;
+	}
 };
 
 const handleConfirmSimulatedPayment = async () => {
@@ -143,6 +164,7 @@ const showUpgradeToast = () => {
 };
 
 const hostName = ref("");
+console.log(tenant.value)
 
 onMounted(() => {
 	for (const f of Object.keys(FONTS_REGISTRY)) {
@@ -153,6 +175,11 @@ onMounted(() => {
 const zodSchema = z.object({
 	groom_name: z.string().min(2, "Nome muito curto").optional(),
 	bride_name: z.string().min(2, "Nome muito curto").optional(),
+	co_owner_email: z
+		.string()
+		.email("E-mail inválido")
+		.optional()
+		.or(z.literal("")),
 	slug: z
 		.string()
 		.min(3, "Mínimo de 3 caracteres")
@@ -231,6 +258,7 @@ const { handleSubmit, errors, setValues, defineField } =
 		initialValues: {
 			groom_name: "",
 			bride_name: "",
+			co_owner_email: "",
 			slug: "",
 			pix_key: "",
 			pix_consent: false,
@@ -260,6 +288,7 @@ const { handleSubmit, errors, setValues, defineField } =
 
 const [groom_name] = defineField("groom_name");
 const [bride_name] = defineField("bride_name");
+const [co_owner_email] = defineField("co_owner_email");
 const [slug] = defineField("slug");
 const [pix_key] = defineField("pix_key");
 const [pix_consent] = defineField("pix_consent");
@@ -376,11 +405,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-							label: "Upgrade",
-							onClick: () => {
-								activeTab.value = "subscription";
-							},
+						label: "Upgrade",
+						onClick: () => {
+							activeTab.value = "subscription";
 						},
+					},
 			});
 			return;
 		}
@@ -395,11 +424,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-							label: "Upgrade",
-							onClick: () => {
-								activeTab.value = "subscription";
-							},
+						label: "Upgrade",
+						onClick: () => {
+							activeTab.value = "subscription";
 						},
+					},
 			});
 			return;
 		}
@@ -746,6 +775,7 @@ const loadSettings = () => {
 		setValues({
 			groom_name: tenant.value.groom_name || "",
 			bride_name: tenant.value.bride_name || "",
+			co_owner_email: tenant.value.co_owner_email || "",
 			slug: tenant.value.slug || "",
 			pix_key: tenant.value.pix_key || "",
 			pix_consent: !!tenant.value.pix_key,
@@ -880,13 +910,13 @@ onMounted(async () => {
 	const state = route.query.state as string;
 
 	if (code && state && tenant.value?.$id === state) {
-		toast.info("Processando conexão...");
+		toast.info("Processando conexão com o Mercado Pago...");
 		try {
-			// AQUI: Chame sua Appwrite Function que troca o code pelo token
-			// await AppwriteFunctions.exchangeCodeForToken(code);
-			toast.success("Conta conectada com sucesso!");
+			await PaymentService.exchangeCodeForToken(code, tenant.value.$id);
+			toast.success("Conta do Mercado Pago conectada com sucesso!");
 		} catch (e) {
-			toast.error("Erro ao conectar conta.");
+			console.error("Erro ao conectar conta:", e);
+			toast.error("Erro ao conectar conta do Mercado Pago.");
 		}
 		window.history.replaceState({}, document.title, window.location.pathname);
 	}
@@ -967,14 +997,23 @@ const connectToMarketPago = () => {
 						<FormGroup label="Nome da Noiva" :error="errors.bride_name">
 							<Input v-model="bride_name" placeholder="Ex: Maria" class="bg-slate-50/50" />
 						</FormGroup>
+						<FormGroup label="E-mail do(a) Co-Administrador(a)" :error="errors.co_owner_email" class="md:col-span-2">
+							<Input v-model="co_owner_email" type="email" class="bg-slate-50/50" />
+							<p class="text-xs text-slate-500 mt-1">
+								Cadastre o e-mail do(a) co-administrador(a) para que ele(a) também consiga fazer login com a própria
+								conta do Google e gerenciar o painel administrativo.
+							</p>
+						</FormGroup>
 						<FormGroup label="Chave PIX" :error="errors.pix_key">
 							<Input v-model="pix_key" placeholder="CPF, Email ou Telefone" class="bg-slate-50/50" />
 							<div class="mt-2.5 p-3.5 bg-amber-50/40 border border-amber-100 rounded-xl space-y-2">
 								<div class="text-[10px] text-amber-800 font-light leading-normal flex items-start gap-1.5">
 									<span class="font-bold shrink-0 mt-0.5">⚠️ Recomendação LGPD:</span>
 									<span>
-										Para proteger sua privacidade, recomendamos fortemente o uso de uma <strong>chave aleatória (EVP)</strong>. 
-										Evite usar chaves com dados pessoais (CPF, e-mail, telefone), pois a chave será exibida publicamente na página de presentes.
+										Para proteger sua privacidade, recomendamos fortemente o uso de uma <strong>chave aleatória
+											(EVP)</strong>.
+										Evite usar chaves com dados pessoais (CPF, e-mail, telefone), pois a chave será exibida publicamente
+										na página de presentes.
 									</span>
 								</div>
 								<div class="flex items-start gap-2 pt-1.5 border-t border-amber-100/50">
@@ -1302,11 +1341,8 @@ const connectToMarketPago = () => {
 
 						<div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between gap-4">
 							<div class="flex items-center gap-4">
-								<div class="w-12 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center">
-									<svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-										<path
-											d="M12 0C5.37 0 0 5.37 0 12c0 6.63 5.37 12 12 12 6.63 0 12-5.37 12-12C24 5.37 18.63 0 12 0zm0 21.6c-5.3 0-9.6-4.3-9.6-9.6 0-5.3 4.3-9.6 9.6-9.6 5.3 0 9.6 4.3 9.6 9.6 0 5.3-4.3 9.6-9.6 9.6z" />
-									</svg>
+								<div class="w-32 h-14 bg-primary rounded-xl flex items-center justify-center">
+									<img src="/images/mp.svg" alt="MercadoPago" class="w-full" />
 								</div>
 								<div>
 									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar Mercado Pago" }}</h4>

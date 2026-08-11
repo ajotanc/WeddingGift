@@ -1,0 +1,10 @@
+{
+  "name": "mp-payment-create",
+  "version": "1.0.0",
+  "description": "Appwrite Function para criar cobranças do Mercado Pago (Presentes via PIX e Assinaturas via Checkout Pro)",
+  "main": "src/main.js",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^14.1.0"
+  }
+}

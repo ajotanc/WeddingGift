@@ -61,6 +61,7 @@ export interface ITenant extends Models.Row {
 	mp_user_id: string | null;
 	mp_access_token: string | null;
 	mp_refresh_token: string | null;
+	co_owner_email?: string | null;
 	is_premium: boolean;
 }
 
@@ -84,6 +85,20 @@ export const TenantService = {
 					"faqs.*",
 					"schedules.*",
 				]),
+			],
+		});
+
+		if (res.rows.length === 0) return null;
+		return res.rows[0];
+	},
+
+	async getByCoOwner(email: string): Promise<ITenant | null> {
+		if (!email) return null;
+		const res = await tables.listRows<ITenant>({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_TENANTS,
+			queries: [
+				Query.equal("co_owner_email", email.toLowerCase().trim()),
 			],
 		});
 

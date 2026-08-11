@@ -193,10 +193,22 @@ export const useAuthStore = defineStore("auth", {
 					}
 
 					try {
-						const t = await TenantService.get(sessionUser.$id);
+						let t = await TenantService.get(sessionUser.$id);
+						if (!t && sessionUser.email) {
+							t = await TenantService.getByCoOwner(sessionUser.email);
+						}
 						this.tenant = this.sanitizeTenant(t);
 					} catch (e) {
-						this.tenant = null;
+						if (sessionUser.email) {
+							try {
+								const tCoOwner = await TenantService.getByCoOwner(sessionUser.email);
+								this.tenant = this.sanitizeTenant(tCoOwner);
+							} catch (err) {
+								this.tenant = null;
+							}
+						} else {
+							this.tenant = null;
+						}
 					}
 
 					try {

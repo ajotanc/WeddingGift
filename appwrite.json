@@ -40,9 +40,9 @@
     },
     "functions": [
         {
-            "$id": "6a344d440006be211283",
-            "name": "mercado-pago-webhook",
-            "runtime": "node-16.0",
+            "$id": "mp-oauth",
+            "name": "mp-oauth",
+            "runtime": "node-22",
             "specification": "s-0.5vcpu-512mb",
             "execute": [
                 "any"
@@ -57,7 +57,47 @@
             "logging": true,
             "entrypoint": "src/main.js",
             "commands": "npm install",
-            "path": "functions/mercado-pago-webhook"
+            "path": "functions/mp-oauth"
+        },
+        {
+            "$id": "mp-webhook",
+            "name": "mp-webhook",
+            "runtime": "node-22",
+            "specification": "s-0.5vcpu-512mb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "path": "functions/mp-webhook"
+        },
+        {
+            "$id": "mp-payment-create",
+            "name": "mp-payment-create",
+            "runtime": "node-22",
+            "specification": "s-0.5vcpu-512mb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "path": "functions/mp-payment-create"
         },
         {
             "$id": "cascade-delete",
@@ -82,7 +122,7 @@
         {
             "$id": "ai-helper",
             "name": "ai-helper",
-            "runtime": "node-22.0",
+            "runtime": "node-22",
             "specification": "s-0.5vcpu-512mb",
             "execute": [
                 "users"
@@ -1073,6 +1113,52 @@
     ],
     "tables": [
         {
+            "$id": "product_links",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "6a2cb37d0034ac2b40c6",
+            "name": "product_links",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "product",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "oneToMany",
+                    "twoWay": true,
+                    "twoWayKey": "links",
+                    "onDelete": "cascade",
+                    "side": "child"
+                },
+                {
+                    "key": "store",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "url",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
             "$id": "tenants",
             "$permissions": [
                 "create(\"users\")",
@@ -1084,15 +1170,16 @@
             "databaseId": "6a2cb37d0034ac2b40c6",
             "name": "tenants",
             "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
+            "rowSecurity": true,
+            "columns": [
                 {
                     "key": "slug",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "couple_name",
@@ -1100,7 +1187,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "groom_name",
@@ -1108,7 +1196,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "bride_name",
@@ -1116,7 +1205,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "couple_history",
@@ -1124,7 +1214,8 @@
                     "required": false,
                     "array": false,
                     "size": 2048,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "pix_key",
@@ -1132,7 +1223,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "status",
@@ -1140,15 +1232,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "event_date",
-                    "type": "datetime",
-                    "required": false,
-                    "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "event_time",
@@ -1156,7 +1241,8 @@
                     "required": false,
                     "array": false,
                     "size": 5,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "event_location",
@@ -1164,7 +1250,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "primary_color",
@@ -1172,7 +1259,8 @@
                     "required": false,
                     "array": false,
                     "size": 7,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "background_color",
@@ -1180,7 +1268,8 @@
                     "required": false,
                     "array": false,
                     "size": 7,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "text_color",
@@ -1188,7 +1277,8 @@
                     "required": false,
                     "array": false,
                     "size": 7,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "background_image",
@@ -1196,16 +1286,17 @@
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "guest_limit",
                     "type": "integer",
                     "required": false,
                     "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
                 },
                 {
                     "key": "show_countdown",
@@ -1219,7 +1310,7 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "products",
+                    "relatedTable": "products",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "tenant",
@@ -1231,7 +1322,7 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "messages",
+                    "relatedTable": "messages",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "tenant",
@@ -1243,7 +1334,7 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "rsvps",
+                    "relatedTable": "rsvps",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "tenant",
@@ -1256,7 +1347,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "logo_url",
@@ -1264,7 +1356,8 @@
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "show_gallery",
@@ -1285,7 +1378,7 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "faqs",
+                    "relatedTable": "faqs",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "tenant",
@@ -1297,7 +1390,7 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "gallery",
+                    "relatedTable": "gallery",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "tenant",
@@ -1309,7 +1402,7 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "schedules",
+                    "relatedTable": "schedules",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "tenant",
@@ -1328,18 +1421,18 @@
                     "type": "double",
                     "required": false,
                     "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
+                    "default": null,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308
                 },
                 {
                     "key": "event_longitude",
                     "type": "double",
                     "required": false,
                     "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
+                    "default": null,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308
                 },
                 {
                     "key": "plan",
@@ -1347,7 +1440,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "premium_until",
@@ -1355,7 +1449,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "title_font",
@@ -1363,7 +1458,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "body_font",
@@ -1371,7 +1467,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "music_url",
@@ -1379,7 +1476,8 @@
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "ambient_effect",
@@ -1387,7 +1485,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "show_dress_code",
@@ -1402,333 +1501,59 @@
                     "required": false,
                     "array": false,
                     "size": 2048,
-                    "default": null
-                }
-            ],
-            "indexes": [],
-            "columns": [
-                {
-                    "key": "slug",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "couple_name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "groom_name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "bride_name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "couple_history",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 2048,
-                    "default": null
-                },
-                {
-                    "key": "pix_key",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "status",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "event_date",
-                    "type": "datetime",
-                    "required": false,
-                    "array": false,
-                    "format": "",
-                    "default": null
-                },
-                {
-                    "key": "event_time",
                     "type": "string",
                     "required": false,
                     "array": false,
-                    "size": 5,
-                    "default": null
+                    "size": 10,
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "event_location",
+                    "key": "co_owner_email",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "primary_color",
+                    "key": "mp_user_id",
                     "type": "string",
                     "required": false,
                     "array": false,
-                    "size": 7,
-                    "default": null
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "background_color",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 7,
-                    "default": null
-                },
-                {
-                    "key": "text_color",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 7,
-                    "default": null
-                },
-                {
-                    "key": "background_image",
+                    "key": "mp_access_token",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "guest_limit",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "show_countdown",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "products",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "products",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "tenant",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "messages",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "messages",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "tenant",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "rsvps",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "rsvps",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "tenant",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "quote",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "logo_url",
+                    "key": "mp_refresh_token",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "show_gallery",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "show_faq",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "faqs",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "faqs",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "tenant",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "gallery",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "gallery",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "tenant",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "schedules",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "schedules",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "tenant",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "show_schedule",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "event_latitude",
-                    "type": "double",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "event_longitude",
-                    "type": "double",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "plan",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "premium_until",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "title_font",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "body_font",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "music_url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "ambient_effect",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "show_dress_code",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "dress_code_text",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 2048,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 }
-            ]
+            ],
+            "indexes": []
         },
         {
-            "$id": "products",
+            "$id": "purchases",
             "$permissions": [
                 "create(\"users\")",
                 "read(\"users\")",
@@ -1736,78 +1561,59 @@
                 "delete(\"users\")"
             ],
             "databaseId": "6a2cb37d0034ac2b40c6",
-            "name": "products",
+            "name": "purchases",
             "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
+            "rowSecurity": true,
+            "columns": [
                 {
-                    "key": "type",
+                    "key": "price_paid",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "price",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "desired_quantity",
+                    "key": "quantity",
                     "type": "integer",
                     "required": false,
                     "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
                 },
                 {
-                    "key": "claimed_quantity",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "image_url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "category",
+                    "key": "method",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "links",
+                    "key": "product",
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "product_links",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "product",
-                    "onDelete": "cascade",
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6a304ef600111b5e867f",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "guest",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "guests",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6a304f100009958c2a11",
+                    "onDelete": "setNull",
                     "side": "parent"
                 },
                 {
@@ -1815,173 +1621,15 @@
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "products",
-                    "onDelete": "cascade",
-                    "side": "child"
-                }
-            ],
-            "indexes": [],
-            "columns": [
-                {
-                    "key": "type",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "price",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "desired_quantity",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "claimed_quantity",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "image_url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "category",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "links",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "product_links",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "product",
-                    "onDelete": "cascade",
+                    "relatedTable": "tenants",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6a304f3100115ac47e39",
+                    "onDelete": "setNull",
                     "side": "parent"
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "products",
-                    "onDelete": "cascade",
-                    "side": "child"
-                }
-            ]
-        },
-        {
-            "$id": "product_links",
-            "$permissions": [
-                "create(\"users\")",
-                "read(\"users\")",
-                "update(\"users\")",
-                "delete(\"users\")"
-            ],
-            "databaseId": "6a2cb37d0034ac2b40c6",
-            "name": "product_links",
-            "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "store",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "product",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "products",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "links",
-                    "onDelete": "cascade",
-                    "side": "child"
                 }
             ],
-            "indexes": [],
-            "columns": [
-                {
-                    "key": "store",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "product",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "products",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "links",
-                    "onDelete": "cascade",
-                    "side": "child"
-                }
-            ]
+            "indexes": []
         },
         {
             "$id": "messages",
@@ -1994,77 +1642,14 @@
             "databaseId": "6a2cb37d0034ac2b40c6",
             "name": "messages",
             "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "content",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 2048,
-                    "default": null
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a30004c00257a940193",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "messages",
-                    "onDelete": "cascade",
-                    "side": "child"
-                },
-                {
-                    "key": "likes",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 255,
-                    "default": null
-                }
-            ],
-            "indexes": [],
+            "rowSecurity": true,
             "columns": [
                 {
-                    "key": "content",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 2048,
-                    "default": null
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a30004c00257a940193",
-                    "onDelete": "cascade",
-                    "side": "parent"
-                },
-                {
                     "key": "tenant",
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "tenants",
+                    "relatedTable": "tenants",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "messages",
@@ -2072,14 +1657,92 @@
                     "side": "child"
                 },
                 {
+                    "key": "content",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guest",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "guests",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6a30004c00257a940193",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                },
+                {
                     "key": "likes",
                     "type": "string",
                     "required": false,
                     "array": true,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 }
-            ]
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "faqs",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "6a2cb37d0034ac2b40c6",
+            "name": "faqs",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "tenant",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "tenants",
+                    "relationType": "oneToMany",
+                    "twoWay": true,
+                    "twoWayKey": "faqs",
+                    "onDelete": "cascade",
+                    "side": "child"
+                },
+                {
+                    "key": "question",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "answer",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "order",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                }
+            ],
+            "indexes": []
         },
         {
             "$id": "guests",
@@ -2093,42 +1756,7 @@
             "databaseId": "6a2cb37d0034ac2b40c6",
             "name": "guests",
             "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "email",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "phone",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 25,
-                    "default": null
-                },
-                {
-                    "key": "photo_url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                }
-            ],
-            "indexes": [],
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "name",
@@ -2136,7 +1764,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "email",
@@ -2144,7 +1773,8 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "phone",
@@ -2152,7 +1782,8 @@
                     "required": false,
                     "array": false,
                     "size": 25,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "photo_url",
@@ -2160,9 +1791,11 @@
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 }
-            ]
+            ],
+            "indexes": []
         },
         {
             "$id": "rsvps",
@@ -2175,64 +1808,14 @@
             "databaseId": "6a2cb37d0034ac2b40c6",
             "name": "rsvps",
             "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "email",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "phone",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 25,
-                    "default": null
-                },
-                {
-                    "key": "status",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "total_adults",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "total_children",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
+            "rowSecurity": true,
+            "columns": [
                 {
                     "key": "tenant",
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "tenants",
+                    "relatedTable": "tenants",
                     "relationType": "oneToMany",
                     "twoWay": true,
                     "twoWayKey": "rsvps",
@@ -2240,19 +1823,74 @@
                     "side": "child"
                 },
                 {
+                    "key": "name",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "phone",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 25,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "total_adults",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "total_children",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
                     "key": "message",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "guest",
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "guests",
+                    "relatedTable": "guests",
                     "relationType": "manyToOne",
                     "twoWay": false,
                     "twoWayKey": "6a30a15f0008af2d1feb",
@@ -2265,7 +1903,8 @@
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "companions_names",
@@ -2273,470 +1912,114 @@
                     "required": false,
                     "array": true,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 }
             ],
-            "indexes": [],
+            "indexes": []
+        },
+        {
+            "$id": "products",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "6a2cb37d0034ac2b40c6",
+            "name": "products",
+            "enabled": true,
+            "rowSecurity": true,
             "columns": [
+                {
+                    "key": "tenant",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "tenants",
+                    "relationType": "oneToMany",
+                    "twoWay": true,
+                    "twoWayKey": "products",
+                    "onDelete": "cascade",
+                    "side": "child"
+                },
+                {
+                    "key": "type",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
                 {
                     "key": "name",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "email",
+                    "key": "price",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "phone",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 25,
-                    "default": null
-                },
-                {
-                    "key": "status",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "total_adults",
+                    "key": "desired_quantity",
                     "type": "integer",
                     "required": false,
                     "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
                 },
                 {
-                    "key": "total_children",
+                    "key": "claimed_quantity",
                     "type": "integer",
                     "required": false,
                     "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
                 },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "rsvps",
-                    "onDelete": "cascade",
-                    "side": "child"
-                },
-                {
-                    "key": "message",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a30a15f0008af2d1feb",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                },
-                {
-                    "key": "dietary_restrictions",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "companions_names",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 255,
-                    "default": null
-                }
-            ]
-        },
-        {
-            "$id": "purchases",
-            "$permissions": [
-                "create(\"users\")",
-                "read(\"users\")",
-                "update(\"users\")",
-                "delete(\"users\")"
-            ],
-            "databaseId": "6a2cb37d0034ac2b40c6",
-            "name": "purchases",
-            "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "price_paid",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "quantity",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "method",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "product",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "products",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a304ef600111b5e867f",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a304f100009958c2a11",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a304f3100115ac47e39",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                }
-            ],
-            "indexes": [],
-            "columns": [
-                {
-                    "key": "price_paid",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "quantity",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "method",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "product",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "products",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a304ef600111b5e867f",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a304f100009958c2a11",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a304f3100115ac47e39",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                }
-            ]
-        },
-        {
-            "$id": "faqs",
-            "$permissions": [
-                "create(\"users\")",
-                "read(\"users\")",
-                "update(\"users\")",
-                "delete(\"users\")"
-            ],
-            "databaseId": "6a2cb37d0034ac2b40c6",
-            "name": "faqs",
-            "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "question",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "answer",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "order",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "faqs",
-                    "onDelete": "cascade",
-                    "side": "child"
-                }
-            ],
-            "indexes": [],
-            "columns": [
-                {
-                    "key": "question",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "answer",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "order",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "min": null,
-                    "max": null,
-                    "default": null
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "faqs",
-                    "onDelete": "cascade",
-                    "side": "child"
-                }
-            ]
-        },
-        {
-            "$id": "gallery",
-            "$permissions": [
-                "create(\"users\")",
-                "read(\"users\")",
-                "update(\"users\")",
-                "delete(\"users\")"
-            ],
-            "databaseId": "6a2cb37d0034ac2b40c6",
-            "name": "gallery",
-            "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
                 {
                     "key": "image_url",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "likes",
+                    "key": "category",
                     "type": "string",
                     "required": false,
-                    "array": true,
+                    "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
-                    "key": "tenant",
+                    "key": "links",
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "tenants",
+                    "relatedTable": "product_links",
                     "relationType": "oneToMany",
                     "twoWay": true,
-                    "twoWayKey": "gallery",
+                    "twoWayKey": "product",
                     "onDelete": "cascade",
-                    "side": "child"
-                },
-                {
-                    "key": "is_public",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "caption",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a336252002a8505a8f1",
-                    "onDelete": "setNull",
                     "side": "parent"
                 }
             ],
-            "indexes": [],
-            "columns": [
-                {
-                    "key": "image_url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "likes",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "gallery",
-                    "onDelete": "cascade",
-                    "side": "child"
-                },
-                {
-                    "key": "is_public",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": null
-                },
-                {
-                    "key": "caption",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "guest",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "guests",
-                    "relationType": "manyToOne",
-                    "twoWay": false,
-                    "twoWayKey": "6a336252002a8505a8f1",
-                    "onDelete": "setNull",
-                    "side": "parent"
-                }
-            ]
+            "indexes": []
         },
         {
             "$id": "schedules",
@@ -2749,62 +2032,28 @@
             "databaseId": "6a2cb37d0034ac2b40c6",
             "name": "schedules",
             "enabled": true,
-            "documentSecurity": true,
-            "attributes": [
-                {
-                    "key": "title",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "description",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "hour",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 5,
-                    "default": null
-                },
-                {
-                    "key": "icon",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null
-                },
-                {
-                    "key": "tenant",
-                    "type": "relationship",
-                    "required": false,
-                    "array": false,
-                    "relatedCollection": "tenants",
-                    "relationType": "oneToMany",
-                    "twoWay": true,
-                    "twoWayKey": "schedules",
-                    "onDelete": "cascade",
-                    "side": "child"
-                }
-            ],
-            "indexes": [],
+            "rowSecurity": true,
             "columns": [
                 {
+                    "key": "tenant",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "tenants",
+                    "relationType": "oneToMany",
+                    "twoWay": true,
+                    "twoWayKey": "schedules",
+                    "onDelete": "cascade",
+                    "side": "child"
+                },
+                {
                     "key": "title",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "description",
@@ -2812,7 +2061,8 @@
                     "required": false,
                     "array": false,
                     "size": 1024,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "hour",
@@ -2820,7 +2070,8 @@
                     "required": false,
                     "array": false,
                     "size": 5,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "icon",
@@ -2828,21 +2079,85 @@
                     "required": false,
                     "array": false,
                     "size": 255,
-                    "default": null
-                },
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "gallery",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "6a2cb37d0034ac2b40c6",
+            "name": "gallery",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
                 {
                     "key": "tenant",
                     "type": "relationship",
                     "required": false,
                     "array": false,
-                    "relatedCollection": "tenants",
+                    "relatedTable": "tenants",
                     "relationType": "oneToMany",
                     "twoWay": true,
-                    "twoWayKey": "schedules",
+                    "twoWayKey": "gallery",
                     "onDelete": "cascade",
                     "side": "child"
+                },
+                {
+                    "key": "image_url",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "likes",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "is_public",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "caption",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guest",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "guests",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6a336252002a8505a8f1",
+                    "onDelete": "setNull",
+                    "side": "parent"
                 }
-            ]
+            ],
+            "indexes": []
         }
     ],
     "buckets": [

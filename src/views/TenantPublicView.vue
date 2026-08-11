@@ -5,13 +5,15 @@ import "dayjs/locale/pt-br";
 import { useTenant } from "@/composables/useTenant";
 import { EFFECT_CONFIGS, type Particle } from "@/lib/effect";
 import { formatMoney, getProductPrice } from "@/lib/money";
-import { generatePixPayload, sortBy } from "@/lib/utils";
+import { generatePixPayload } from "@/lib/utils";
 import { GalleryService } from "@/services/gallery.service";
 import type { IGalleryImage } from "@/services/gallery.service";
 import { type IProduct, ProductService } from "@/services/product.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
+import { PaymentService } from "@/services/payment.service";
 import { useAuthStore } from "@/stores/auth";
+import { Loader2 } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 import GuestProfileModal from "@/components/GuestProfileModal.vue";
@@ -43,6 +45,7 @@ const {
 	rsvps,
 	gallery,
 	faqs,
+	schedules,
 	loading,
 	error,
 } = useTenant();
@@ -79,24 +82,48 @@ const selectedProduct = ref<IProduct | null>(null);
 const quotaQuantities = ref<Record<string, number>>({});
 
 const pixPayload = ref({ payload: "", base64: "" });
+const isGeneratingMpPix = ref(false);
+const mpPixData = ref<{ qr_code: string; qr_code_base64: string; paymentId?: number } | null>(null);
 
 watch(
-	[tenant, selectedProduct, quotaQuantities],
-	async () => {
-		if (!tenant.value || !selectedProduct.value) {
+	selectedProduct,
+	async (product) => {
+		if (
+			!product ||
+			!tenant.value?.pix_key ||
+			product.type !== "quota"
+		) {
 			pixPayload.value = { payload: "", base64: "" };
 			return;
 		}
 
-		const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
-		const finalPrice = getProductPrice(selectedProduct.value, qty);
-		const message = `${tenant.value.couple_name} • ${selectedProduct.value.name}`;
+		pixPayload.value = await generatePixPayload(
+			tenant.value.pix_key,
+			tenant.value.couple_name || "Noivos",
+			String(getProductPrice(product, currentQty.value)),
+			`Presente: ${product.name}`,
+			product.$id,
+		);
+	},
+	{ immediate: true },
+);
+
+watch(
+	currentQty,
+	async (qty) => {
+		if (
+			!selectedProduct.value ||
+			!tenant.value?.pix_key ||
+			selectedProduct.value.type !== "quota"
+		) {
+			return;
+		}
 
 		pixPayload.value = await generatePixPayload(
 			tenant.value.pix_key,
-			tenant.value.couple_name,
-			String(finalPrice),
-			message,
+			tenant.value.couple_name || "Noivos",
+			String(getProductPrice(selectedProduct.value, qty)),
+			`Presente: ${selectedProduct.value.name}`,
 			selectedProduct.value.$id,
 		);
 	},
@@ -106,8 +133,46 @@ watch(
 const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
 	if (!currentUser.value) return;
 	selectedProduct.value = data.product;
-	quotaQuantities.value[data.product.$id] = data.quantity || 1;
+	const qty = data.quantity || 1;
+	quotaQuantities.value[data.product.$id] = qty;
 	showPixModal.value = true;
+	mpPixData.value = null;
+
+	if (tenant.value?.mp_access_token) {
+		isGeneratingMpPix.value = true;
+		try {
+			const finalPrice = getProductPrice(data.product, qty);
+			const mpRes = await PaymentService.createGiftPixPayment({
+				tenantId: tenant.value.$id,
+				productId: data.product.$id,
+				productName: data.product.name,
+				quantity: qty,
+				price: finalPrice,
+				guestName: currentUser.value.name,
+				guestEmail: currentUser.value.email,
+				guestId: currentUser.value.$id,
+			});
+			mpPixData.value = {
+				qr_code: mpRes.qr_code,
+				qr_code_base64: mpRes.qr_code_base64,
+				paymentId: mpRes.paymentId,
+			};
+		} catch (err) {
+			console.warn("Mercado Pago PIX indisponível, usando PIX estático:", err);
+		} finally {
+			isGeneratingMpPix.value = false;
+		}
+	}
+
+	if (!mpPixData.value?.qr_code && tenant.value?.pix_key) {
+		pixPayload.value = await generatePixPayload(
+			tenant.value.pix_key,
+			tenant.value.couple_name || "Noivos",
+			String(getProductPrice(data.product, qty)),
+			`Presente: ${data.product.name}`,
+			data.product.$id,
+		);
+	}
 };
 
 const openLinksModal = async (data: {
@@ -123,8 +188,13 @@ const openLinksModal = async (data: {
 };
 
 const copyPix = () => {
-	navigator.clipboard.writeText(pixPayload.value.payload);
-	toast.success("Chave PIX copiada!");
+	const codeToCopy = mpPixData.value?.qr_code || pixPayload.value.payload;
+	if (codeToCopy) {
+		navigator.clipboard.writeText(codeToCopy);
+		toast.success("Chave PIX copiada!");
+	} else {
+		toast.error("Nenhum código PIX disponível.");
+	}
 };
 
 const confirmingPurchase = ref(false);
@@ -674,8 +744,16 @@ onUnmounted(() => {
 					segura.
 				</p>
 
-				<div class="flex justify-center bg-white p-5 rounded-2xl border border-slate-100 max-w-[230px] mx-auto shadow-sm">
-					<qrcode-svg :value="pixPayload.payload" :size="180" level="H" />
+				<div class="flex justify-center bg-white p-5 rounded-2xl border border-slate-100 max-w-[230px] mx-auto shadow-sm min-h-[200px] items-center">
+					<div v-if="isGeneratingMpPix" class="flex flex-col items-center gap-2 py-6 text-slate-500">
+						<Loader2 class="w-8 h-8 animate-spin text-primary" />
+						<span class="text-xs">Gerando PIX no Mercado Pago...</span>
+					</div>
+					<template v-else>
+						<img v-if="mpPixData?.qr_code_base64" :src="`data:image/png;base64,${mpPixData.qr_code_base64}`" alt="QR Code PIX Mercado Pago" class="w-[180px] h-[180px] object-contain" />
+						<qrcode-svg v-else-if="mpPixData?.qr_code || pixPayload.payload" :value="mpPixData?.qr_code || pixPayload.payload" :size="180" level="H" />
+						<p v-else class="text-xs text-slate-400">QR Code indisponível.</p>
+					</template>
 				</div>
 
 				<div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -698,11 +776,19 @@ onUnmounted(() => {
 						@click="copyPix">
 						Copiar Código Pix
 					</Button>
-					<Button
+					<Button v-if="!tenant?.mp_user_id"
 						class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary"
 						:disabled="confirmingPurchase" @click="confirmPurchase('pix')">
 						{{ confirmingPurchase ? 'Confirmando...' : 'Confirmar Envio' }}
 					</Button>
+				</div>
+
+				<div v-if="mpPixData?.qr_code" class="flex items-center justify-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
+					<span class="relative flex h-2 w-2">
+						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+						<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+					</span>
+					<span>Aguardando PIX... O presente é confirmado automaticamente ao pagar.</span>
 				</div>
 			</div>
 		</Modal>

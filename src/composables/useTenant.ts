@@ -185,6 +185,10 @@ export function useTenant() {
 				"--color-primary",
 				hexToRgbChannels(color),
 			);
+			const themeMeta = document.querySelector('meta[name="theme-color"]');
+			if (themeMeta) {
+				themeMeta.setAttribute("content", color);
+			}
 		}
 		if (textColor) {
 			try {

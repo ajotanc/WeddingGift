@@ -90,8 +90,8 @@ import { useAuthStore } from "@/stores/auth";
 router.beforeEach((to, _from, next) => {
 	const authStore = useAuthStore();
 
-	// Redirecionamento da rota estática /admin/config para a rota dinâmica com slug (OAuth Mercado Pago)
-	if (to.path === "/admin/config/mercadopago") {
+	// Redirecionamento da rota estática /admin/config/mercadopago para a rota dinâmica do casal com o slug (OAuth Mercado Pago)
+	if (to.path === "/admin/config/mercadopago" || to.path === "/admin/config/mercadopago/") {
 		if (!authStore.user) {
 			return next({ name: "login", query: { redirect: to.fullPath } });
 		}
