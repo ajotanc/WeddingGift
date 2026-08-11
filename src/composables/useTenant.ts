@@ -267,7 +267,8 @@ export function useTenant() {
 
 	const updateDynamicManifest = (t: ITenant) => {
 		try {
-			const currentPath = `/${t.slug}`;
+			const origin = window.location.origin;
+			const currentPath = `${origin}/${t.slug}`;
 
 			const dynamicManifest = {
 				id: currentPath,
@@ -275,34 +276,34 @@ export function useTenant() {
 				short_name: t.couple_name,
 				description: `Site de casamento e lista de presentes de ${t.couple_name}`,
 				start_url: currentPath,
-				scope: currentPath,
+				scope: `${origin}/`,
 				display: "standalone",
 				orientation: "portrait",
 				background_color: "#FAF8F6",
-				theme_color: t.primary_color,
+				theme_color: t.primary_color || "#c5a880",
 				lang: "pt-BR",
 				prefer_related_applications: false,
 				icons: [
 					{
-						src: "/images/pwa-64x64.png",
+						src: `${origin}/images/pwa-64x64.png`,
 						sizes: "64x64",
 						type: "image/png",
 						purpose: "any",
 					},
 					{
-						src: "/images/pwa-192x192.png",
+						src: `${origin}/images/pwa-192x192.png`,
 						sizes: "192x192",
 						type: "image/png",
 						purpose: "any",
 					},
 					{
-						src: "/images/pwa-512x512.png",
+						src: `${origin}/images/pwa-512x512.png`,
 						sizes: "512x512",
 						type: "image/png",
 						purpose: "any",
 					},
 					{
-						src: "/images/maskable-icon-512x512.png",
+						src: `${origin}/images/maskable-icon-512x512.png`,
 						sizes: "512x512",
 						type: "image/png",
 						purpose: "maskable",

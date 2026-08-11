@@ -27,7 +27,7 @@ export default defineConfig(function (_a) {
                     id: "/",
                     name: env.VITE_PROJECT_NAME,
                     short_name: env.VITE_PROJECT_NAME,
-                    start_url: "/",
+                    start_url: ".",
                     scope: "/",
                     theme_color: "#c5a880",
                     display: "standalone",
