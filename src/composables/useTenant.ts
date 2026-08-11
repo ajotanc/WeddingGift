@@ -1,5 +1,5 @@
 import { hexToHsl, hexToRgbChannels, hslToHex } from "@/lib/colors";
-import { DEFAULT_SLATE_COLORS } from "@/lib/defaults";
+import { DEFAULT_SLATE_COLORS, PROJECT_NAME } from "@/lib/defaults";
 import { sortBy } from "@/lib/utils";
 import type { IFaq } from "@/services/faq.service";
 import type { IGalleryImage } from "@/services/gallery.service";
@@ -265,10 +265,78 @@ export function useTenant() {
 		document.documentElement.style.setProperty("--font-body", bodyFamily);
 	};
 
+	const updateDynamicManifest = (t: ITenant) => {
+		try {
+			const currentPath = `/${t.slug}`;
+
+			const dynamicManifest = {
+				id: currentPath,
+				name: `${PROJECT_NAME} • ${t.couple_name}`,
+				short_name: t.couple_name,
+				description: `Site de casamento e lista de presentes de ${t.couple_name}`,
+				start_url: currentPath,
+				scope: currentPath,
+				display: "standalone",
+				orientation: "portrait",
+				background_color: "#FAF8F6",
+				theme_color: t.primary_color,
+				lang: "pt-BR",
+				prefer_related_applications: false,
+				icons: [
+					{
+						src: "/images/pwa-64x64.png",
+						sizes: "64x64",
+						type: "image/png",
+						purpose: "any",
+					},
+					{
+						src: "/images/pwa-192x192.png",
+						sizes: "192x192",
+						type: "image/png",
+						purpose: "any",
+					},
+					{
+						src: "/images/pwa-512x512.png",
+						sizes: "512x512",
+						type: "image/png",
+						purpose: "any",
+					},
+					{
+						src: "/images/maskable-icon-512x512.png",
+						sizes: "512x512",
+						type: "image/png",
+						purpose: "maskable",
+					},
+				],
+			};
+
+			const stringManifest = JSON.stringify(dynamicManifest);
+			const blob = new Blob([stringManifest], { type: "application/json" });
+			const manifestUrl = URL.createObjectURL(blob);
+
+			let manifestLink = document.querySelector(
+				'link[rel="manifest"]',
+			) as HTMLLinkElement;
+			if (manifestLink) {
+				manifestLink.href = manifestUrl;
+			} else {
+				manifestLink = document.createElement("link");
+				manifestLink.rel = "manifest";
+				manifestLink.href = manifestUrl;
+				document.head.appendChild(manifestLink);
+			}
+		} catch (e) {
+			console.error("Erro ao atualizar manifest dinâmico do PWA:", e);
+		}
+	};
+
 	// Watch tenant dynamically to apply theme updates reactively
 	watch(
 		tenant,
 		(newTenant) => {
+			if (newTenant?.slug) {
+				updateDynamicManifest(newTenant);
+			}
 			if (newTenant?.primary_color) {
 				applyTheme(
 					newTenant.primary_color,
