@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Brand from "@/components/reusable/Brand.vue";
 import { useTenant } from "@/composables/useTenant";
 import { useAuthStore } from "@/stores/auth";
 import {
@@ -38,7 +39,7 @@ const isActive = (path: string) => route.path.includes(`/${path}`);
       <div class="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
 
         <div class="flex items-center gap-3">
-          <h1 class="text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">Casamento</h1>
+          <Brand class="w-9 h-9" />
           <a v-if="tenant" :href="`/${tenant.slug}`" target="_blank" :style="{ backgroundColor: tenant.primary_color + '1a', color: tenant.primary_color }"
             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold cursor-pointer hover:opacity-90 active:scale-95 transition-all uppercase tracking-wider">
             {{ tenant.couple_name }}

@@ -20,3 +20,4 @@ export const DEFAULT_TITLE_FONT = "playfair";
 export const DEFAULT_BODY_FONT = "inter";
 
 export const PROJECT_NAME = import.meta.env.VITE_PROJECT_NAME;
+export const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL;

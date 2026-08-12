@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useThankYouGenerator } from "@/composables/useThankYouGenerator";
 import { ConsentService } from "@/services/consent.service";
+import { EmailService } from "@/services/email.service";
 import type { IGuest } from "@/services/guest.service";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type IRsvp, RsvpService } from "@/services/rsvp.service";
@@ -191,6 +192,17 @@ const submitRsvp = handleSubmit(async (values) => {
 				accepted_terms: true,
 				accepted_terms_at: dayjs().toISOString(),
 			});
+
+			// Dispara o envio de e-mail de confirmação do RSVP
+			if (authStore.guest.email) {
+				EmailService.sendRsvpConfirmation({
+					guest_name: authStore.guest.name,
+					guest_email: authStore.guest.email,
+					couple_name: props.tenant.couple_name,
+					status: values.status,
+					message: thankYouMessage
+				}).catch((e) => console.error("Erro ao enviar e-mail de RSVP:", e));
+			}
 		}
 
 		isEditingRsvp.value = false;
@@ -327,7 +339,7 @@ const toggleLike = async (msg: IMessage) => {
 						</span>
 					</div>
 
-					<Button variant="outline" class="rounded-full px-8 border-primary text-primary hover:bg-primary/10"
+					<Button variant="outline" class="rounded-xl px-8 h-11 border-primary text-primary hover:bg-primary/10 font-semibold"
 						@click="isEditingRsvp = true">
 						Alterar Resposta
 					</Button>

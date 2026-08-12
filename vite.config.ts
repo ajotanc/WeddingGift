@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
 					type: "module",
 				},
 				workbox: {
+					maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
 					globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
 					navigateFallback: "/index.html",
 					navigateFallbackDenylist: [/^\/v1/, /^\/api/],
@@ -69,20 +70,17 @@ export default defineConfig(({ mode }) => {
 		],
 		build: {
 			target: "esnext",
-			chunkSizeWarningLimit: 4000,
+			chunkSizeWarningLimit: 3000,
 			rollupOptions: {
 				output: {
 					manualChunks(id) {
 						if (id.includes("node_modules")) {
-							if (id.includes("appwrite")) {
-								return "appwrite";
-							}
-							if (id.includes("leaflet")) {
-								return "leaflet";
-							}
-							if (id.includes("xlsx")) {
-								return "xlsx";
-							}
+							if (id.includes("appwrite")) return "vendor-appwrite";
+							if (id.includes("leaflet")) return "vendor-leaflet";
+							if (id.includes("xlsx")) return "vendor-xlsx";
+							if (id.includes("lucide-vue-next")) return "vendor-icons";
+							if (id.includes("@vue-email") || id.includes("vue-email")) return "vendor-email";
+							if (id.includes("dayjs")) return "vendor-dayjs";
 							return "vendor";
 						}
 					},
@@ -99,17 +97,9 @@ export default defineConfig(({ mode }) => {
 				"/api-serp": {
 					target: "https://google.serper.dev",
 					changeOrigin: true,
-					rewrite: (path) => path.replace(/^\/api-serp/, "/search"),
+					rewrite: (path) => path.replace(/^\/api-serp/, ""),
 				},
 			},
-			host: true,
-			allowedHosts: [
-				".ajotanc.com.br",
-				".ngrok-free.app",
-				".ngrok.io",
-				".ngrok-free.dev",
-				".trycloudflare.com",
-			],
 		},
-	}
+	};
 });

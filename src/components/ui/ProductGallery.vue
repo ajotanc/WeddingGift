@@ -6,12 +6,13 @@ import { computed, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   ChevronsUpDown,
+  Minus,
+  Plus,
   Edit2,
   Gift,
   Heart,
@@ -38,9 +39,7 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 
 const props = defineProps<{
@@ -320,24 +319,28 @@ const updateItemsPerPage = (event: Event) => {
             </p>
 
             <div v-if="isProductSoldOut(product)"
-              class="mt-4 w-full py-2.5 rounded-xl border border-dashed border-slate-200 text-center transition-all bg-slate-50/50 cursor-not-allowed">
-              <span class="text-xs italic text-slate-400">Garantido com carinho</span>
+              class="mt-4 w-full h-11 px-4 rounded-xl border border-primary/40 bg-primary/10 text-primary/80 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all select-none">
+              <span>Garantido com carinho</span>
             </div>
 
             <template v-if="mode === 'public' && !isProductSoldOut(product)">
               <div class="flex flex-col gap-2 mt-4">
 
                 <div v-if="getRemainingQuantity(product) > 1" class="flex items-center gap-2 mb-2">
-                  <Button variant="outline" class="w-11 h-11 p-0 rounded-xl shrink-0"
-                    @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">-</Button>
+                  <Button variant="outline" size="icon" class="h-11 w-11 p-0 rounded-xl shrink-0 border-slate-200 text-red-600 hover:bg-slate-50 font-bold text-base"
+                    @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">
+                  <Minus />
+                  </Button>
 
                   <Input type="number" min="1" :max="getRemainingQuantity(product)"
-                    class="text-center h-11 rounded-xl border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="text-center h-11 rounded-xl border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-sm text-slate-600"
                     :model-value="getLocalQuantity(product.$id)"
                     @update:model-value="(val: string | number) => setLocalQuantity(product.$id, Number(val), getRemainingQuantity(product))" />
 
-                  <Button variant="outline" class="w-11 h-11 p-0 rounded-xl shrink-0"
-                    @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">+</Button>
+                  <Button variant="outline" size="icon" class="h-11 w-11 p-0 rounded-xl shrink-0 border-slate-200 text-emerald-600 hover:bg-slate-50 font-bold text-base"
+                    @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">
+                  <Plus />
+                  </Button>
                 </div>
 
                 <template v-if="product.type === 'quota'">
@@ -404,17 +407,19 @@ const updateItemsPerPage = (event: Event) => {
       <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges :default-page="1"
         v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
         <PaginationContent v-slot="{ items }" class="gap-1 flex items-center">
+          <PaginationFirst
+            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
+            :disabled="currentPage === 1" @click="currentPage = 1" />
+
           <PaginationPrevious
-            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 disabled:opacity-40"
-            :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)">
-            <ChevronLeft class="w-4 h-4" />
-          </PaginationPrevious>
+            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
+            :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)" />
 
           <template v-for="(item, index) in items">
             <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
               :is-active="item.value === page" @click="currentPage = item.value"
               class="w-9 h-9 p-0 rounded-xl text-sm transition-all cursor-pointer flex items-center justify-center border"
-              :class="item.value === page ? 'border-primary text-primary font-bold bg-primary/10' : 'border-slate-200 text-slate-600'">
+              :class="item.value === page ? 'border-primary text-primary font-bold bg-primary/10' : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50'">
               {{ item.value }}
             </PaginationItem>
             <PaginationEllipsis v-else :key="item.type" :index="index"
@@ -422,11 +427,14 @@ const updateItemsPerPage = (event: Event) => {
           </template>
 
           <PaginationNext
-            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 disabled:opacity-40"
+            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
             :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
-            @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)">
-            <ChevronRight class="w-4 h-4" />
-          </PaginationNext>
+            @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)" />
+
+          <PaginationLast
+            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
+            :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
+            @click="currentPage = Math.ceil(filteredProducts.length / itemsPerPage)" />
         </PaginationContent>
       </Pagination>
     </div>

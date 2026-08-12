@@ -40,6 +40,7 @@ import {
 	DEFAULT_TITLE_FONT,
 	FREE_BACKGROUND_COLORS,
 	FREE_PRIMARY_COLORS,
+	PROJECT_NAME,
 } from "@/lib/defaults";
 import { sortBy } from "@/lib/utils";
 import { FaqService } from "@/services/faq.service";
@@ -1784,7 +1785,7 @@ const connectToMarketPago = () => {
 			<div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
 				<div class="flex justify-between items-center text-sm">
 					<span class="text-slate-500">Produto:</span>
-					<span class="font-bold text-slate-800">EternoSim Premium ({{ selectedPlan === 'quarterly' ? 'Trimestral' :
+					<span class="font-bold text-slate-800">{{PROJECT_NAME}} Premium ({{ selectedPlan === 'quarterly' ? 'Trimestral' :
 						'Semestral' }})</span>
 				</div>
 				<div class="flex justify-between items-center text-sm">

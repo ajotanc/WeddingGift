@@ -12,6 +12,7 @@ import { type IProduct, ProductService } from "@/services/product.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
 import { PaymentService } from "@/services/payment.service";
+import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
 import { Loader2 } from "lucide-vue-next";
 import { toast } from "vue-sonner";
@@ -210,7 +211,7 @@ const confirmPurchase = async (method: MethodType) => {
 	const finalPrice = getProductPrice(selectedProduct.value, qty);
 
 	try {
-		const updatedProduct = await ProductService.updatePublic(
+		const updatedProduct = await ProductService.updateQuantity(
 			selectedProduct.value.$id,
 			{
 				claimed_quantity: selectedProduct.value.claimed_quantity + qty,
@@ -235,6 +236,20 @@ const confirmPurchase = async (method: MethodType) => {
 		});
 
 		purchases.value.push(newGift);
+
+		// Dispara e-mail de confirmação de presente para o convidado
+		if (authStore.guest?.email && tenant.value) {
+			EmailService.sendGiftConfirmation({
+				guest_name: authStore.guest.name,
+				guest_email: authStore.guest.email,
+				couple_name: tenant.value.couple_name,
+				product_name: updatedProduct.name,
+				quantity: qty,
+				total_paid: finalPrice,
+				image_url: updatedProduct.image_url,
+				method,
+			}).catch((e) => console.error("Erro ao enviar e-mail de presente:", e));
+		}
 
 		toast.success("Presente confirmado! Muito obrigado pelo carinho.");
 	} catch (error) {

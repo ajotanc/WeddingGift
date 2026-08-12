@@ -3,7 +3,7 @@ import type { ButtonVariants } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { reactiveOmit } from "@vueuse/core";
-import { ChevronRightIcon } from "lucide-vue-next";
+import { ChevronRight } from "lucide-vue-next";
 import type { PaginationNextProps } from "reka-ui";
 import { PaginationNext, useForwardProps } from "reka-ui";
 import type { HTMLAttributes } from "vue";
@@ -16,7 +16,7 @@ const props = withDefaults(
 		}
 	>(),
 	{
-		size: "default",
+		size: "icon",
 	},
 );
 
@@ -26,10 +26,9 @@ const forwarded = useForwardProps(delegatedProps);
 
 <template>
   <PaginationNext data-slot="pagination-next"
-    :class="cn(buttonVariants({ variant: 'ghost', size }), 'gap-1 px-2.5 sm:pr-2.5', props.class)" v-bind="forwarded">
+    :class="cn(buttonVariants({ variant: 'ghost', size }), props.class)" v-bind="forwarded">
     <slot>
-      <span class="hidden sm:block">Next</span>
-      <ChevronRightIcon />
+      <ChevronRight class="w-4 h-4" />
     </slot>
   </PaginationNext>
 </template>

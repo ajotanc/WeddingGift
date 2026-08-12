@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { PROJECT_NAME } from "@/lib/defaults";
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -7,31 +9,31 @@ const router = createRouter({
 			path: "/",
 			name: "home",
 			component: () => import("@/views/HomeView.vue"),
-			meta: { title: "EternoSim • Crie sua Lista de Presentes" },
+			meta: { title: `${PROJECT_NAME} • Crie sua Lista de Presentes` },
 		},
 		{
 			path: "/register",
 			name: "register",
 			component: () => import("@/views/RegisterView.vue"),
-			meta: { title: "EternoSim • Cadastro" },
+			meta: { title: `${PROJECT_NAME} • Cadastro` },
 		},
 		{
 			path: "/login",
 			name: "login",
 			component: () => import("@/views/LoginView.vue"),
-			meta: { title: "EternoSim • Login" },
+			meta: { title: `${PROJECT_NAME} • Login` },
 		},
 		{
 			path: "/terms",
 			name: "terms",
 			component: () => import("@/views/TermsView.vue"),
-			meta: { title: "EternoSim • Termos de Uso" },
+			meta: { title: `${PROJECT_NAME} • Termos de Uso` },
 		},
 		{
 			path: "/privacy",
 			name: "privacy",
 			component: () => import("@/views/PrivacyView.vue"),
-			meta: { title: "EternoSim • Política de Privacidade" },
+			meta: { title: `${PROJECT_NAME} • Política de Privacidade` },
 		},
 		{
 			path: "/:slug/gallery",
@@ -84,8 +86,6 @@ const router = createRouter({
 		},
 	],
 });
-
-import { useAuthStore } from "@/stores/auth";
 
 router.beforeEach((to, _from, next) => {
 	const authStore = useAuthStore();

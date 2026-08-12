@@ -14,6 +14,8 @@ declare module "*.vue" {
 
 // ADICIONE ESTA LINHA NO FINAL DO ARQUIVO:
 declare module "qrcode-vue";
+declare module "@vue-email/render";
+declare module "@vue-email/components";
 
 export {};
 

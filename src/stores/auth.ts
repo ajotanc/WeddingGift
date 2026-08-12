@@ -131,6 +131,19 @@ export const useAuthStore = defineStore("auth", {
 							if (this.user) {
 								this.user.prefs = newPrefs as IUserPreferences;
 							}
+
+							if (pictureUrl && sessionUser.$id) {
+								try {
+									const updatedGuest = await GuestService.upsert(sessionUser.$id, {
+										photo_url: pictureUrl,
+										email: sessionUser.email,
+										name: sessionUser.name,
+									});
+									this.guest = updatedGuest;
+								} catch (err) {
+									console.error("Failed to sync guest photo_url:", err);
+								}
+							}
 						}
 					} catch (e) {
 						console.error("Failed to fetch Google Avatar:", e);
@@ -181,14 +194,21 @@ export const useAuthStore = defineStore("auth", {
 						}
 
 						this.tenant = this.sanitizeTenant(created);
-						const g = await GuestService.get(sessionUser.$id);
-						this.guest = g?.$id
-							? g
-							: ({
+						try {
+							const g = await GuestService.upsert(sessionUser.$id, {
+								name: sessionUser.name || "Convidado",
+								email: sessionUser.email || "",
+								photo_url: sessionUser.prefs?.photo_url || undefined,
+							});
+							this.guest = g;
+						} catch (e) {
+							this.guest = {
 								$id: sessionUser.$id,
 								email: sessionUser.email,
 								name: sessionUser.name,
-							} as IGuest);
+								photo_url: sessionUser.prefs?.photo_url,
+							} as IGuest;
+						}
 						return;
 					}
 
@@ -212,19 +232,18 @@ export const useAuthStore = defineStore("auth", {
 					}
 
 					try {
-						const g = await GuestService.get(sessionUser.$id);
-						this.guest = g?.$id
-							? g
-							: ({
-								$id: sessionUser.$id,
-								email: sessionUser.email,
-								name: sessionUser.name,
-							} as IGuest);
+						const g = await GuestService.upsert(sessionUser.$id, {
+							name: sessionUser.name || "Convidado",
+							email: sessionUser.email || "",
+							photo_url: sessionUser.prefs?.photo_url || undefined,
+						});
+						this.guest = g;
 					} catch (e) {
 						this.guest = {
 							$id: sessionUser.$id,
 							email: sessionUser.email,
 							name: sessionUser.name,
+							photo_url: sessionUser.prefs?.photo_url,
 						} as IGuest;
 					}
 				}

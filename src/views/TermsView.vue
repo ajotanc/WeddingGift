@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PROJECT_NAME } from "@/lib/defaults";
 import { ArrowLeft, Scale } from "lucide-vue-next";
 import { computed } from "vue";
 
@@ -46,7 +47,8 @@ const currentYear = computed(() => new Date().getFullYear());
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">1. Aceitação dos Termos</h2>
 					<p>
-						Ao se cadastrar ou utilizar os serviços do <strong class="font-medium text-slate-800">EternoSim</strong>
+						Ao se cadastrar ou utilizar os serviços do <strong
+							class="font-medium text-slate-800">{{ PROJECT_NAME }}</strong>
 						(incluindo o envio de mensagens, confirmação de presença (RSVP) ou compra de presentes), você expressa seu
 						consentimento livre e expresso aos presentes Termos de Uso. Caso não concorde com qualquer disposição, você
 						não deve utilizar a plataforma.
@@ -56,7 +58,8 @@ const currentYear = computed(() => new Date().getFullYear());
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">2. Descrição dos Serviços</h2>
 					<p>
-						O <strong class="font-medium text-slate-800">EternoSim</strong> funciona como um facilitador digital para
+						O <strong class="font-medium text-slate-800">{{ PROJECT_NAME }}</strong> funciona como um facilitador digital
+						para
 						eventos de casamento, permitindo a criação de páginas de convites personalizadas, gerenciamento de listas de
 						convidados (RSVP), murais de recados e cotas de presentes integradas via PIX ou links externos.
 					</p>
@@ -77,12 +80,13 @@ const currentYear = computed(() => new Date().getFullYear());
 					<ul class="list-disc pl-6 space-y-2">
 						<li>
 							<strong class="font-medium text-slate-800">Cotas de Presente (PIX):</strong> As cotas são pagas
-							diretamente de convidado para a chave PIX do casal cadastrado. O EternoSim gera a carga útil (Payload) e o
+							diretamente de convidado para a chave PIX do casal cadastrado. O {{ PROJECT_NAME }} gera a carga útil
+							(Payload) e o
 							QR Code de pagamento, mas não atua como intermediário financeiro retendo valores.
 						</li>
 						<li>
 							<strong class="font-medium text-slate-800">Links de Lojas Externas:</strong> Para presentes em lojas
-							parceiras, o EternoSim redireciona o convidado para o link externo. Toda a compra, entrega e termos
+							parceiras, o {{ PROJECT_NAME }} redireciona o convidado para o link externo. Toda a compra, entrega e termos
 							associados à transação são de responsabilidade exclusiva da loja terceira escolhida.
 						</li>
 					</ul>
@@ -100,7 +104,7 @@ const currentYear = computed(() => new Date().getFullYear());
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">6. Propriedade Intelectual</h2>
 					<p>
-						Todos os materiais, logos, design do sistema, marcas e códigos da plataforma EternoSim são de nossa
+						Todos os materiais, logos, design do sistema, marcas e códigos da plataforma {{ PROJECT_NAME }} são de nossa
 						propriedade intelectual ou de nossos licenciadores. O uso não autorizado destes elementos é estritamente
 						proibido.
 					</p>
@@ -126,7 +130,7 @@ const currentYear = computed(() => new Date().getFullYear());
 
 			<!-- Footer info -->
 			<div class="text-center text-xs text-slate-400 font-light">
-				&copy; {{ currentYear }} EternoSim. Todos os direitos reservados.
+				&copy; {{ currentYear }} {{ PROJECT_NAME }}. Todos os direitos reservados.
 			</div>
 		</main>
 	</div>

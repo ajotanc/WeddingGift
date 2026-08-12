@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PROJECT_NAME, SUPPORT_EMAIL } from "@/lib/defaults";
 import { ArrowLeft, ShieldCheck } from "lucide-vue-next";
 import { computed } from "vue";
 
@@ -47,7 +48,9 @@ const currentYear = computed(() => new Date().getFullYear());
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">1. Quem somos</h2>
 					<p>
-						Esta Política de Privacidade descreve como o <strong>EternoSim</strong> ("EternoSim", "nossa plataforma"),
+						Esta Política de Privacidade descreve como o <strong>{{ PROJECT_NAME }}</strong> ("{{ PROJECT_NAME }}",
+						"nossa
+						plataforma"),
 						coleta, usa, armazena, compartilha e protege dados pessoais de quem utiliza o site e o aplicativo de listas
 						de presentes, RSVP e cotas de lua de mel.
 					</p>
@@ -57,15 +60,18 @@ const currentYear = computed(() => new Date().getFullYear());
 						Proteção de Dados da União Europeia (GDPR).
 					</p>
 					<p>
-						Ao usar o EternoSim — seja como casal organizando sua lista de presentes, seja como convidado confirmando
+						Ao usar o {{ PROJECT_NAME }} — seja como casal organizando sua lista de presentes, seja como convidado
+						confirmando
 						presença ou presenteando — você concorda com as práticas descritas aqui.
 					</p>
 				</section>
 
 				<section class="space-y-3">
-					<h2 class="text-xl font-serif text-slate-900 font-medium">2. Quem usa o EternoSim e quais dados coletamos</h2>
+					<h2 class="text-xl font-serif text-slate-900 font-medium">2. Quem usa o {{ PROJECT_NAME }} e quais dados
+						coletamos</h2>
 					<p>
-						O EternoSim é uma plataforma multi-tenant: cada casal tem seu próprio espaço (<code>/seu-slug</code>), e
+						O {{ PROJECT_NAME }} é uma plataforma multi-tenant: cada casal tem seu próprio espaço
+						(<code>/seu-slug</code>), e
 						convidados interagem com esse espaço público. Por isso, tratamos dois grupos de titulares de forma
 						diferente.
 					</p>
@@ -180,12 +186,13 @@ const currentYear = computed(() => new Date().getFullYear());
 					<ul class="list-disc pl-6 space-y-2">
 						<li>
 							Para os <strong>dados da conta do casal</strong> (login, configurações, chave PIX, dados de pagamento), o
-							<strong>EternoSim é o controlador</strong> dos dados, nos termos do Art. 5º, VI da LGPD.
+							<strong>{{ PROJECT_NAME }} é o controlador</strong> dos dados, nos termos do Art. 5º, VI da LGPD.
 						</li>
 						<li>
 							Para os <strong>dados dos convidados</strong> coletados através da página pública de um casal (RSVP,
 							mensagens do mural), o <strong>casal é o controlador</strong> desses dados — é ele quem decide coletar
-							essas informações e para qual finalidade (organizar seu próprio casamento). O <strong>EternoSim atua como
+							essas informações e para qual finalidade (organizar seu próprio casamento). O <strong>{{ PROJECT_NAME }}
+								atua como
 								operador</strong> (Art. 5º, VII), isto é, fornecemos a infraestrutura técnica que processa esses dados
 							em nome do casal, seguindo as instruções dadas pelo desenho da própria plataforma.
 						</li>
@@ -314,7 +321,8 @@ const currentYear = computed(() => new Date().getFullYear());
 				<section class="space-y-3">
 					<h2 class="text-xl font-serif text-slate-900 font-medium">9. Dados de crianças e adolescentes</h2>
 					<p>
-						O EternoSim não é direcionado a crianças e não permite que menores de idade criem contas. O único dado
+						O {{ PROJECT_NAME }} não é direcionado a crianças e não permite que menores de idade criem contas. O único
+						dado
 						relacionado a crianças tratado pela plataforma é a <strong>contagem agregada</strong> de crianças
 						acompanhantes informada por um responsável adulto no formulário de RSVP — não coletamos nome, data de
 						nascimento, foto ou qualquer outro dado individualmente identificável de menores.
@@ -361,7 +369,7 @@ const currentYear = computed(() => new Date().getFullYear());
 						nosso Encarregado de Proteção de Dados (DPO):
 					</p>
 					<ul class="list-disc pl-6 space-y-2">
-						<li><strong>E-mail de Contato:</strong> ajotanc@gmail.com</li>
+						<li><strong>E-mail de Contato:</strong> {{ SUPPORT_EMAIL }}</li>
 						<li><strong>Prazo de resposta:</strong> buscamos responder em até 15 dias, conforme a complexidade do
 							pedido.</li>
 					</ul>
@@ -399,7 +407,7 @@ const currentYear = computed(() => new Date().getFullYear());
 
 			<!-- Footer info -->
 			<div class="text-center text-xs text-slate-400 font-light">
-				&copy; {{ currentYear }} EternoSim. Todos os direitos reservados.
+				&copy; {{ currentYear }} {{ PROJECT_NAME }}. Todos os direitos reservados.
 			</div>
 		</main>
 	</div>
