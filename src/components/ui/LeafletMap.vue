@@ -68,7 +68,7 @@ watch(
 </script>
 
 <template>
-	<div class="relative w-full h-[400px] rounded-[1.5rem] overflow-hidden z-0 border border-slate-100">
+	<div class="relative w-full h-[400px] rounded-2xl overflow-hidden z-0 border border-slate-100">
 		<div v-if="loading" class="absolute inset-0 bg-slate-50 flex items-center justify-center z-10">
 			<span class="text-slate-400 font-medium">Carregando mapa...</span>
 		</div>

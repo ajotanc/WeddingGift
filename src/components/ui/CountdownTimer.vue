@@ -40,19 +40,19 @@ const remaining = computed(() => {
 <template>
   <div v-if="remaining" class="flex gap-4 text-slate-900 font-serif text-xl md:text-2xl justify-center">
     <div class="text-center">
-      <div class="text-4xl md:text-5xl font-bold">{{ remaining.days }}</div>
+      <div class="text-5xl md:text-6xl font-bold">{{ remaining.days }}</div>
       <div class="text-sm">Dias</div>
     </div>
     <div class="text-center">
-      <div class="text-4xl md:text-5xl font-bold">{{ remaining.hours }}</div>
+      <div class="text-5xl md:text-6xl font-bold">{{ remaining.hours }}</div>
       <div class="text-sm">Horas</div>
     </div>
     <div class="text-center">
-      <div class="text-4xl md:text-5xl font-bold">{{ remaining.minutes }}</div>
+      <div class="text-5xl md:text-6xl font-bold">{{ remaining.minutes }}</div>
       <div class="text-sm">Min</div>
     </div>
     <div class="text-center">
-      <div class="text-4xl md:text-5xl font-bold">{{ remaining.seconds }}</div>
+      <div class="text-5xl md:text-6xl font-bold">{{ remaining.seconds }}</div>
       <div class="text-sm">Seg</div>
     </div>
   </div>

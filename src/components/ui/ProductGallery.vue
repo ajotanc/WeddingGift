@@ -6,22 +6,23 @@ import { computed, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   ChevronsUpDown,
   Edit2,
-  Heart,
-  Trash2,
   Gift,
+  Heart,
+  SlidersHorizontal,
+  Trash2,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -32,6 +33,15 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const props = defineProps<{
   products: IProduct[];
@@ -55,6 +65,11 @@ const categories = computed(() => {
   );
   return Array.from(cats).sort();
 });
+
+const getCategoryCount = (categoryName: string) => {
+  if (categoryName === "all") return props.products.length;
+  return props.products.filter((p) => p.category === categoryName).length;
+};
 
 const filteredProducts = computed(() => {
   if (selectedCategory.value === "all") return props.products;
@@ -120,21 +135,107 @@ const updateItemsPerPage = (event: Event) => {
 
 <template>
   <div class="space-y-12">
-    <div v-if="categories.length > 0" class="flex flex-col items-center mb-10">
-      <div
-        class="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 px-4 py-2 border-b border-slate-100 max-w-2xl mx-auto overflow-x-auto md:flex-wrap scrollbar-none">
-        <button @click="selectedCategory = 'all'"
-          class="text-xs uppercase tracking-widest font-semibold pb-2 transition-all cursor-pointer relative bg-transparent border-0 outline-none"
-          :class="selectedCategory === 'all' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'">
-          Todas
-          <span v-if="selectedCategory === 'all'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></span>
+    <div v-if="categories.length > 0" class="w-full mb-8">
+      <!-- Seletor Dropdown Shadcn no Mobile (sm:hidden) -->
+      <div class="block sm:hidden px-4 max-w-sm mx-auto">
+        <Select v-model="selectedCategory">
+          <SelectTrigger
+            class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
+            :class="selectedCategory !== 'all'
+              ? 'bg-primary/10 text-primary border-primary/40 font-bold'
+              : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'"
+          >
+            <div class="flex items-center justify-between w-full pr-1">
+              <div class="flex items-center gap-2.5 truncate">
+                <div class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <SlidersHorizontal class="w-3.5 h-3.5" />
+                </div>
+                <span class="truncate font-bold text-slate-700">
+                  {{ selectedCategory === 'all' ? 'Todas as Categorias' : selectedCategory }}
+                </span>
+              </div>
+              <div
+                class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors"
+              >
+                {{ getCategoryCount(selectedCategory) }}
+              </div>
+            </div>
+          </SelectTrigger>
+          <SelectContent class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
+            <SelectGroup>
+              <SelectItem
+                value="all"
+                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors"
+              >
+                <div class="flex items-center justify-between w-full gap-4">
+                  <span>Todas as Categorias</span>
+                  <div
+                    class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                    :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'"
+                  >
+                    {{ props.products.length }}
+                  </div>
+                </div>
+              </SelectItem>
+              <SelectItem
+                v-for="cat in categories"
+                :key="cat"
+                :value="cat"
+                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors"
+              >
+                <div class="flex items-center justify-between w-full gap-4">
+                  <span>{{ cat }}</span>
+                  <div
+                    class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                    :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'"
+                  >
+                    {{ getCategoryCount(cat) }}
+                  </div>
+                </div>
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <!-- Abas de Pílula no Desktop (hidden sm:flex) -->
+      <div class="hidden sm:flex items-center justify-center gap-2.5 max-w-3xl mx-auto flex-wrap">
+        <button
+          @click="selectedCategory = 'all'"
+          class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
+          :class="selectedCategory === 'all'
+            ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
+            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'"
+        >
+          <span>Todas</span>
+          <div
+            class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+            :class="selectedCategory === 'all'
+              ? 'bg-primary/20 text-primary border border-primary/30'
+              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
+          >
+            {{ props.products.length }}
+          </div>
         </button>
 
-        <button v-for="cat in categories" :key="cat" @click="selectedCategory = cat"
-          class="text-xs uppercase tracking-widest font-semibold pb-2 transition-all cursor-pointer relative bg-transparent border-0 outline-none"
-          :class="selectedCategory === cat ? 'text-primary' : 'text-slate-400 hover:text-slate-600'">
-          {{ cat }}
-          <span v-if="selectedCategory === cat" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></span>
+        <button
+          v-for="cat in categories"
+          :key="cat"
+          @click="selectedCategory = cat"
+          class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
+          :class="selectedCategory === cat
+            ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
+            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'"
+        >
+          <span>{{ cat }}</span>
+          <div
+            class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+            :class="selectedCategory === cat
+              ? 'bg-primary/20 text-primary border border-primary/30'
+              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
+          >
+            {{ getCategoryCount(cat) }}
+          </div>
         </button>
       </div>
     </div>
@@ -227,15 +328,15 @@ const updateItemsPerPage = (event: Event) => {
               <div class="flex flex-col gap-2 mt-4">
 
                 <div v-if="getRemainingQuantity(product) > 1" class="flex items-center gap-2 mb-2">
-                  <Button variant="outline" class="w-10 h-10 p-0 rounded-xl"
+                  <Button variant="outline" class="w-11 h-11 p-0 rounded-xl shrink-0"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">-</Button>
 
                   <Input type="number" min="1" :max="getRemainingQuantity(product)"
-                    class="text-center h-10 rounded-xl border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="text-center h-11 rounded-xl border-slate-200 shadow-sm bg-slate-50/50 font-medium flex-1 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     :model-value="getLocalQuantity(product.$id)"
                     @update:model-value="(val: string | number) => setLocalQuantity(product.$id, Number(val), getRemainingQuantity(product))" />
 
-                  <Button variant="outline" class="w-10 h-10 p-0 rounded-xl"
+                  <Button variant="outline" class="w-11 h-11 p-0 rounded-xl shrink-0"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">+</Button>
                 </div>
 

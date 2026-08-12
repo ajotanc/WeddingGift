@@ -34,8 +34,11 @@ import ProductsSection from "@/components/public/ProductsSection.vue";
 import RsvpMessageSection from "@/components/public/RsvpMessageSection.vue";
 import ScheduleSection from "@/components/public/ScheduleSection.vue";
 import { Button } from "@/components/ui/button";
+import { useRoute } from "vue-router";
 
 dayjs.locale("pt-br");
+
+const route = useRoute();
 
 const {
 	tenant,
@@ -45,9 +48,9 @@ const {
 	rsvps,
 	gallery,
 	faqs,
-	schedules,
 	loading,
 	error,
+	fetchTenant,
 } = useTenant();
 const authStore = useAuthStore();
 
@@ -582,11 +585,19 @@ watch([() => tenant.value?.ambient_effect, effectCanvas], () => {
 	}
 });
 
+const handleVisibility = () => {
+	if (document.visibilityState === "visible" && route.params.slug) {
+		fetchTenant(route.params.slug as string);
+	}
+};
+
 onMounted(() => {
-	// ScrollSpy is handled by the IntersectionObserver watcher
+	document.addEventListener("visibilitychange", handleVisibility);
 });
 
 onUnmounted(() => {
+	document.removeEventListener("visibilitychange", handleVisibility);
+	
 	if (observer) {
 		observer.disconnect();
 	}
@@ -633,20 +644,21 @@ onUnmounted(() => {
 				<div
 					class="absolute inset-0 backdrop-blur-md [-webkit-mask-image:linear-gradient(to_top,black,transparent)] [mask-image:linear-gradient(to_top,black,transparent)]"
 					:style="tenant.background_color ? { background: `linear-gradient(to top, ${tenant.background_color}, transparent)` } : {}"
-					:class="!tenant.background_color ? 'bg-gradient-to-t from-zinc-50 to-transparent' : ''">
+					:class="!tenant.background_color ? 'bg-gradient-to-t from-slate-50 to-transparent' : ''">
 				</div>
 
-				<div class="relative flex flex-col items-center justify-center max-w-4xl z-10 px-4">
+				<div class="relative flex flex-col items-center justify-center max-w-4xl z-10">
 					<img v-if="tenant.logo_url" :src="tenant.logo_url" :alt="tenant.couple_name"
 						class="w-32 h-32 md:w-40 md:h-40 object-contain mb-6 transition-all">
 
-					<h1 class="text-4xl md:text-7xl font-serif text-slate-900 mb-6 tracking-tight leading-tight select-none">{{
-						tenant.couple_name }}</h1>
-
-					<p
-						class="text-xs text-primary md:text-sm uppercase tracking-[0.25em] font-medium max-w-[500px] leading-relaxed text-center mb-8">
+					<h1 class="text-[2.5rem] md:text-7xl font-serif text-slate-900 mb-6 tracking-tight leading-tight select-none">
 						{{
-							tenant?.quote || "Lista de Presentes & RSVP" }}</p>
+							tenant.couple_name }}</h1>
+
+					<p v-if="tenant?.quote"
+						class="text-xs text-primary md:text-sm uppercase tracking-[0.2em] font-medium max-w-[500px] leading-relaxed text-center mb-6">
+						{{
+							tenant?.quote }}</p>
 
 					<!-- Event Date & Time Display -->
 					<div v-if="tenant.event_date" class="text-slate-800 font-serif italic text-base md:text-xl tracking-wide">
@@ -654,7 +666,7 @@ onUnmounted(() => {
 					</div>
 
 					<!-- Countdown -->
-					<div v-if="tenant.event_date && tenant?.show_countdown !== false" class="mt-8">
+					<div v-if="tenant.event_date && tenant?.show_countdown !== false" class="mt-6">
 						<CountdownTimer :eventDate="tenant.event_date" />
 					</div>
 					<div class="w-12 h-[1px] mx-auto mt-12 bg-primary/50"></div>
@@ -744,14 +756,17 @@ onUnmounted(() => {
 					segura.
 				</p>
 
-				<div class="flex justify-center bg-white p-5 rounded-2xl border border-slate-100 max-w-[230px] mx-auto shadow-sm min-h-[200px] items-center">
+				<div
+					class="flex justify-center bg-white p-5 rounded-2xl border border-slate-100 max-w-[230px] mx-auto shadow-sm min-h-[200px] items-center">
 					<div v-if="isGeneratingMpPix" class="flex flex-col items-center gap-2 py-6 text-slate-500">
 						<Loader2 class="w-8 h-8 animate-spin text-primary" />
 						<span class="text-xs">Gerando PIX no Mercado Pago...</span>
 					</div>
 					<template v-else>
-						<img v-if="mpPixData?.qr_code_base64" :src="`data:image/png;base64,${mpPixData.qr_code_base64}`" alt="QR Code PIX Mercado Pago" class="w-[180px] h-[180px] object-contain" />
-						<qrcode-svg v-else-if="mpPixData?.qr_code || pixPayload.payload" :value="mpPixData?.qr_code || pixPayload.payload" :size="180" level="H" />
+						<img v-if="mpPixData?.qr_code_base64" :src="`data:image/png;base64,${mpPixData.qr_code_base64}`"
+							alt="QR Code PIX Mercado Pago" class="w-[180px] h-[180px] object-contain" />
+						<qrcode-svg v-else-if="mpPixData?.qr_code || pixPayload.payload"
+							:value="mpPixData?.qr_code || pixPayload.payload" :size="180" level="H" />
 						<p v-else class="text-xs text-slate-400">QR Code indisponível.</p>
 					</template>
 				</div>
@@ -771,9 +786,9 @@ onUnmounted(() => {
 				</div>
 
 				<div class="flex flex-col sm:flex-row gap-3 mt-6">
-					<Button class="flex-1 rounded-xl text-primary border-primary hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5"
-						variant="outline"
-						@click="copyPix">
+					<Button
+						class="flex-1 rounded-xl text-primary border-primary hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5"
+						variant="outline" @click="copyPix">
 						Copiar Código Pix
 					</Button>
 					<Button v-if="!tenant?.mp_user_id"
@@ -783,7 +798,8 @@ onUnmounted(() => {
 					</Button>
 				</div>
 
-				<div v-if="mpPixData?.qr_code" class="flex items-center justify-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
+				<div v-if="mpPixData?.qr_code"
+					class="flex items-center justify-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
 					<span class="relative flex h-2 w-2">
 						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
 						<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>

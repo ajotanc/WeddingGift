@@ -33,8 +33,8 @@ const isActive = (path: string) => route.path.includes(`/${path}`);
 </script>
 
 <template>
-  <div class="min-h-screen bg-zinc-50 font-sans text-slate-600 flex flex-col">
-    <header class="bg-white border-b border-zinc-200 sticky top-0 z-40 w-full">
+  <div class="min-h-screen bg-slate-50 font-sans text-slate-600 flex flex-col">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 w-full">
       <div class="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
 
         <div class="flex items-center gap-3">
@@ -48,13 +48,13 @@ const isActive = (path: string) => route.path.includes(`/${path}`);
         <nav class="hidden md:flex items-center gap-1">
           <router-link v-for="item in navItems" :key="item.path" :to="`/${route.params.slug}/admin/${item.path}`"
             class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 relative"
-            :class="isActive(item.path) ? 'text-primary font-semibold' : 'text-slate-500 hover:bg-zinc-50 hover:text-slate-900'"
+            :class="isActive(item.path) ? 'text-primary font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'"
             :style="isActive(item.path) ? { color: tenant?.primary_color, backgroundColor: tenant?.primary_color + '0d' } : {}">
             <component :is="item.icon" class="w-4 h-4" :style="isActive(item.path) ? { color: tenant?.primary_color } : {}" />
             {{ item.name }}
           </router-link>
 
-          <div class="w-px h-6 bg-zinc-200 mx-2"></div>
+          <div class="w-px h-6 bg-slate-200 mx-2"></div>
 
           <button @click="handleLogout"
             class="p-3 rounded-full text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 flex items-center gap-2">
@@ -63,7 +63,7 @@ const isActive = (path: string) => route.path.includes(`/${path}`);
         </nav>
       </div>
 
-      <nav class="md:hidden flex overflow-x-auto border-t border-zinc-100 bg-white w-full hide-scrollbar">
+      <nav class="md:hidden flex overflow-x-auto border-t border-slate-100 bg-white w-full hide-scrollbar">
         <router-link v-for="item in navItems" :key="item.path" :to="`/${route.params.slug}/admin/${item.path}`"
           class="flex-none min-w-[80px] flex flex-col items-center justify-center gap-1.5 py-3 px-3 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2"
           :class="isActive(item.path) ? 'text-primary' : 'border-transparent text-slate-400'"

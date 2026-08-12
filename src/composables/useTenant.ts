@@ -1,3 +1,11 @@
+import { DATABASE_ID, realtime } from "@/lib/appwrite";
+import {
+	TABLE_FAQS,
+	TABLE_GALLERY,
+	TABLE_PRODUCTS,
+	TABLE_SCHEDULE,
+	TABLE_TENANTS,
+} from "@/lib/collections";
 import { hexToHsl, hexToRgbChannels, hslToHex } from "@/lib/colors";
 import { DEFAULT_SLATE_COLORS, PROJECT_NAME } from "@/lib/defaults";
 import { sortBy } from "@/lib/utils";
@@ -128,7 +136,6 @@ const purchases = ref<IPurchase[]>([]);
 const gallery = ref<IGalleryImage[]>([]);
 const faqs = ref<IFaq[]>([]);
 const schedules = ref<IScheduleItem[]>([]);
-
 export function useTenant() {
 	const route = useRoute();
 	const authStore = useAuthStore();
@@ -140,7 +147,6 @@ export function useTenant() {
 	const error = ref<string | null>(null);
 
 	const fetchTenant = async (slug: string) => {
-		// Proteção 1: Se o slug for inválido, não faz nada
 		if (!slug || slug.trim() === "") return;
 
 		loading.value = true;
@@ -280,7 +286,7 @@ export function useTenant() {
 				display: "standalone",
 				orientation: "portrait",
 				background_color: "#FAF8F6",
-				theme_color: t.primary_color || "#c5a880",
+				theme_color: t.primary_color,
 				lang: "pt-BR",
 				prefer_related_applications: false,
 				icons: [

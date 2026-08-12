@@ -164,7 +164,6 @@ const showUpgradeToast = () => {
 };
 
 const hostName = ref("");
-console.log(tenant.value)
 
 onMounted(() => {
 	for (const f of Object.keys(FONTS_REGISTRY)) {
@@ -886,13 +885,14 @@ const saveSettings = handleSubmit(async (values) => {
 			payload,
 		);
 
-		tenant.value = updatedTenant;
-		authStore.tenant = updatedTenant;
+		const sanitized = authStore.sanitizeTenant(updatedTenant) || updatedTenant;
+		tenant.value = sanitized;
+		authStore.tenant = sanitized;
+
+		toast.success("Configurações salvas em tempo real!");
 
 		if (urlChanged) {
 			window.location.href = `/${values.slug}/admin/config`;
-		} else {
-			window.location.reload();
 		}
 	} catch (err) {
 		console.error("Erro ao salvar configurações", err);
@@ -948,31 +948,31 @@ const connectToMarketPago = () => {
 				class="flex items-center gap-1.5 mb-8 w-full overflow-x-auto pb-2 flex-nowrap hide-scrollbar md:w-fit md:pb-0">
 				<button type="button" @click="activeTab = 'general'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'general' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'general' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
 					<Settings class="w-4 h-4" />
 					Geral
 				</button>
 				<button type="button" @click="activeTab = 'gallery'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'gallery' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'gallery' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
 					<ImageIcon class="w-4 h-4" />
 					Galeria de Fotos
 				</button>
 				<button type="button" @click="activeTab = 'faq'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'faq' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'faq' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
 					<HelpCircle class="w-4 h-4" />
 					FAQ
 				</button>
 				<button type="button" @click="activeTab = 'schedule'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'schedule' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'schedule' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
 					<Calendar class="w-4 h-4" />
 					Cronograma
 				</button>
 				<button type="button" @click="activeTab = 'subscription'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
-					:class="activeTab === 'subscription' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-zinc-100 hover:text-slate-900'">
+					:class="activeTab === 'subscription' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
 					<Sparkles class="w-4 h-4" />
 					Assinatura
 				</button>
