@@ -1345,10 +1345,8 @@ const connectToMarketPago = () => {
 									<img src="/images/mp.svg" alt="MercadoPago" class="w-full" />
 								</div>
 								<div>
-									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar
-										Mercado Pago" }}</h4>
-									<p class="text-xs text-slate-500">{{ tenant?.mp_user_id ? "Sua conta está conectada." : "Permita o
-										acesso para receber pagamentos diretamente." }}</p>
+									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar Mercado Pago" }}</h4>
+									<p class="text-xs text-slate-500">{{ tenant?.mp_user_id ? "Sua conta está conectada." : "Permita o acesso para receber pagamentos diretamente." }}</p>
 								</div>
 							</div>
 
