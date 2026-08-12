@@ -137,7 +137,7 @@ const updateItemsPerPage = (event: Event) => {
   <div class="space-y-12">
     <div v-if="categories.length > 0" class="w-full mb-8">
       <!-- Seletor Dropdown Shadcn no Mobile (sm:hidden) -->
-      <div class="block sm:hidden px-4 max-w-sm mx-auto">
+      <div class="block sm:hidden w-full">
         <Select v-model="selectedCategory">
           <SelectTrigger
             class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"

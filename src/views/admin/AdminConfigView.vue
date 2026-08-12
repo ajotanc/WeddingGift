@@ -1345,8 +1345,10 @@ const connectToMarketPago = () => {
 									<img src="/images/mp.svg" alt="MercadoPago" class="w-full" />
 								</div>
 								<div>
-									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar Mercado Pago" }}</h4>
-									<p class="text-xs text-slate-500">{{ tenant?.mp_user_id ? "Sua conta está conectada." : "Permita o acesso para receber pagamentos diretamente." }}</p>
+									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar
+										Mercado Pago" }}</h4>
+									<p class="text-xs text-slate-500">{{ tenant?.mp_user_id ? "Sua conta está conectada." : "Permita o
+										acesso para receber pagamentos diretamente." }}</p>
 								</div>
 							</div>
 
@@ -1784,7 +1786,7 @@ const connectToMarketPago = () => {
 			<div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
 				<div class="flex justify-between items-center text-sm">
 					<span class="text-slate-500">Produto:</span>
-					<span class="font-bold text-slate-800">Wedding Gift Premium ({{ selectedPlan === 'quarterly' ? 'Trimestral' :
+					<span class="font-bold text-slate-800">EternoSim Premium ({{ selectedPlan === 'quarterly' ? 'Trimestral' :
 						'Semestral' }})</span>
 				</div>
 				<div class="flex justify-between items-center text-sm">

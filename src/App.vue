@@ -183,7 +183,7 @@ watch(
 
 	<!-- Global Floating Feedback Button -->
 	<button v-if="!isPageLoadingTheme" type="button" @click="openFeedback"
-		class="text-primary fixed bottom-6 right-6 z-50 bg-white/80 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
+		class="fixed bottom-6 right-6 z-50 text-primary bg-white/80 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
 		<MessageSquarePlus class="w-5 h-5" />
 	</button>
 
@@ -192,36 +192,36 @@ watch(
 		description="Ajude-nos a melhorar a plataforma enviando o seu feedback.">
 		<form @submit="onSubmitFeedback" class="space-y-4 pt-4">
 			<FormGroup label="Seu Nome" :error="errors.name">
-				<Input v-model="name" placeholder="Ex: João" class="bg-[#FAF8F6]/50 border-[#E8E2DD]" />
+				<Input v-model="name" placeholder="Ex: João" class="rounded-xl border-slate-200 focus-visible:ring-primary/20 focus-visible:border-primary bg-slate-50/50 h-11 text-sm font-medium text-slate-900" />
 			</FormGroup>
 			<FormGroup label="Seu E-mail" :error="errors.email">
 				<Input v-model="email" type="email" placeholder="joao@example.com"
-					class="rounded-xl border-[#E8E2DD] focus-visible:ring-[#C5A880]/20 bg-[#FAF8F6]/50" />
+					class="rounded-xl border-slate-200 focus-visible:ring-primary/20 focus-visible:border-primary bg-slate-50/50 h-11 text-sm font-medium text-slate-900" />
 			</FormGroup>
 			<FormGroup label="Tipo" :error="errors.type">
 				<Select v-model="type">
 					<SelectTrigger
-						class="w-full bg-white border-[#E8E2DD] rounded-xl text-sm font-light text-slate-600 focus:ring-[#C5A880]/20 h-11">
-						<SelectValue placeholder="Selecione um ícone" />
+						class="w-full bg-slate-50/50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary h-11 px-3 shadow-xs transition-all">
+						<SelectValue placeholder="Selecione o tipo de feedback" />
 					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="Sugestão">Sugestão</SelectItem>
-						<SelectItem value="Dúvida">Dúvida</SelectItem>
-						<SelectItem value="Crítica">Crítica</SelectItem>
+					<SelectContent class="rounded-xl bg-white border border-slate-200 shadow-lg">
+						<SelectItem value="Sugestão" class="text-sm font-medium rounded-lg cursor-pointer">Sugestão</SelectItem>
+						<SelectItem value="Dúvida" class="text-sm font-medium rounded-lg cursor-pointer">Dúvida</SelectItem>
+						<SelectItem value="Crítica" class="text-sm font-medium rounded-lg cursor-pointer">Crítica</SelectItem>
 					</SelectContent>
 				</Select>
 			</FormGroup>
 
 			<FormGroup label="Mensagem" :error="errors.message">
 				<Textarea v-model="message" placeholder="O que você gostaria de nos dizer?"
-					class="rounded-xl border-[#E8E2DD] focus-visible:ring-[#C5A880]/20 bg-[#FAF8F6]/50 min-h-[100px] resize-none" />
+					class="rounded-xl border-slate-200 focus-visible:ring-primary/20 focus-visible:border-primary bg-slate-50/50 text-sm font-medium text-slate-900 min-h-[100px] resize-none" />
 			</FormGroup>
 
 			<div class="pt-2 flex justify-end gap-3">
-				<Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-500 hover:text-[#2C2421]">
+				<Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-600 hover:bg-slate-50 h-11 px-4">
 					Cancelar
 				</Button>
-				<Button type="submit" :disabled="sending" class="bg-[#1E1A17] hover:bg-[#2C2421] text-white rounded-full px-6 shadow-sm">
+				<Button type="submit" :disabled="sending" class="bg-primary hover:brightness-105 text-white rounded-xl px-6 h-11 font-semibold border border-primary/30 shadow-sm transition-all flex items-center justify-center">
 					{{ sending ? 'Enviando...' : 'Enviar Feedback' }}
 				</Button>
 			</div>

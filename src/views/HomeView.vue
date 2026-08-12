@@ -210,7 +210,7 @@ const handleLogout = async () => {
       <div class="text-left mb-20 max-w-2xl space-y-4">
         <span class="text-xs uppercase tracking-widest font-bold text-primary">Uma experiência única</span>
         <h2 class="text-4xl md:text-5xl font-serif text-slate-900 font-semibold leading-tight">Por que escolher o
-          <br />Wedding Gift?
+          <br />EternoSim?
         </h2>
         <p class="text-slate-600 font-light text-base md:text-lg">Desenvolvemos cada detalhe para proporcionar o máximo
           de
@@ -447,9 +447,9 @@ const handleLogout = async () => {
           <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
             <Heart class="w-4 h-4 fill-white" />
           </div>
-          <span class="text-white font-bold font-serif tracking-wide text-lg">Wedding Gift</span>
+          <span class="text-white font-bold font-serif tracking-wide text-lg">EternoSim</span>
         </div>
-        <p class="text-xs font-light">&copy; 2026 Wedding Gift. Feito com cuidado editorial e amor para o dia mais
+        <p class="text-xs font-light">&copy; 2026 EternoSim. Feito com cuidado editorial e amor para o dia mais
           especial
           da sua vida.</p>
       </div>

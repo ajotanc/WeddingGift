@@ -31,7 +31,7 @@ export default async (request: Request, context: Context) => {
   const ENDPOINT = Netlify.env.get("VITE_APPWRITE_ENDPOINT");
   const PROJECT_ID = Netlify.env.get("VITE_APPWRITE_PROJECT_ID");
   const DATABASE_ID = Netlify.env.get("VITE_APPWRITE_DATABASE_ID");
-  const PROJECT_NAME = Netlify.env.get("VITE_PROJECT_NAME") || "Wedding Gift";
+  const PROJECT_NAME = Netlify.env.get("VITE_PROJECT_NAME");
   const TABLE_ID = "tenants";
 
   if (!ENDPOINT || !PROJECT_ID || !DATABASE_ID) {

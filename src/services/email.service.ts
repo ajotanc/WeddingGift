@@ -1,17 +1,39 @@
 import emailjs from "@emailjs/browser";
+import { functions } from "@/lib/appwrite";
+import { ExecutionMethod } from "appwrite";
 
 // To use EmailJS, the user needs to create an account at emailjs.com
 // and set these environment variables in their .env file.
-const EMAILJS_SERVICE_ID =
-	import.meta.env.VITE_EMAILJS_SERVICE_ID || "default_service";
-const EMAILJS_TEMPLATE_GIFT =
-	import.meta.env.VITE_EMAILJS_TEMPLATE_GIFT || "template_gift";
-const EMAILJS_TEMPLATE_RSVP =
-	import.meta.env.VITE_EMAILJS_TEMPLATE_RSVP || "template_rsvp";
-const EMAILJS_TEMPLATE_FEEDBACK =
-	import.meta.env.VITE_EMAILJS_TEMPLATE_FEEDBACK || "template_feedback";
-const EMAILJS_PUBLIC_KEY =
-	import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_GIFT = import.meta.env.VITE_EMAILJS_TEMPLATE_GIFT;
+const EMAILJS_TEMPLATE_RSVP = import.meta.env.VITE_EMAILJS_TEMPLATE_RSVP;
+const EMAILJS_TEMPLATE_FEEDBACK = import.meta.env.VITE_EMAILJS_TEMPLATE_FEEDBACK;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+async function generateAiRsvpMessage(guestName: string, coupleName: string): Promise<string> {
+	try {
+		const execution = await functions.createExecution({
+			functionId: "ai-helper",
+			body: JSON.stringify({
+				action: "ai-thanks",
+				payload: { guestName, coupleName },
+			}),
+			async: false,
+			xpath: "/",
+			method: ExecutionMethod.POST,
+		});
+
+		if (execution.responseStatusCode < 400 && execution.responseBody) {
+			const data = JSON.parse(execution.responseBody);
+			if (data?.text) {
+				return data.text;
+			}
+		}
+	} catch (error) {
+		console.warn("AI generation fallback for RSVP confirmation email:", error);
+	}
+	return `Que alegria, ${guestName}! Estamos radiantes que você fará parte desta celebração inesquecível com ${coupleName}!`;
+}
 
 /**
  * Initialize EmailJS with the public key.
@@ -24,6 +46,7 @@ export interface IGiftEmailParams {
 	product_name: string;
 	quantity: number;
 	total_paid: string;
+	image_url: string;
 	method: string;
 }
 
@@ -51,6 +74,7 @@ export const EmailService = {
 					product_name: params.product_name,
 					quantity: params.quantity,
 					total_paid: params.total_paid,
+					image_url: params.image_url,
 					method: params.method === "pix" ? "PIX" : "Loja",
 				},
 				EMAILJS_PUBLIC_KEY,
@@ -65,6 +89,14 @@ export const EmailService = {
 
 	async sendRsvpConfirmation(params: IRsvpEmailParams) {
 		try {
+			const message_text =
+				params.status !== "confirmed"
+					? "Que pena! Sentiremos sua falta, mas agradecemos por nos avisar."
+					: await generateAiRsvpMessage(
+						params.guest_name,
+						params.couple_name,
+					);
+
 			const response = await emailjs.send(
 				EMAILJS_SERVICE_ID,
 				EMAILJS_TEMPLATE_RSVP,
@@ -76,10 +108,7 @@ export const EmailService = {
 						params.status === "confirmed"
 							? "Presença Confirmada"
 							: "Ausência Registrada",
-					message_text:
-						params.status === "confirmed"
-							? "Que alegria! Estamos muito felizes que você celebrará conosco."
-							: "Que pena! Sentiremos sua falta, mas agradecemos por nos avisar.",
+					message_text,
 				},
 				EMAILJS_PUBLIC_KEY,
 			);
@@ -106,7 +135,7 @@ export const EmailService = {
 					from_email: params.email,
 					feedback_type: params.type,
 					message: params.message,
-					system: "WeddingGift SaaS",
+					system: "EternoSim SaaS",
 				},
 				EMAILJS_PUBLIC_KEY,
 			);
