@@ -38,25 +38,25 @@ const remaining = computed(() => {
 </script>
 
 <template>
-  <div v-if="remaining" class="flex gap-4 text-slate-900 font-serif text-xl md:text-2xl justify-center">
-    <div class="text-center">
-      <div class="text-5xl md:text-6xl font-bold">{{ remaining.days }}</div>
-      <div class="text-sm">Dias</div>
+  <div v-if="remaining" class="flex text-slate-900 font-serif text-xl md:text-2xl justify-center items-center">
+    <div class="flex flex-col items-center justify-center min-w-[4rem] sm:min-w-[5rem] text-center">
+      <div class="text-5xl md:text-6xl font-bold tabular-nums tracking-tight">{{ remaining.days }}</div>
+      <div class="text-[10px] font-sans tracking-wide uppercase font-bold">Dias</div>
     </div>
-    <div class="text-center">
-      <div class="text-5xl md:text-6xl font-bold">{{ remaining.hours }}</div>
-      <div class="text-sm">Horas</div>
+    <div class="flex flex-col items-center justify-center min-w-[4rem] sm:min-w-[5rem] text-center">
+      <div class="text-5xl md:text-6xl font-bold tabular-nums tracking-tight">{{ remaining.hours }}</div>
+      <div class="text-[10px] font-sans tracking-wide uppercase font-bold">Horas</div>
     </div>
-    <div class="text-center">
-      <div class="text-5xl md:text-6xl font-bold">{{ remaining.minutes }}</div>
-      <div class="text-sm">Min</div>
+    <div class="flex flex-col items-center justify-center min-w-[4rem] sm:min-w-[5rem] text-center">
+      <div class="text-5xl md:text-6xl font-bold tabular-nums tracking-tight">{{ remaining.minutes }}</div>
+      <div class="text-[10px] font-sans tracking-wide uppercase font-bold">Min</div>
     </div>
-    <div class="text-center">
-      <div class="text-5xl md:text-6xl font-bold">{{ remaining.seconds }}</div>
-      <div class="text-sm">Seg</div>
+    <div class="flex flex-col items-center justify-center min-w-[4rem] sm:min-w-[5rem] text-center">
+      <div class="text-5xl md:text-6xl font-bold tabular-nums tracking-tight">{{ remaining.seconds }}</div>
+      <div class="text-[10px] font-sans tracking-wide uppercase font-bold">Seg</div>
     </div>
   </div>
-  <div v-else class="text-primary font-medium text-lg text-center">O evento já começou!</div>
+  <div v-else class="text-primary font-bold text-lg text-center">O evento já começou!</div>
 </template>
 
 <style scoped>
