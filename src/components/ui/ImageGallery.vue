@@ -12,7 +12,7 @@ import { handleImageError } from "@/lib/utils";
 import type { IGalleryImage } from "@/services/gallery.service";
 import Autoplay from "embla-carousel-autoplay";
 import { Download, Heart, Trash2, X } from "lucide-vue-next";
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 const { tenant } = useTenant();
 
@@ -32,16 +32,51 @@ const props = withDefaults(
 	},
 );
 
+// Seamless infinite loop: duplicate items if count is small so Embla Carousel can loop endlessly without gaps
+const displayImages = computed(() => {
+	if (!props.images || props.images.length === 0) return [];
+	if (props.images.length === 1) return props.images;
+	if (props.images.length < 8) {
+		const repeatCount = Math.ceil(8 / props.images.length);
+		const result: IGalleryImage[] = [];
+		for (let r = 0; r < repeatCount; r++) {
+			for (let i = 0; i < props.images.length; i++) {
+				result.push({
+					...props.images[i],
+					$id: `${props.images[i].$id}_copy_${r}_${i}`,
+				});
+			}
+		}
+		return result;
+	}
+	return props.images;
+});
+
+const getOriginalImage = (img: IGalleryImage) => {
+	const rawId = img.$id.split("_copy_")[0];
+	return props.images.find((i) => i.$id === rawId) || img;
+};
+
+const shouldLoop = computed(() => props.images.length > 1);
+
 const emit = defineEmits<{
 	(e: "like", image: IGalleryImage): void;
 	(e: "delete", image: IGalleryImage): void;
 }>();
 
+const handleLike = (img: IGalleryImage) => {
+	emit("like", getOriginalImage(img));
+};
+
+const handleDelete = (img: IGalleryImage) => {
+	emit("delete", getOriginalImage(img));
+};
+
 // Lightbox state
 const activeLightboxImage = ref<IGalleryImage | null>(null);
 
 const openLightbox = (img: IGalleryImage) => {
-	activeLightboxImage.value = img;
+	activeLightboxImage.value = getOriginalImage(img);
 };
 
 const closeLightbox = () => {
@@ -115,13 +150,13 @@ const downloadImage = async (url: string, id: string) => {
 <template>
   <div>
     <!-- CAROUSEL MODE -->
-    <div v-if="props.carousel" class="relative max-w-5xl mx-auto px-2 sm:px-4">
+    <div v-if="props.carousel" class="relative max-w-6xl mx-auto px-2 sm:px-4">
       <Carousel @init-api="onInitApi"
-        :opts="{ loop: true, align: 'start', containScroll: false }"
-        :plugins="props.autoplay ? [Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })] : []"
+        :opts="{ loop: shouldLoop, align: 'start', containScroll: false }"
+        :plugins="props.autoplay && shouldLoop ? [Autoplay({ delay: 3500, stopOnInteraction: false, stopOnMouseEnter: true })] : []"
         class="relative group/carousel">
         <CarouselContent>
-          <CarouselItem v-for="img in props.images" :key="img.$id" class="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+          <CarouselItem v-for="img in displayImages" :key="img.$id" class="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
             <div
               class="group relative aspect-square rounded-3xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm cursor-pointer"
               @click="openLightbox(img)">
@@ -138,7 +173,7 @@ const downloadImage = async (url: string, id: string) => {
                   <div class="text-xs text-white/70">
                     {{ img.guest ? `Por ${img.guest.name}` : tenant?.couple_name }}
                   </div>
-                  <button v-if="canDeleteImage(img)" type="button" @click.stop="emit('delete', img)"
+                  <button v-if="canDeleteImage(img)" type="button" @click.stop="handleDelete(img)"
                     class="bg-white/20 hover:bg-red-500 hover:text-white text-white p-2 rounded-full backdrop-blur-sm transition-all duration-200 cursor-pointer border-0 outline-none">
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -150,11 +185,11 @@ const downloadImage = async (url: string, id: string) => {
                     "{{ img.caption }}"
                   </p>
                   <div class="flex items-center justify-between">
-                    <button type="button" @click.stop="emit('like', img)"
+                    <button type="button" @click.stop="handleLike(img)"
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/25 bg-white/10 hover:bg-white/20 transition-all cursor-pointer active:scale-95">
                       <Heart class="w-4 h-4 transition-colors"
-                        :class="img.likes?.includes(props.currentGuestId) ? 'fill-red-500 text-red-500 border-none' : 'text-white'" />
-                      <span class="font-semibold text-xs">{{ img.likes?.length || 0 }}</span>
+                        :class="getOriginalImage(img).likes?.includes(props.currentGuestId) ? 'fill-red-500 text-red-500 border-none' : 'text-white'" />
+                      <span class="font-semibold text-xs">{{ getOriginalImage(img).likes?.length || 0 }}</span>
                     </button>
                   </div>
                 </div>
@@ -164,9 +199,9 @@ const downloadImage = async (url: string, id: string) => {
         </CarouselContent>
 
         <!-- Carousel navigation arrows inside container bounds -->
-        <CarouselPrevious
+        <CarouselPrevious v-if="props.images.length > 1"
           class="left-2 sm:left-3 opacity-90 md:opacity-0 md:group-hover/carousel:opacity-100 transition-all z-30 bg-white/95 text-slate-800 shadow-md hover:bg-white border border-slate-200/80 -translate-y-1/2" />
-        <CarouselNext
+        <CarouselNext v-if="props.images.length > 1"
           class="right-2 sm:right-3 opacity-90 md:opacity-0 md:group-hover/carousel:opacity-100 transition-all z-30 bg-white/95 text-slate-800 shadow-md hover:bg-white border border-slate-200/80 -translate-y-1/2" />
       </Carousel>
 
