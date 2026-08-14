@@ -62,122 +62,6 @@ export const ProductService = {
 		return res.rows;
 	},
 
-	async create(
-		data: Omit<IProduct, keyof Models.Row | "links"> & {
-			links?: IProductLink[];
-		},
-		customId?: string,
-		file?: File | null,
-	): Promise<IProduct> {
-		let image_url = data.image_url;
-		const rowId = customId || ID.unique();
-
-		if (file) {
-			image_url = await StorageService.uploadFile(rowId, file, "product");
-		}
-
-		const payload: Partial<Omit<IProduct, keyof Models.Row>> = {
-			...data,
-			image_url,
-			claimed_quantity: data.claimed_quantity || 0,
-		};
-
-		const links = payload.links || [];
-		payload.links = undefined;
-
-		const ownerId = data.tenant;
-
-		const row = await tables.createRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PRODUCTS,
-			rowId,
-			data: payload as Omit<IProduct, keyof Models.Row>,
-			permissions: getProductPermissions(ownerId),
-		});
-
-		if (links.length > 0) {
-			for (const link of links) {
-				await tables.createRow({
-					databaseId: DATABASE_ID,
-					tableId: TABLE_PRODUCT_LINKS,
-					rowId: ID.unique(),
-					data: {
-						store: link.store,
-						url: link.url,
-						product: row.$id,
-					},
-					permissions: getProductPermissions(ownerId),
-				});
-			}
-		}
-
-		return row;
-	},
-
-	async update(
-		id: string,
-		data: Partial<Omit<IProduct, "links"> & { links?: IProductLink[] }>,
-		file?: File | null,
-	): Promise<IProduct> {
-		let imageUrl = data.image_url;
-		if (file) {
-			imageUrl = await StorageService.uploadFile(id, file, "product");
-		}
-
-		const payload: Partial<Omit<IProduct, keyof Models.Row>> = {
-			...data,
-		};
-		if (imageUrl) payload.image_url = imageUrl;
-
-		const links = payload.links;
-		payload.links = undefined;
-
-		const existing = await ProductService.get(id);
-		const ownerId = existing?.tenant || data.tenant || "";
-
-		const row = await tables.updateRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PRODUCTS,
-			rowId: id,
-			data: payload as Partial<Omit<IProduct, keyof Models.Row>>,
-			permissions: getProductPermissions(ownerId),
-		});
-
-		if (links) {
-			const existingLinks = await tables.listRows<IProductLink>({
-				databaseId: DATABASE_ID,
-				tableId: TABLE_PRODUCT_LINKS,
-				queries: [Query.equal("product", id)],
-			});
-
-			for (const el of existingLinks.rows) {
-				await tables.deleteRow({
-					databaseId: DATABASE_ID,
-					tableId: TABLE_PRODUCT_LINKS,
-					rowId: el.$id,
-				});
-			}
-
-			if (links.length > 0) {
-				for (const link of links) {
-					await tables.createRow({
-						databaseId: DATABASE_ID,
-						tableId: TABLE_PRODUCT_LINKS,
-						rowId: ID.unique(),
-						data: {
-							store: link.store,
-							url: link.url,
-							product: row.$id,
-						},
-						permissions: getProductPermissions(ownerId),
-					});
-				}
-			}
-		}
-
-		return row;
-	},
-
 	async upsert(
 		rowId: string | null,
 		data: Partial<Omit<IProduct, "links"> & { links?: IProductLink[] }>,
@@ -187,7 +71,7 @@ export const ProductService = {
 		const id = rowId || ID.unique();
 
 		if (file instanceof File) {
-			if (isUpdate && data.image_url) {
+			if (isUpdate) {
 				await StorageService.deleteFile(id, "product");
 			}
 
@@ -209,7 +93,11 @@ export const ProductService = {
 		});
 	},
 
-	async delete(id: string): Promise<void> {
+	async delete(id: string, hasFile: boolean): Promise<void> {
+		if (hasFile) {
+			await StorageService.deleteFile(id, "product");
+		}
+
 		await tables.deleteRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,

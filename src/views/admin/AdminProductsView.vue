@@ -48,12 +48,6 @@ const categoryOptions = computed(() => {
 });
 
 const PREDEFINED_EXPERIENCES = [
-	{
-		name: "Contribuição Livre",
-		price: 10,
-		qty: 10,
-		category: "Contribuição Livre",
-	},
 	{ name: "Jogo de panelas moderno", price: 500, qty: 1, category: "Cozinha" },
 	{
 		name: "Relógio da noiva sem atrasos",
@@ -659,7 +653,7 @@ const deleteProduct = async (product: IProduct) => {
 		confirmText: "Sim, excluir",
 		cancelText: "Não",
 		confirm: async () => {
-			await ProductService.delete(product.$id);
+			await ProductService.delete(product.$id, !!product.image_url);
 			products.value = products.value.filter((p) => p.$id !== product.$id);
 			toast.success("Sucesso", { description: "Item excluído com sucesso!" });
 		},

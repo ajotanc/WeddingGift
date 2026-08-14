@@ -67,6 +67,21 @@ const currentQty = computed(() => {
 	return quotaQuantities.value[selectedProduct.value.$id] || 1;
 });
 
+const productList = computed(() => {
+	const productPix = {
+		$id: "custom-pix-amount",
+		type: 'quota',
+		name: 'Contribuição Livre',
+		price: '10',
+		desired_quantity: 9999,
+		claimed_quantity: 0,
+		is_custom_amount: true,
+		category: 'pix'
+	} as IProduct;
+
+	return [productPix, ...products.value];
+});
+
 const requireAuth = async (): Promise<boolean> => {
 	if (currentUser.value) return true;
 	try {
@@ -99,13 +114,13 @@ const customPixAmount = ref<number>(10);
 const isCustomPix = computed(() =>
 	Boolean(
 		selectedProduct.value?.category === "pix" &&
-			selectedProduct.value?.is_custom_amount,
+		selectedProduct.value?.is_custom_amount,
 	),
 );
 
 const activePixPrice = computed(() => {
 	if (isCustomPix.value) {
-		return Math.max(1, Number(customPixAmount.value) || 50);
+		return Math.max(1, Number(customPixAmount.value) || 10);
 	}
 	if (!selectedProduct.value) return 0;
 	return getProductPrice(selectedProduct.value, currentQty.value);
@@ -122,13 +137,8 @@ const updatePixPaymentData = async () => {
 		try {
 			const mpRes = await PaymentService.createGiftPixPayment({
 				tenantId: tenant.value.$id,
-				productId:
-					selectedProduct.value.$id === "custom-pix-amount"
-						? "custom-pix"
-						: selectedProduct.value.$id,
-				productName: isCustomPix.value
-					? "Contribuição Livre (PIX)"
-					: selectedProduct.value.name,
+				productId: selectedProduct.value.$id,
+				productName: selectedProduct.value.name,
 				quantity: 1,
 				price,
 				guestName: currentUser.value.name,
@@ -152,7 +162,7 @@ const updatePixPaymentData = async () => {
 			tenant.value.pix_key,
 			tenant.value.couple_name || "Noivos",
 			String(price),
-			`Presente: ${isCustomPix.value ? "Valor Livre" : selectedProduct.value.name}`,
+			`Presente: ${selectedProduct.value.name}`,
 			selectedProduct.value.$id,
 		);
 	}
@@ -173,10 +183,7 @@ const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
 	selectedProduct.value = data.product;
 	const qty = data.quantity || 1;
 	quotaQuantities.value[data.product.$id] = qty;
-	if (
-		data.product.$id === "custom-pix-amount" ||
-		data.product.is_custom_amount
-	) {
+	if (data.product.category === 'pix') {
 		customPixAmount.value = 10;
 	}
 	showPixModal.value = true;
@@ -212,22 +219,29 @@ const confirmPurchase = async (method: MethodType) => {
 
 	confirmingPurchase.value = true;
 	const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
-	const finalPrice = getProductPrice(selectedProduct.value, qty);
+	const finalPrice = isCustomPix.value
+		? activePixPrice.value
+		: getProductPrice(selectedProduct.value, qty);
 
 	try {
-		const updatedProduct = await ProductService.updateQuantity(
-			selectedProduct.value.$id,
-			{
-				claimed_quantity: selectedProduct.value.claimed_quantity + qty,
-			},
-		);
+		let updatedProduct = selectedProduct.value;
 
-		const productIndex = products.value.findIndex(
-			(p) => p.$id === updatedProduct.$id,
-		);
+		if (!isCustomPix.value) {
+			updatedProduct = await ProductService.updateQuantity(
+				selectedProduct.value.$id,
+				{
+					claimed_quantity:
+						(selectedProduct.value.claimed_quantity || 0) + qty,
+				},
+			);
 
-		if (productIndex !== -1) {
-			products.value[productIndex] = updatedProduct;
+			const productIndex = products.value.findIndex(
+				(p) => p.$id === updatedProduct.$id,
+			);
+
+			if (productIndex !== -1) {
+				products.value[productIndex] = updatedProduct;
+			}
 		}
 
 		const newGift = await PurchaseService.create({
@@ -771,7 +785,7 @@ onUnmounted(() => {
 
 				<template v-else>
 					<!-- Products -->
-					<ProductsSection :products="products" :tenant="tenant" :current-user="currentUser" @open-pix="openPixModal"
+					<ProductsSection :products="productList" :tenant="tenant" :current-user="currentUser" @open-pix="openPixModal"
 						@open-links="openLinksModal" />
 
 					<!-- RSVP & Message Wall -->
@@ -942,18 +956,10 @@ onUnmounted(() => {
 		</Teleport>
 
 		<!-- Floating Back To Top Button -->
-		<transition
-			enter-active-class="transition duration-300 ease-out"
-			enter-from-class="opacity-0 translate-y-3"
-			enter-to-class="opacity-100 translate-y-0"
-			leave-active-class="transition duration-200 ease-in"
-			leave-from-class="opacity-100 translate-y-0"
-			leave-to-class="opacity-0 translate-y-3">
-			<button
-				v-if="showBackToTop"
-				@click="scrollToTop"
-				type="button"
-				aria-label="Voltar ao topo"
+		<transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-y-3"
+			enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-200 ease-in"
+			leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-3">
+			<button v-if="showBackToTop" @click="scrollToTop" type="button" aria-label="Voltar ao topo"
 				class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-primary hover:border-primary/40 hover:bg-white flex items-center justify-center transition-colors duration-200 cursor-pointer">
 				<ChevronUp class="w-5 h-5" />
 			</button>

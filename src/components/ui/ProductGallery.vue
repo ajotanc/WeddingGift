@@ -6,14 +6,14 @@ import { computed, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
-	ChevronsUpDown,
-	Edit2,
-	Gift,
-	Heart,
-	Minus,
-	Plus,
-	SlidersHorizontal,
-	Trash2,
+  ChevronsUpDown,
+  Edit2,
+  Gift,
+  Heart,
+  Minus,
+  Plus,
+  SlidersHorizontal,
+  Trash2,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
@@ -21,56 +21,56 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-	Pagination,
-	PaginationContent,
-	PaginationEllipsis,
-	PaginationFirst,
-	PaginationItem,
-	PaginationLast,
-	PaginationNext,
-	PaginationPrevious,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationItem,
+  PaginationLast,
+  PaginationNext,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
 } from "@/components/ui/select";
 import { handleImageError } from "@/lib/utils";
 import Pix from "./icons/Pix.vue";
 
 const props = defineProps<{
-	products: IProduct[];
-	tenant: ITenant | null;
-	mode: "public" | "admin";
-	currentUser?: Record<string, unknown> | null;
+  products: IProduct[];
+  tenant: ITenant | null;
+  mode: "public" | "admin";
+  currentUser?: Record<string, unknown> | null;
 }>();
 
 const emit = defineEmits<{
-	(e: "open-pix", product: IProduct, quantity: number): void;
-	(e: "open-links", product: IProduct, quantity: number): void;
-	(e: "edit", product: IProduct): void;
-	(e: "delete", product: IProduct): void;
+  (e: "open-pix", product: IProduct, quantity: number): void;
+  (e: "open-links", product: IProduct, quantity: number): void;
+  (e: "edit", product: IProduct): void;
+  (e: "delete", product: IProduct): void;
 }>();
 
 // --- Estado de Filtros ---
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
-	const cats = new Set(
-		props.products.map((p) => p.category).filter((c): c is string => !!c),
-	);
-	return Array.from(cats).sort();
+  const cats = new Set(
+    props.products.map((p) => p.category).filter((c): c is string => !!c && c !== 'pix'),
+  );
+  return Array.from(cats).sort();
 });
 
 const getCategoryCount = (categoryName: string) => {
-	if (categoryName === "all") return props.products.length;
-	return props.products.filter((p) => p.category === categoryName).length;
+  if (categoryName === "all") return props.products.length;
+  return props.products.filter((p) => p.category === categoryName).length;
 };
 
 const filteredProducts = computed(() => {
-	if (selectedCategory.value === "all") return props.products;
-	return props.products.filter((p) => p.category === selectedCategory.value);
+  if (selectedCategory.value === "all") return props.products;
+  return props.products.filter((p) => p.category === selectedCategory.value);
 });
 
 // --- Estado de Paginação ---
@@ -78,13 +78,13 @@ const currentPage = ref(1);
 const itemsPerPage = ref(6);
 
 watch(selectedCategory, () => {
-	currentPage.value = 1;
+  currentPage.value = 1;
 });
 
 const paginatedProducts = computed(() => {
-	const start = (currentPage.value - 1) * itemsPerPage.value;
-	const end = start + itemsPerPage.value;
-	return filteredProducts.value.slice(start, end);
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredProducts.value.slice(start, end);
 });
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
@@ -92,67 +92,67 @@ const quotaQuantities = ref<Record<string, number>>({});
 
 // Métodos auxiliares para calcular limites individuais de cada produto na lista
 const isProductSoldOut = (product: IProduct) => {
-	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
+  return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
 };
 
 const getRemainingQuantity = (product: IProduct) => {
-	return Math.max(
-		0,
-		(product.desired_quantity || 1) - (product.claimed_quantity || 0),
-	);
+  return Math.max(
+    0,
+    (product.desired_quantity || 1) - (product.claimed_quantity || 0),
+  );
 };
 
 const getLocalQuantity = (productId: string) => {
-	return quotaQuantities.value[productId] || 1;
+  return quotaQuantities.value[productId] || 1;
 };
 
 const setLocalQuantity = (productId: string, val: number, maxQty: number) => {
-	quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
+  quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
 };
 
 const getGoalCollected = (product: IProduct) => {
-	if (
-		product.collected_amount !== undefined &&
-		product.collected_amount !== null
-	) {
-		return product.collected_amount;
-	}
-	return (
-		(product.claimed_quantity || 0) * (Number.parseFloat(product.price) || 0)
-	);
+  if (
+    product.collected_amount !== undefined &&
+    product.collected_amount !== null
+  ) {
+    return product.collected_amount;
+  }
+  return (
+    (product.claimed_quantity || 0) * (Number.parseFloat(product.price) || 0)
+  );
 };
 
 const getGoalTarget = (product: IProduct) => {
-	if (product.target_amount) return product.target_amount;
-	return (
-		(product.desired_quantity || 1) * (Number.parseFloat(product.price) || 0)
-	);
+  if (product.target_amount) return product.target_amount;
+  return (
+    (product.desired_quantity || 1) * (Number.parseFloat(product.price) || 0)
+  );
 };
 
 const getGoalPercentage = (product: IProduct) => {
-	const target = getGoalTarget(product);
-	if (!target || target <= 0) return 0;
-	const collected = getGoalCollected(product);
-	return Math.min(100, Math.round((collected / target) * 100));
+  const target = getGoalTarget(product);
+  if (!target || target <= 0) return 0;
+  const collected = getGoalCollected(product);
+  return Math.min(100, Math.round((collected / target) * 100));
 };
 
 // --- Handlers de Ação de Envio ---
 const handleOpenPix = (product: IProduct) => {
-	const qty = getLocalQuantity(product.$id);
-	emit("open-pix", product, qty);
+  const qty = getLocalQuantity(product.$id);
+  emit("open-pix", product, qty);
 };
 
 const handleOpenLinks = (product: IProduct) => {
-	const qty = getLocalQuantity(product.$id);
-	emit("open-links", product, qty);
+  const qty = getLocalQuantity(product.$id);
+  emit("open-links", product, qty);
 };
 
 // TIPAGEM ESTRITA SEM ANY/UNKNOWN USANDO INTERFACES NATIVAS DO DOM
 const updateItemsPerPage = (event: Event) => {
-	const target = event.target as HTMLSelectElement;
-	if (target) {
-		itemsPerPage.value = Number.parseInt(target.value, 10);
-	}
+  const target = event.target as HTMLSelectElement;
+  if (target) {
+    itemsPerPage.value = Number.parseInt(target.value, 10);
+  }
 };
 </script>
 
@@ -251,78 +251,21 @@ const updateItemsPerPage = (event: Event) => {
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 text-left">
-      <!-- Featured Custom Amount Card (Valor Livre PIX) -->
-      <Card
-        v-if="mode === 'public' && (selectedCategory === 'all' || selectedCategory === 'Contribuição Livre') && currentPage === 1"
-        class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
-
-        <div
-          class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
-          <div
-            class="p-4 w-full h-full flex flex-col items-center justify-center text-slate-300 select-none bg-slate-50/50">
-            <div
-              class="w-14 h-14 rounded-full border flex items-center justify-center mb-2 bg-white shadow-sm border-primary/20 text-primary">
-              <Pix class="w-7 h-7" />
-            </div>
-            <span class="text-[9px] uppercase tracking-widest font-bold text-slate-400">Presente Especial</span>
-          </div>
-        </div>
-
-        <div class="flex flex-col flex-1">
-          <div class="mb-2.5 flex items-center gap-2 flex-wrap">
-            <span
-              class="bg-slate-100/80 border border-slate-300 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
-              Contribuição
-            </span>
-            <span
-              class="text-[9px] border border-primary/50 font-bold px-2.5 py-1 rounded-md uppercase tracking-widest text-primary bg-primary/10">
-              PIX
-            </span>
-          </div>
-
-          <h3 class="text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300">
-            Contribuição Livre
-          </h3>
-          <p class="text-xs text-slate-500 font-light leading-relaxed">
-            Prefere nos abençoar com um valor de sua escolha? Sinta-se à vontade para contribuir com a quantia que tocar
-            o seu coração e nos ajudar a construir nosso novo lar.
-          </p>
-
-          <div class="mt-auto pt-2">
-            <div class="flex flex-col gap-2">
-              <Button @click="emit('open-pix', {
-                tenant: tenant?.$id,
-                type: 'quota',
-                name: 'Contribuição Livre',
-                price: '10',
-                desired_quantity: 999,
-                claimed_quantity: 0,
-                is_custom_amount: true,
-                category: 'pix'
-              } as IProduct, 1)"
-                class="w-full h-11 rounded-xl bg-primary text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all hover:brightness-105 active:scale-[0.98] cursor-pointer border border-primary">
-                <span>Presentear com PIX</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       <Card v-for="product in paginatedProducts" :key="product.$id"
         class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
         <div
           class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
           <div v-if="product.type === 'physical' && product?.image_url"
             class="p-4 w-full h-full flex items-center justify-center">
-            <img :src="product.image_url" alt="Produto"
-              @error="handleImageError"
+            <img :src="product.image_url" alt="Produto" @error="handleImageError"
               class="max-h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.03]" />
           </div>
           <div v-else
             class="p-4 w-full h-full flex flex-col items-center justify-center text-slate-300 select-none bg-slate-50/50">
             <div
               class="w-14 h-14 rounded-full border flex items-center justify-center mb-2 bg-white shadow-sm border-primary/20 text-primary">
-              <Gift v-if="product.type === 'quota'" class="w-6 h-6 stroke-[1.25]" />
+              <Pix v-if="product.category === 'pix'" class="w-6 h-6 stroke-[1.25]" />
+              <Gift v-else-if="product.type === 'quota'" class="w-6 h-6 stroke-[1.25]" />
               <Heart v-else class="w-6 h-6 stroke-[1.25] fill-current" />
             </div>
             <span class="text-[9px] uppercase tracking-widest font-bold text-slate-400">Presente Especial</span>
@@ -339,7 +282,38 @@ const updateItemsPerPage = (event: Event) => {
           </div>
         </div>
 
-        <div class="flex flex-col flex-1">
+        <div v-if="product.$id === 'custom-pix-amount'" class="flex flex-col flex-1">
+          <div class="mb-2.5 flex items-center gap-2 flex-wrap">
+            <span
+              class="bg-slate-100/80 border border-slate-300 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
+              Contribuição
+            </span>
+            <span
+              class="text-[9px] border border-primary/50 font-bold px-2.5 py-1 rounded-md uppercase tracking-widest text-primary bg-primary/10">
+              PIX
+            </span>
+          </div>
+
+          <h3
+            class="text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300 font-bold">
+            Contribuição Livre
+          </h3>
+          <p class="text-xs text-slate-500 font-light leading-relaxed">
+            Prefere nos abençoar com um valor de sua escolha? Sinta-se à vontade para contribuir com a quantia que tocar
+            o seu coração e nos ajudar a construir nosso novo lar.
+          </p>
+
+          <div class="mt-auto pt-2">
+            <div class="flex flex-col gap-2">
+              <Button @click="handleOpenPix(product)"
+                class="w-full h-11 rounded-xl bg-primary text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all hover:brightness-105 active:scale-[0.98] cursor-pointer border border-primary">
+                <span>Presentear com PIX</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="flex flex-col flex-1">
           <div class="mb-2.5 flex items-center gap-2 flex-wrap">
             <span v-if="product.category"
               class="bg-slate-100/80 border border-slate-300 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
@@ -363,7 +337,8 @@ const updateItemsPerPage = (event: Event) => {
             </template>
           </div>
 
-          <h3 class="text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300">
+          <h3
+            class="text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300 font-bold">
             {{ product.name }}
           </h3>
 
