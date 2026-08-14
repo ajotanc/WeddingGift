@@ -48,6 +48,12 @@ const categoryOptions = computed(() => {
 });
 
 const PREDEFINED_EXPERIENCES = [
+	{
+		name: "Contribuição Livre",
+		price: 10,
+		qty: 10,
+		category: "Contribuição Livre",
+	},
 	{ name: "Jogo de panelas moderno", price: 500, qty: 1, category: "Cozinha" },
 	{
 		name: "Relógio da noiva sem atrasos",
@@ -662,141 +668,142 @@ const deleteProduct = async (product: IProduct) => {
 </script>
 
 <template>
-  <div class="space-y-12">
-    <!-- Header -->
-    <PageHeader title="Lista de Presentes" description="Gerencie produtos físicos e cotas financeiras.">
-      <Button @click="openNewQuota">Nova Cota (PIX)</Button>
-      <Button @click="openNewPhysical" variant="outline">Novo
-        Produto</Button>
-    </PageHeader>
+	<div class="space-y-12">
+		<!-- Header -->
+		<PageHeader title="Lista de Presentes" description="Gerencie produtos físicos e cotas financeiras.">
+			<Button @click="openNewQuota">Nova Cota (PIX)</Button>
+			<Button @click="openNewPhysical" variant="outline">Novo
+				Produto</Button>
+		</PageHeader>
 
-    <!-- Products Gallery -->
-    <ProductGallery :products="products" :tenant="tenant" mode="admin"
-      @edit="(p: IProduct) => p.type === 'quota' ? editQuota(p) : editPhysical(p)" @delete="deleteProduct" />
+		<!-- Products Gallery -->
+		<ProductGallery :products="products" :tenant="tenant" mode="admin"
+			@edit="(p: IProduct) => p.type === 'quota' ? editQuota(p) : editPhysical(p)" @delete="deleteProduct" />
 
-    <!-- Modals -->
-    <!-- Physical Modal -->
-    <Modal v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'"
-      class="max-w-2xl">
-      <div class="space-y-5 max-h-[60vh] overflow-y-auto py-4">
-        <FormGroup label="Nome do Produto" :error="physicalErrors.name">
-          <Input v-model="pName" placeholder="Ex: Jogo de Panelas Tramontina" />
-        </FormGroup>
+		<!-- Modals -->
+		<!-- Physical Modal -->
+		<Modal v-model:open="showPhysicalModal" :title="editProductId ? 'Editar Produto Físico' : 'Novo Produto Físico'"
+			class="max-w-2xl">
+			<div class="space-y-5 max-h-[60vh] overflow-y-auto py-4">
+				<FormGroup label="Nome do Produto" :error="physicalErrors.name">
+					<Input v-model="pName" placeholder="Ex: Jogo de Panelas Tramontina" />
+				</FormGroup>
 
-        <FormGroup label="Categoria" :error="physicalErrors.categorySelect">
-          <Combobox v-model="pCategorySelect" :options="categoryOptions" placeholder="Selecione a categoria..."
-            emptyText="Nenhuma categoria..." />
-        </FormGroup>
+				<FormGroup label="Categoria" :error="physicalErrors.categorySelect">
+					<Combobox v-model="pCategorySelect" :options="categoryOptions" placeholder="Selecione a categoria..."
+						emptyText="Nenhuma categoria..." />
+				</FormGroup>
 
-        <FormGroup v-if="pCategorySelect === 'Outro'" label="Qual categoria?" :error="physicalErrors.categoryCustom">
-          <Input v-model="pCategoryCustom" placeholder="Ex: Eletroportáteis" class="bg-slate-50/50" />
-        </FormGroup>
+				<FormGroup v-if="pCategorySelect === 'Outro'" label="Qual categoria?" :error="physicalErrors.categoryCustom">
+					<Input v-model="pCategoryCustom" placeholder="Ex: Eletroportáteis" class="bg-slate-50/50" />
+				</FormGroup>
 
-        <div class="grid grid-cols-2 gap-4">
-          <FormGroup label="Preço Unitário Estimado" :error="physicalErrors.price">
-            <Input v-model.number="pPrice" type="number" step="0.01" placeholder="Ex: 150.00" />
-          </FormGroup>
-          <FormGroup label="Quantidade" :error="physicalErrors.desiredQuantity">
-            <Input v-model.number="pDesiredQuantity" type="number" min="1" />
-          </FormGroup>
-        </div>
+				<div class="grid grid-cols-2 gap-4">
+					<FormGroup label="Preço Unitário Estimado" :error="physicalErrors.price">
+						<Input v-model.number="pPrice" type="number" step="0.01" placeholder="Ex: 150.00" />
+					</FormGroup>
+					<FormGroup label="Quantidade" :error="physicalErrors.desiredQuantity">
+						<Input v-model.number="pDesiredQuantity" type="number" min="1" />
+					</FormGroup>
+				</div>
 
-        <FormGroup label="Imagem do Produto">
-          <FileUpload v-model="pImageBase64" @file-selected="(file) => pImageFile = file" :maxSizeMb="1"
-            accept="image/*" />
-        </FormGroup>
+				<FormGroup label="Imagem do Produto">
+					<FileUpload v-model="pImageBase64" @file-selected="(file) => pImageFile = file" :maxSizeMb="1"
+						accept="image/*" />
+				</FormGroup>
 
-        <FormGroup label="Links Externos (Lojas)">
-          <div v-if="pLinks.length > 0" class="space-y-2 mb-2">
-            <div v-for="(link, idx) in pLinks" :key="idx"
-              class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
-              <div class="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-400">
-                <ExternalLink class="w-4 h-4" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-slate-900 truncate">{{ link.store }}</p>
-              </div>
-              <Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600 hover:bg-red-50"
-                @click="removeLink(idx)">
-                <X class="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+				<FormGroup label="Links Externos (Lojas)">
+					<div v-if="pLinks.length > 0" class="space-y-2 mb-2">
+						<div v-for="(link, idx) in pLinks" :key="idx"
+							class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+							<div class="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-400">
+								<ExternalLink class="w-4 h-4" />
+							</div>
+							<div class="flex-1 min-w-0">
+								<p class="text-sm font-medium text-slate-900 truncate">{{ link.store }}</p>
+							</div>
+							<Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600 hover:bg-red-50"
+								@click="removeLink(idx)">
+								<X class="w-4 h-4" />
+							</Button>
+						</div>
+					</div>
 
-          <div v-if="searchResults.length > 0"
-            class="space-y-2 mt-4 p-4 border border-primary/20 bg-primary/5 rounded-xl">
-            <h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-3">Resultados da Busca (Serper)</h4>
-            <div v-for="(res, idx) in searchResults" :key="idx"
-              class="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm">
-              <div class="flex-1 min-w-0">
-                <a :href="res.url" target="_blank" class="block text-xs font-medium text-slate-900 truncate" :title="res.title">{{ res.title }}</a>
-                <p class="text-[10px] text-slate-500">{{ res.store }}</p>
-              </div>
-              <Button size="sm" variant="outline" class="h-7 text-xs px-2" @click="addLinkToProduct(res)">
-                <Plus class="w-3 h-3 mr-1" /> Add
-              </Button>
-            </div>
-          </div>
-          <div v-else-if="pLinks.length === 0"
-            class="text-sm text-slate-500 text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-            Nenhum link adicionado. Use a busca abaixo para encontrar ofertas.
-          </div>
-        </FormGroup>
-      </div>
-      <div class="pt-4 border-t border-slate-100 flex gap-3">
-        <Button variant="outline" class="flex-1" @click="searchExternalLinks" :disabled="isSearchingLinks">
-          {{ isSearchingLinks ? 'Buscando...' : 'Buscar Links (Google)' }}
-        </Button>
-        <Button class="flex-1" @click="productSubmit">Salvar</Button>
-      </div>
-    </Modal>
+					<div v-if="searchResults.length > 0"
+						class="space-y-2 mt-4 p-4 border border-primary/20 bg-primary/5 rounded-xl">
+						<h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-3">Resultados da Busca (Serper)</h4>
+						<div v-for="(res, idx) in searchResults" :key="idx"
+							class="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm">
+							<div class="flex-1 min-w-0">
+								<a :href="res.url" target="_blank" class="block text-xs font-medium text-slate-900 truncate"
+									:title="res.title">{{ res.title }}</a>
+								<p class="text-[10px] text-slate-500">{{ res.store }}</p>
+							</div>
+							<Button size="sm" variant="outline" class="h-7 text-xs px-2" @click="addLinkToProduct(res)">
+								<Plus class="w-3 h-3 mr-1" /> Add
+							</Button>
+						</div>
+					</div>
+					<div v-else-if="pLinks.length === 0"
+						class="text-sm text-slate-500 text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+						Nenhum link adicionado. Use a busca abaixo para encontrar ofertas.
+					</div>
+				</FormGroup>
+			</div>
+			<div class="pt-4 border-t border-slate-100 flex gap-3">
+				<Button variant="outline" class="flex-1" @click="searchExternalLinks" :disabled="isSearchingLinks">
+					{{ isSearchingLinks ? 'Buscando...' : 'Buscar Links (Google)' }}
+				</Button>
+				<Button class="flex-1" @click="productSubmit">Salvar</Button>
+			</div>
+		</Modal>
 
-    <!-- Quota Modal -->
-    <Modal v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'"
-      class="max-w-2xl">
-      <div class="space-y-5 max-h-[60vh] overflow-y-auto py-4">
-        <FormGroup label="Sugestão de Experiência">
-          <Combobox v-model="selectedPredefinedExp" :options="predefinedExperienceOptions"
-            placeholder="Selecione uma sugestão para preencher..." emptyText="Nenhuma sugestão encontrada..." />
-        </FormGroup>
+		<!-- Quota Modal -->
+		<Modal v-model:open="showQuotaModal" :title="editProductId ? 'Editar Cota PIX' : 'Nova Cota (PIX)'"
+			class="max-w-2xl">
+			<div class="space-y-5 max-h-[60vh] overflow-y-auto py-4">
+				<FormGroup label="Sugestão de Experiência">
+					<Combobox v-model="selectedPredefinedExp" :options="predefinedExperienceOptions"
+						placeholder="Selecione uma sugestão para preencher..." emptyText="Nenhuma sugestão encontrada..." />
+				</FormGroup>
 
-        <FormGroup label="Nome da Experiência" :error="quotaErrors.name">
-          <Input v-model="qName" placeholder="Ex: Jantar Romântico" />
-        </FormGroup>
+				<FormGroup label="Nome da Experiência" :error="quotaErrors.name">
+					<Input v-model="qName" placeholder="Ex: Jantar Romântico" />
+				</FormGroup>
 
-        <FormGroup label="Categoria" :error="quotaErrors.categorySelect">
-          <Combobox v-model="qCategorySelect" :options="categoryOptions" placeholder="Selecione a categoria..."
-            emptyText="Nenhuma categoria..." />
-        </FormGroup>
+				<FormGroup label="Categoria" :error="quotaErrors.categorySelect">
+					<Combobox v-model="qCategorySelect" :options="categoryOptions" placeholder="Selecione a categoria..."
+						emptyText="Nenhuma categoria..." />
+				</FormGroup>
 
-        <FormGroup v-if="qCategorySelect === 'Outro'" label="Qual categoria?" :error="quotaErrors.categoryCustom">
-          <Input v-model="qCategoryCustom" placeholder="Ex: Experiências de Viagem" class="bg-slate-50/50" />
-        </FormGroup>
+				<FormGroup v-if="qCategorySelect === 'Outro'" label="Qual categoria?" :error="quotaErrors.categoryCustom">
+					<Input v-model="qCategoryCustom" placeholder="Ex: Experiências de Viagem" class="bg-slate-50/50" />
+				</FormGroup>
 
-        <div class="grid grid-cols-2 gap-4">
-          <FormGroup label="Valor da Cota (R$)" :error="quotaErrors.price">
-            <Input v-model.number="qPrice" type="number" step="0.01" placeholder="Ex: 400.00" />
-          </FormGroup>
-          <FormGroup label="Quantidade de Cotas" :error="quotaErrors.desiredQuantity">
-            <Input v-model.number="qDesiredQuantity" type="number" placeholder="Ex: 5" />
-          </FormGroup>
-        </div>
+				<div class="grid grid-cols-2 gap-4">
+					<FormGroup label="Valor da Cota (R$)" :error="quotaErrors.price">
+						<Input v-model.number="qPrice" type="number" step="0.01" placeholder="Ex: 400.00" />
+					</FormGroup>
+					<FormGroup label="Quantidade de Cotas" :error="quotaErrors.desiredQuantity">
+						<Input v-model.number="qDesiredQuantity" type="number" placeholder="Ex: 5" />
+					</FormGroup>
+				</div>
 
-        <div v-if="(Number(quotaValues.price) || 0) > 0 && (Number(quotaValues.desiredQuantity) || 0) > 0"
-          class="bg-primary/5 text-primary text-sm font-medium p-3 rounded-xl border border-primary/10 flex justify-between items-center">
-          <span>Valor da Cota Individual:</span>
-          <span class="text-base font-bold">{{ formatMoney((Number(quotaValues.price) || 0) /
-            (Number(quotaValues.desiredQuantity) || 1)) }}</span>
-        </div>
+				<div v-if="(Number(quotaValues.price) || 0) > 0 && (Number(quotaValues.desiredQuantity) || 0) > 0"
+					class="bg-primary/5 text-primary text-sm font-medium p-3 rounded-xl border border-primary/10 flex justify-between items-center">
+					<span>Valor da Cota Individual:</span>
+					<span class="text-base font-bold">{{ formatMoney((Number(quotaValues.price) || 0) /
+						(Number(quotaValues.desiredQuantity) || 1)) }}</span>
+				</div>
 
-        <FormGroup label="Imagem Inspiracional">
-          <FileUpload v-model="qImageBase64" @file-selected="(file) => qImageFile = file" :maxSizeMb="1"
-            accept="image/*" />
-        </FormGroup>
-      </div>
-      <div class="pt-4 border-t border-slate-100 flex gap-3">
-        <Button class="flex-1" @click="quotaSubmit">Salvar</Button>
-      </div>
-    </Modal>
-  </div>
+				<FormGroup label="Imagem Inspiracional">
+					<FileUpload v-model="qImageBase64" @file-selected="(file) => qImageFile = file" :maxSizeMb="1"
+						accept="image/*" />
+				</FormGroup>
+			</div>
+			<div class="pt-4 border-t border-slate-100 flex gap-3">
+				<Button class="flex-1" @click="quotaSubmit">Salvar</Button>
+			</div>
+		</Modal>
+	</div>
 </template>

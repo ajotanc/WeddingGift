@@ -54,7 +54,10 @@ export const useAuthStore = defineStore("auth", {
 			this.loading = true;
 
 			// Mock developer auth bypass for UI testing
-			const isMockAuth = typeof window !== "undefined" && (localStorage.getItem("mock_auth") === "true" || window.location.search.includes("mock_auth=true"));
+			const isMockAuth =
+				typeof window !== "undefined" &&
+				(localStorage.getItem("mock_auth") === "true" ||
+					window.location.search.includes("mock_auth=true"));
 			if (isMockAuth) {
 				this.user = {
 					$id: "mock-user-123",
@@ -134,11 +137,14 @@ export const useAuthStore = defineStore("auth", {
 
 							if (pictureUrl && sessionUser.$id) {
 								try {
-									const updatedGuest = await GuestService.upsert(sessionUser.$id, {
-										photo_url: pictureUrl,
-										email: sessionUser.email,
-										name: sessionUser.name,
-									});
+									const updatedGuest = await GuestService.upsert(
+										sessionUser.$id,
+										{
+											photo_url: pictureUrl,
+											email: sessionUser.email,
+											name: sessionUser.name,
+										},
+									);
 									this.guest = updatedGuest;
 								} catch (err) {
 									console.error("Failed to sync guest photo_url:", err);
@@ -221,7 +227,9 @@ export const useAuthStore = defineStore("auth", {
 					} catch (e) {
 						if (sessionUser.email) {
 							try {
-								const tCoOwner = await TenantService.getByCoOwner(sessionUser.email);
+								const tCoOwner = await TenantService.getByCoOwner(
+									sessionUser.email,
+								);
 								this.tenant = this.sanitizeTenant(tCoOwner);
 							} catch (err) {
 								this.tenant = null;
@@ -248,7 +256,10 @@ export const useAuthStore = defineStore("auth", {
 					}
 				}
 			} catch (err) {
-				console.error("Erro crítico no carregamento da sessão (authStore.init):", err);
+				console.error(
+					"Erro crítico no carregamento da sessão (authStore.init):",
+					err,
+				);
 				this.user = null;
 				this.tenant = null;
 				this.guest = null;
@@ -316,6 +327,7 @@ export const useAuthStore = defineStore("auth", {
 				copy.title_font = DEFAULT_TITLE_FONT;
 				copy.body_font = DEFAULT_BODY_FONT;
 				copy.show_countdown = false;
+				copy.show_quiz = false;
 				copy.music_url = null;
 				copy.ambient_effect = null;
 			}

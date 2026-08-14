@@ -6,18 +6,14 @@ import { computed, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronsUpDown,
-  Minus,
-  Plus,
-  Edit2,
-  Gift,
-  Heart,
-  SlidersHorizontal,
-  Trash2,
+	ChevronsUpDown,
+	Edit2,
+	Gift,
+	Heart,
+	Minus,
+	Plus,
+	SlidersHorizontal,
+	Trash2,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
@@ -25,54 +21,56 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationFirst,
+	PaginationItem,
+	PaginationLast,
+	PaginationNext,
+	PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
 } from "@/components/ui/select";
+import { handleImageError } from "@/lib/utils";
+import Pix from "./icons/Pix.vue";
 
 const props = defineProps<{
-  products: IProduct[];
-  tenant: ITenant | null;
-  mode: "public" | "admin";
-  currentUser?: Record<string, unknown> | null;
+	products: IProduct[];
+	tenant: ITenant | null;
+	mode: "public" | "admin";
+	currentUser?: Record<string, unknown> | null;
 }>();
 
 const emit = defineEmits<{
-  (e: "open-pix", product: IProduct, quantity: number): void;
-  (e: "open-links", product: IProduct, quantity: number): void;
-  (e: "edit", product: IProduct): void;
-  (e: "delete", product: IProduct): void;
+	(e: "open-pix", product: IProduct, quantity: number): void;
+	(e: "open-links", product: IProduct, quantity: number): void;
+	(e: "edit", product: IProduct): void;
+	(e: "delete", product: IProduct): void;
 }>();
 
 // --- Estado de Filtros ---
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
-  const cats = new Set(
-    props.products.map((p) => p.category).filter((c): c is string => !!c),
-  );
-  return Array.from(cats).sort();
+	const cats = new Set(
+		props.products.map((p) => p.category).filter((c): c is string => !!c),
+	);
+	return Array.from(cats).sort();
 });
 
 const getCategoryCount = (categoryName: string) => {
-  if (categoryName === "all") return props.products.length;
-  return props.products.filter((p) => p.category === categoryName).length;
+	if (categoryName === "all") return props.products.length;
+	return props.products.filter((p) => p.category === categoryName).length;
 };
 
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === "all") return props.products;
-  return props.products.filter((p) => p.category === selectedCategory.value);
+	if (selectedCategory.value === "all") return props.products;
+	return props.products.filter((p) => p.category === selectedCategory.value);
 });
 
 // --- Estado de Paginação ---
@@ -80,13 +78,13 @@ const currentPage = ref(1);
 const itemsPerPage = ref(6);
 
 watch(selectedCategory, () => {
-  currentPage.value = 1;
+	currentPage.value = 1;
 });
 
 const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredProducts.value.slice(start, end);
+	const start = (currentPage.value - 1) * itemsPerPage.value;
+	const end = start + itemsPerPage.value;
+	return filteredProducts.value.slice(start, end);
 });
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
@@ -94,41 +92,67 @@ const quotaQuantities = ref<Record<string, number>>({});
 
 // Métodos auxiliares para calcular limites individuais de cada produto na lista
 const isProductSoldOut = (product: IProduct) => {
-  return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
+	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
 };
 
 const getRemainingQuantity = (product: IProduct) => {
-  return Math.max(
-    0,
-    (product.desired_quantity || 1) - (product.claimed_quantity || 0),
-  );
+	return Math.max(
+		0,
+		(product.desired_quantity || 1) - (product.claimed_quantity || 0),
+	);
 };
 
 const getLocalQuantity = (productId: string) => {
-  return quotaQuantities.value[productId] || 1;
+	return quotaQuantities.value[productId] || 1;
 };
 
 const setLocalQuantity = (productId: string, val: number, maxQty: number) => {
-  quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
+	quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
+};
+
+const getGoalCollected = (product: IProduct) => {
+	if (
+		product.collected_amount !== undefined &&
+		product.collected_amount !== null
+	) {
+		return product.collected_amount;
+	}
+	return (
+		(product.claimed_quantity || 0) * (Number.parseFloat(product.price) || 0)
+	);
+};
+
+const getGoalTarget = (product: IProduct) => {
+	if (product.target_amount) return product.target_amount;
+	return (
+		(product.desired_quantity || 1) * (Number.parseFloat(product.price) || 0)
+	);
+};
+
+const getGoalPercentage = (product: IProduct) => {
+	const target = getGoalTarget(product);
+	if (!target || target <= 0) return 0;
+	const collected = getGoalCollected(product);
+	return Math.min(100, Math.round((collected / target) * 100));
 };
 
 // --- Handlers de Ação de Envio ---
 const handleOpenPix = (product: IProduct) => {
-  const qty = getLocalQuantity(product.$id);
-  emit("open-pix", product, qty);
+	const qty = getLocalQuantity(product.$id);
+	emit("open-pix", product, qty);
 };
 
 const handleOpenLinks = (product: IProduct) => {
-  const qty = getLocalQuantity(product.$id);
-  emit("open-links", product, qty);
+	const qty = getLocalQuantity(product.$id);
+	emit("open-links", product, qty);
 };
 
 // TIPAGEM ESTRITA SEM ANY/UNKNOWN USANDO INTERFACES NATIVAS DO DOM
 const updateItemsPerPage = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  if (target) {
-    itemsPerPage.value = Number.parseInt(target.value, 10);
-  }
+	const target = event.target as HTMLSelectElement;
+	if (target) {
+		itemsPerPage.value = Number.parseInt(target.value, 10);
+	}
 };
 </script>
 
@@ -142,8 +166,7 @@ const updateItemsPerPage = (event: Event) => {
             class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
             :class="selectedCategory !== 'all'
               ? 'bg-primary/10 text-primary border-primary/40 font-bold'
-              : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'"
-          >
+              : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
             <div class="flex items-center justify-between w-full pr-1">
               <div class="flex items-center gap-2.5 truncate">
                 <div class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
@@ -154,40 +177,32 @@ const updateItemsPerPage = (event: Event) => {
                 </span>
               </div>
               <div
-                class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors"
-              >
+                class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
                 {{ getCategoryCount(selectedCategory) }}
               </div>
             </div>
           </SelectTrigger>
-          <SelectContent class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
+          <SelectContent
+            class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
             <SelectGroup>
-              <SelectItem
-                value="all"
-                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors"
-              >
+              <SelectItem value="all"
+                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
                 <div class="flex items-center justify-between w-full gap-4">
                   <span>Todas as Categorias</span>
                   <div
                     class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
-                    :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'"
-                  >
+                    :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
                     {{ props.products.length }}
                   </div>
                 </div>
               </SelectItem>
-              <SelectItem
-                v-for="cat in categories"
-                :key="cat"
-                :value="cat"
-                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors"
-              >
+              <SelectItem v-for="cat in categories" :key="cat" :value="cat"
+                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
                 <div class="flex items-center justify-between w-full gap-4">
                   <span>{{ cat }}</span>
                   <div
                     class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
-                    :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'"
-                  >
+                    :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
                     {{ getCategoryCount(cat) }}
                   </div>
                 </div>
@@ -199,40 +214,32 @@ const updateItemsPerPage = (event: Event) => {
 
       <!-- Abas de Pílula no Desktop (hidden sm:flex) -->
       <div class="hidden sm:flex items-center justify-center gap-2.5 max-w-3xl mx-auto flex-wrap">
-        <button
-          @click="selectedCategory = 'all'"
+        <button @click="selectedCategory = 'all'"
           class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
           :class="selectedCategory === 'all'
             ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
-            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'"
-        >
+            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'">
           <span>Todas</span>
           <div
             class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
             :class="selectedCategory === 'all'
               ? 'bg-primary/20 text-primary border border-primary/30'
-              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
-          >
+              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'">
             {{ props.products.length }}
           </div>
         </button>
 
-        <button
-          v-for="cat in categories"
-          :key="cat"
-          @click="selectedCategory = cat"
+        <button v-for="cat in categories" :key="cat" @click="selectedCategory = cat"
           class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
           :class="selectedCategory === cat
             ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
-            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'"
-        >
+            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'">
           <span>{{ cat }}</span>
           <div
             class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
             :class="selectedCategory === cat
               ? 'bg-primary/20 text-primary border border-primary/30'
-              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
-          >
+              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'">
             {{ getCategoryCount(cat) }}
           </div>
         </button>
@@ -243,15 +250,72 @@ const updateItemsPerPage = (event: Event) => {
       Nenhum presente encontrado nesta categoria.
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-      <Card v-for="product in paginatedProducts" :key="product.$id"
-        class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100/70 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 text-left">
+      <!-- Featured Custom Amount Card (Valor Livre PIX) -->
+      <Card
+        v-if="mode === 'public' && (selectedCategory === 'all' || selectedCategory === 'Contribuição Livre') && currentPage === 1"
+        class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
 
         <div
-          class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100/50 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
+          class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
+          <div
+            class="p-4 w-full h-full flex flex-col items-center justify-center text-slate-300 select-none bg-slate-50/50">
+            <div
+              class="w-14 h-14 rounded-full border flex items-center justify-center mb-2 bg-white shadow-sm border-primary/20 text-primary">
+              <Pix class="w-7 h-7" />
+            </div>
+            <span class="text-[9px] uppercase tracking-widest font-bold text-slate-400">Presente Especial</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col flex-1">
+          <div class="mb-2.5 flex items-center gap-2 flex-wrap">
+            <span
+              class="bg-slate-100/80 border border-slate-300 text-slate-500 text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest">
+              Contribuição
+            </span>
+            <span
+              class="text-[9px] border border-primary/50 font-bold px-2.5 py-1 rounded-md uppercase tracking-widest text-primary bg-primary/10">
+              PIX
+            </span>
+          </div>
+
+          <h3 class="text-slate-800 text-lg mb-2 leading-snug group-hover:text-primary transition-colors duration-300">
+            Contribuição Livre
+          </h3>
+          <p class="text-xs text-slate-500 font-light leading-relaxed">
+            Prefere nos abençoar com um valor de sua escolha? Sinta-se à vontade para contribuir com a quantia que tocar
+            o seu coração e nos ajudar a construir nosso novo lar.
+          </p>
+
+          <div class="mt-auto pt-2">
+            <div class="flex flex-col gap-2">
+              <Button @click="emit('open-pix', {
+                tenant: tenant?.$id,
+                type: 'quota',
+                name: 'Contribuição Livre',
+                price: '10',
+                desired_quantity: 999,
+                claimed_quantity: 0,
+                is_custom_amount: true,
+                category: 'pix'
+              } as IProduct, 1)"
+                class="w-full h-11 rounded-xl bg-primary text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all hover:brightness-105 active:scale-[0.98] cursor-pointer border border-primary">
+                <span>Presentear com PIX</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card v-for="product in paginatedProducts" :key="product.$id"
+        class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
+        <div
+          class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
           <div v-if="product.type === 'physical' && product?.image_url"
             class="p-4 w-full h-full flex items-center justify-center">
             <img :src="product.image_url" alt="Produto"
+              @error="handleImageError"
               class="max-h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.03]" />
           </div>
           <div v-else
@@ -318,6 +382,24 @@ const updateItemsPerPage = (event: Event) => {
               {{ formatMoney(product.price) }}
             </p>
 
+            <!-- Progress Bar for Quotas and Goals -->
+            <div v-if="product.type === 'quota' || product.is_goal || product.target_amount"
+              class="mt-3 space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100/80">
+              <div class="flex justify-between items-center text-[11px] font-semibold">
+                <span class="text-slate-500 uppercase tracking-wider font-bold">Meta Coletiva</span>
+                <span class="text-primary font-bold">{{ getGoalPercentage(product) }}%</span>
+              </div>
+              <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div class="bg-primary h-full transition-all duration-500"
+                  :style="{ width: `${getGoalPercentage(product)}%` }">
+                </div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 pt-0.5">
+                <span>{{ formatMoney(getGoalCollected(product)) }}</span>
+                <span>{{ formatMoney(getGoalTarget(product)) }}</span>
+              </div>
+            </div>
+
             <div v-if="isProductSoldOut(product)"
               class="mt-4 w-full h-11 px-4 rounded-xl border border-primary/40 bg-primary/10 text-primary/80 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all select-none">
               <span>Garantido com carinho</span>
@@ -327,9 +409,10 @@ const updateItemsPerPage = (event: Event) => {
               <div class="flex flex-col gap-2 mt-4">
 
                 <div v-if="getRemainingQuantity(product) > 1" class="flex items-center gap-2 mb-2">
-                  <Button variant="outline" size="icon" class="h-11 w-11 p-0 rounded-xl shrink-0 border-slate-200 text-red-600 hover:bg-slate-50 font-bold text-base"
+                  <Button variant="outline" size="icon"
+                    class="h-11 w-11 p-0 rounded-xl shrink-0 border-slate-200 text-red-600 hover:bg-slate-50 font-bold text-base"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) - 1, getRemainingQuantity(product))">
-                  <Minus />
+                    <Minus />
                   </Button>
 
                   <Input type="number" min="1" :max="getRemainingQuantity(product)"
@@ -337,9 +420,10 @@ const updateItemsPerPage = (event: Event) => {
                     :model-value="getLocalQuantity(product.$id)"
                     @update:model-value="(val: string | number) => setLocalQuantity(product.$id, Number(val), getRemainingQuantity(product))" />
 
-                  <Button variant="outline" size="icon" class="h-11 w-11 p-0 rounded-xl shrink-0 border-slate-200 text-emerald-600 hover:bg-slate-50 font-bold text-base"
+                  <Button variant="outline" size="icon"
+                    class="h-11 w-11 p-0 rounded-xl shrink-0 border-slate-200 text-emerald-600 hover:bg-slate-50 font-bold text-base"
                     @click="setLocalQuantity(product.$id, getLocalQuantity(product.$id) + 1, getRemainingQuantity(product))">
-                  <Plus />
+                    <Plus />
                   </Button>
                 </div>
 

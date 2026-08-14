@@ -7,13 +7,14 @@ import Confirm from "@/components/ui/confirm/Confirm.vue";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { useFeedback } from "@/composables/useFeedback";
 import { useTenant } from "@/composables/useTenant";
 import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import { MessageSquarePlus, Pause, Play } from "lucide-vue-next";
+import { Pause, Play } from "lucide-vue-next";
 import { useForm } from "vee-validate";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { toast } from "vue-sonner";
 import * as z from "zod";
 import CookieConsent from "./components/reusable/CookieConsent.vue";
@@ -25,22 +26,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./components/ui/select";
-import { useMusicStore } from "./stores/music";
 import { PROJECT_NAME } from "./lib/defaults";
+import { useMusicStore } from "./stores/music";
 
 const authStore = useAuthStore();
 const route = useRoute();
 const music = useMusicStore();
 const { tenant: currentTenant } = useTenant();
+const { isFeedbackOpen } = useFeedback();
 
-const isPageLoadingTheme = computed(() => {
-	if (route.params.slug) {
-		const activeTenant = currentTenant.value || authStore.tenant;
-		return !activeTenant || activeTenant.slug !== route.params.slug;
-	}
-	return false;
-});
-const showFeedbackModal = ref(false);
 const sending = ref(false);
 
 const feedbackSchema = toTypedSchema(
@@ -52,7 +46,7 @@ const feedbackSchema = toTypedSchema(
 	}),
 );
 
-const { handleSubmit, errors, setValues, defineField, resetForm } = useForm({
+const { handleSubmit, errors, defineField, resetForm } = useForm({
 	validationSchema: feedbackSchema,
 	initialValues: {
 		name: "",
@@ -67,43 +61,18 @@ const [email] = defineField("email");
 const [type] = defineField("type");
 const [message] = defineField("message");
 
-watch(
-	() => authStore.user,
-	(user) => {
-		if (user) {
-			setValues({
-				name: user.name || "",
-				email: user.email || "",
-			});
-		}
-	},
-	{ immediate: true },
-);
-
-watch(
-	() => authStore.guest,
-	(guest) => {
-		if (guest) {
-			setValues({
-				name: guest.name || name.value || "",
-				email: guest.email || email.value || "",
-			});
-		}
-	},
-	{ immediate: true },
-);
-
-const openFeedback = () => {
-	resetForm({
-		values: {
-			name: authStore.user?.name || authStore.guest?.name || "",
-			email: authStore.user?.email || authStore.guest?.email || "",
-			type: "Sugestão",
-			message: "",
-		},
-	});
-	showFeedbackModal.value = true;
-};
+watch(isFeedbackOpen, (isOpen) => {
+	if (isOpen) {
+		resetForm({
+			values: {
+				name: authStore.user?.name || authStore.guest?.name || "",
+				email: authStore.user?.email || authStore.guest?.email || "",
+				type: "Sugestão",
+				message: "",
+			},
+		});
+	}
+});
 
 const onSubmitFeedback = handleSubmit(async (values) => {
 	sending.value = true;
@@ -115,7 +84,7 @@ const onSubmitFeedback = handleSubmit(async (values) => {
 			message: values.message,
 		});
 		toast.success("Feedback enviado com sucesso! Muito obrigado.");
-		showFeedbackModal.value = false;
+		isFeedbackOpen.value = false;
 	} catch (error) {
 		console.error(error);
 		toast.error("Erro ao enviar o feedback. Tente novamente mais tarde.");
@@ -181,14 +150,8 @@ watch(
 		</div>
 	</template>
 
-	<!-- Global Floating Feedback Button -->
-	<button v-if="!isPageLoadingTheme" type="button" @click="openFeedback"
-		class="fixed bottom-6 right-6 z-50 text-primary bg-white/80 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
-		<MessageSquarePlus class="w-5 h-5" />
-	</button>
-
 	<!-- Feedback Modal -->
-	<Modal v-model:open="showFeedbackModal" title="Sugestões / Dúvidas / Críticas"
+	<Modal v-model:open="isFeedbackOpen" title="Sugestões / Dúvidas / Críticas"
 		description="Ajude-nos a melhorar a plataforma enviando o seu feedback.">
 		<form @submit="onSubmitFeedback" class="space-y-4 pt-4">
 			<FormGroup label="Seu Nome" :error="errors.name">
@@ -218,7 +181,7 @@ watch(
 			</FormGroup>
 
 			<div class="pt-2 flex justify-end gap-3">
-				<Button type="button" variant="ghost" @click="showFeedbackModal = false" class="text-slate-600 hover:bg-slate-50 h-11 px-4">
+				<Button type="button" variant="ghost" @click="isFeedbackOpen = false" class="text-slate-600 hover:bg-slate-50 h-11 px-4">
 					Cancelar
 				</Button>
 				<Button type="submit" :disabled="sending" class="bg-primary hover:brightness-105 text-white rounded-xl px-6 h-11 font-semibold border border-primary/30 shadow-sm transition-all flex items-center justify-center">

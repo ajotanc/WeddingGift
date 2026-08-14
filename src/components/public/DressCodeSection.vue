@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SectionHeader from "@/components/public/SectionHeader.vue";
 import DOMPurify from "dompurify";
 import { Shirt } from "lucide-vue-next";
 import { computed } from "vue";
@@ -23,18 +24,15 @@ const sanitizedDressCodeText = computed(() =>
 			<div class="absolute bottom-4 left-4 w-4 h-4 border-primary/40 border-b border-l"></div>
 			<div class="absolute bottom-4 right-4 w-4 h-4 border-primary/40 border-b border-r"></div>
 
-			<div class="text-center mb-8">
-				<!-- Elegant diamond icon frame -->
-				<div class="w-10 h-10 border flex items-center justify-center mx-auto mb-6 rounded-xl rotate-45 border-primary">
+			<SectionHeader
+				tag="Dress Code"
+				title="Guia de Trajes"
+				description="Preparamos algumas sugestões sobre o traje recomendado para que todos os nossos convidados se sintam confortáveis e elegantes no nosso dia."
+				responsive>
+				<div class="w-10 h-10 border flex items-center justify-center mx-auto mt-4 rounded-xl rotate-45 border-primary">
 					<Shirt class="w-4 h-4 -rotate-45 text-primary" />
 				</div>
-				<span class="text-[10px] font-bold tracking-[0.25em] uppercase text-primary">Dress Code</span>
-				<h2 class="text-3xl font-serif text-slate-900 mt-2 mb-4 font-semibold">Guia de Trajes</h2>
-				<p class="text-slate-600 font-light max-w-xl mx-auto text-sm leading-relaxed">
-					Preparamos algumas sugestões sobre o traje recomendado para que todos os nossos convidados se sintam
-					confortáveis e elegantes no nosso dia.
-				</p>
-			</div>
+			</SectionHeader>
 
 			<div class="border-t border-slate-200/60 pt-8 mt-6">
 				<div

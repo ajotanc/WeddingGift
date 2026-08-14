@@ -1,11 +1,3 @@
-import { DATABASE_ID, realtime } from "@/lib/appwrite";
-import {
-	TABLE_FAQS,
-	TABLE_GALLERY,
-	TABLE_PRODUCTS,
-	TABLE_SCHEDULE,
-	TABLE_TENANTS,
-} from "@/lib/collections";
 import { hexToHsl, hexToRgbChannels, hslToHex } from "@/lib/colors";
 import { DEFAULT_SLATE_COLORS, PROJECT_NAME } from "@/lib/defaults";
 import { sortBy } from "@/lib/utils";
@@ -15,6 +7,7 @@ import type { IMessage } from "@/services/message.service";
 import type { IProduct } from "@/services/product.service";
 import type { IPurchase } from "@/services/purchase.service";
 import { PurchaseService } from "@/services/purchase.service";
+import type { IQuizQuestion } from "@/services/quiz.service";
 import type { IRsvp } from "@/services/rsvp.service";
 import type { IScheduleItem } from "@/services/schedule.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
@@ -136,6 +129,7 @@ const purchases = ref<IPurchase[]>([]);
 const gallery = ref<IGalleryImage[]>([]);
 const faqs = ref<IFaq[]>([]);
 const schedules = ref<IScheduleItem[]>([]);
+const quizzes = ref<IQuizQuestion[]>([]);
 export function useTenant() {
 	const route = useRoute();
 	const authStore = useAuthStore();
@@ -162,6 +156,7 @@ export function useTenant() {
 				gallery.value = data?.gallery || [];
 				faqs.value = sortBy(data?.faqs || [], "order");
 				schedules.value = sortBy(data?.schedules || [], "hour");
+				quizzes.value = sortBy(data?.quizzes || [], "order");
 
 				tenant.value = sanitizeTenant(data);
 
@@ -388,6 +383,7 @@ export function useTenant() {
 				gallery.value = [];
 				faqs.value = [];
 				schedules.value = [];
+				quizzes.value = [];
 				loading.value = false;
 			}
 		},
@@ -401,6 +397,7 @@ export function useTenant() {
 		gallery,
 		faqs,
 		schedules,
+		quizzes,
 		loading,
 		error,
 		fetchTenant,

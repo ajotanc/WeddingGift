@@ -144,7 +144,9 @@ export function hexToRgbChannels(hex: string): string {
 	const match = HEX_PATTERN.exec(hex.trim());
 
 	if (!match?.groups) {
-		throw new TypeError(`hexToRgbChannels: cor hexadecimal inválida -> "${hex}"`);
+		throw new TypeError(
+			`hexToRgbChannels: cor hexadecimal inválida -> "${hex}"`,
+		);
 	}
 
 	const fullHex =
@@ -163,7 +165,13 @@ export const DEFAULT_PRIMARY_COLOR = "#C5A880";
 export const DEFAULT_TEXT_COLOR = "#5A4F4A";
 export const DEFAULT_BACKGROUND_COLOR = "#FAF8F6";
 
-export const FREE_PRIMARY_COLORS = ["#C5A880", "#ec4899", "#2e7d32", "#d4af37", "#1976d2"];
+export const FREE_PRIMARY_COLORS = [
+	"#C5A880",
+	"#ec4899",
+	"#2e7d32",
+	"#d4af37",
+	"#1976d2",
+];
 export const FREE_BACKGROUND_COLORS = [
 	"#FAF8F6",
 	"#ffffff",

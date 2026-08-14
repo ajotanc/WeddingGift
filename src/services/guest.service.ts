@@ -37,7 +37,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: guestId,
 			data,
-			permissions: getGuestPermissions(guestId),
+			permissions: getGuestPermissions(),
 		});
 	},
 
@@ -50,7 +50,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: id,
 			data,
-			permissions: getGuestPermissions(id),
+			permissions: getGuestPermissions(),
 		});
 	},
 
@@ -63,7 +63,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: id,
 			data,
-			permissions: getGuestPermissions(id),
+			permissions: getGuestPermissions(),
 		});
 	},
 

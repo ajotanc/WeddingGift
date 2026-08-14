@@ -45,34 +45,22 @@ export const RsvpService = {
 		data: Omit<IRsvp, keyof Models.Row>,
 		customId?: string,
 	): Promise<IRsvp> {
-		const ownerId = data.tenant;
-		const guestId =
-			data.guest?.$id || (typeof data.guest === "string" ? data.guest : null);
-
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_RSVPS,
 			rowId: customId || ID.unique(),
 			data,
-			permissions: getRsvpPermissions(ownerId, guestId),
+			permissions: getRsvpPermissions(),
 		});
 	},
 
 	async update(rowId: string, data: Partial<IRsvp>): Promise<IRsvp> {
-		const existing = await RsvpService.get(rowId);
-		const ownerId = existing?.tenant || data.tenant || "";
-		const guestId =
-			existing?.guest?.$id ||
-			(typeof existing?.guest === "string" ? existing.guest : null) ||
-			data.guest?.$id ||
-			null;
-
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_RSVPS,
 			rowId,
 			data,
-			permissions: getRsvpPermissions(ownerId, guestId),
+			permissions: getRsvpPermissions(),
 		});
 	},
 
@@ -81,28 +69,13 @@ export const RsvpService = {
 		data: Partial<IRsvp>,
 	): Promise<IRsvp> {
 		const id = rowId || ID.unique();
-		let ownerId = data.tenant || "";
-		let guestId =
-			data.guest?.$id ||
-			(typeof data.guest === "string" ? data.guest : null) ||
-			null;
-
-		if (rowId && (!ownerId || !guestId)) {
-			const existing = await RsvpService.get(rowId);
-			if (!ownerId) ownerId = existing?.tenant || "";
-			if (!guestId)
-				guestId =
-					existing?.guest?.$id ||
-					(typeof existing?.guest === "string" ? existing.guest : null) ||
-					null;
-		}
 
 		return await tables.upsertRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_RSVPS,
 			rowId: id,
 			data,
-			permissions: getRsvpPermissions(ownerId, guestId),
+			permissions: getRsvpPermissions(),
 		});
 	},
 

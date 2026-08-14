@@ -6,6 +6,7 @@ import type { IGalleryImage } from "./gallery.service";
 import type { IMessage } from "./message.service";
 import type { IProduct } from "./product.service";
 import type { IPurchase } from "./purchase.service";
+import type { IQuizQuestion } from "./quiz.service";
 import type { IRsvp } from "./rsvp.service";
 import type { IScheduleItem } from "./schedule.service";
 
@@ -36,21 +37,22 @@ export interface ITenant extends Models.Row {
 	show_faq?: boolean;
 	show_schedule?: boolean;
 	show_dress_code?: boolean;
+	show_quiz?: boolean;
 	dress_code_text?: string | null;
 	music_url?: string | null;
 	ambient_effect?:
-	| "none"
-	| "rose-petals"
-	| "sparkles"
-	| "snow"
-	| "hearts"
-	| "butterflies"
-	| "gold-dust"
-	| "confetti"
-	| "shooting-stars"
-	| "fireflies"
-	| "balloons"
-	| null;
+		| "none"
+		| "rose-petals"
+		| "sparkles"
+		| "snow"
+		| "hearts"
+		| "butterflies"
+		| "gold-dust"
+		| "confetti"
+		| "shooting-stars"
+		| "fireflies"
+		| "balloons"
+		| null;
 	products?: IProduct[];
 	messages?: IMessage[];
 	rsvps?: IRsvp[];
@@ -58,6 +60,7 @@ export interface ITenant extends Models.Row {
 	gallery: IGalleryImage[];
 	faqs: IFaq[];
 	schedules?: IScheduleItem[];
+	quizzes?: IQuizQuestion[];
 	mp_user_id: string | null;
 	mp_access_token: string | null;
 	mp_refresh_token: string | null;
@@ -84,6 +87,7 @@ export const TenantService = {
 					"gallery.guest.*",
 					"faqs.*",
 					"schedules.*",
+					"quizzes.*",
 				]),
 			],
 		});
@@ -97,9 +101,7 @@ export const TenantService = {
 		const res = await tables.listRows<ITenant>({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
-			queries: [
-				Query.equal("co_owner_email", email.toLowerCase().trim()),
-			],
+			queries: [Query.equal("co_owner_email", email.toLowerCase().trim())],
 		});
 
 		if (res.rows.length === 0) return null;

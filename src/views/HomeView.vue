@@ -2,39 +2,42 @@
 import Brand from "@/components/reusable/Brand.vue";
 import GoogleAuthButton from "@/components/ui/GoogleAuthButton.vue";
 import { Button } from "@/components/ui/button";
+import { useFeedback } from "@/composables/useFeedback";
 import { PROJECT_NAME } from "@/lib/defaults";
 import { useAuthStore } from "@/stores/auth";
 import {
-  ArrowRight,
-  Gift,
-  Heart,
-  Sparkles,
-  Star,
-  Users,
-  MessageSquare,
+	ArrowRight,
+	Gift,
+	Heart,
+	MessageSquare,
+	MessageSquarePlus,
+	Sparkles,
+	Star,
+	Users,
 } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { openFeedback } = useFeedback();
 const goRegister = () => {
-  router.push("/register");
+	router.push("/register");
 };
 
 const goLogin = () => {
-  router.push("/login");
+	router.push("/login");
 };
 
 const goDashboard = () => {
-  if (authStore.tenant?.slug) {
-    router.push(`/${authStore.tenant.slug}/admin/dashboard`);
-  } else {
-    router.push("/login");
-  }
+	if (authStore.tenant?.slug) {
+		router.push(`/${authStore.tenant.slug}/admin/dashboard`);
+	} else {
+		router.push("/login");
+	}
 };
 
 const handleLogout = async () => {
-  await authStore.logout();
+	await authStore.logout();
 };
 </script>
 
@@ -449,9 +452,17 @@ const handleLogout = async () => {
           </div>
           <span class="text-white font-bold font-serif tracking-wide text-lg">{{ PROJECT_NAME }}</span>
         </div>
-        <p class="text-xs font-light">&copy; 2026 {{ PROJECT_NAME }}. Feito com cuidado editorial e amor para o dia mais
-          especial
-          da sua vida.</p>
+
+        <div class="flex flex-col md:flex-row items-center gap-4 text-center md:text-right">
+          <button
+            type="button"
+            @click="openFeedback"
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-700 text-xs font-medium text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-colors cursor-pointer">
+            <MessageSquarePlus class="w-3.5 h-3.5 text-primary" />
+            <span>Enviar Feedback</span>
+          </button>
+          <p class="text-xs font-light">&copy; 2026 {{ PROJECT_NAME }}. Feito com cuidado editorial e amor para o dia mais especial da sua vida.</p>
+        </div>
       </div>
     </footer>
   </main>

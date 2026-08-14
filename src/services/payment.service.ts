@@ -97,7 +97,9 @@ export const PaymentService = {
 
 		const responseBody = JSON.parse(execution.responseBody || "{}");
 		if (execution.responseStatusCode >= 400) {
-			throw new Error(responseBody.error || "Falha ao gerar checkout de assinatura.");
+			throw new Error(
+				responseBody.error || "Falha ao gerar checkout de assinatura.",
+			);
 		}
 
 		return responseBody as {
@@ -117,4 +119,3 @@ export const PaymentService = {
 		});
 	},
 };
-

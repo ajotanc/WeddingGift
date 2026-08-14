@@ -79,7 +79,8 @@ export default defineConfig(({ mode }) => {
 							if (id.includes("leaflet")) return "vendor-leaflet";
 							if (id.includes("xlsx")) return "vendor-xlsx";
 							if (id.includes("lucide-vue-next")) return "vendor-icons";
-							if (id.includes("@vue-email") || id.includes("vue-email")) return "vendor-email";
+							if (id.includes("@vue-email") || id.includes("vue-email"))
+								return "vendor-email";
 							if (id.includes("dayjs")) return "vendor-dayjs";
 							return "vendor";
 						}
@@ -93,6 +94,14 @@ export default defineConfig(({ mode }) => {
 			},
 		},
 		server: {
+			host: true,
+			allowedHosts: [
+				".ajotanc.com.br",
+				".ngrok-free.app",
+				".ngrok.io",
+				".ngrok-free.dev",
+				".trycloudflare.com",
+			],
 			proxy: {
 				"/api-serp": {
 					target: "https://google.serper.dev",

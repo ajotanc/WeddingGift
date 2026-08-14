@@ -1,48 +1,48 @@
 <script setup lang="ts">
-import { PROJECT_NAME } from '@/lib/defaults';
-import type { IGiftEmailParams } from '@/services/email.service';
+import { PROJECT_NAME } from "@/lib/defaults";
+import type { IGiftEmailParams } from "@/services/email.service";
 import {
-  Tailwind,
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Heading,
-  Text,
-  Img,
-} from '@vue-email/components';
+	Body,
+	Container,
+	Head,
+	Heading,
+	Html,
+	Img,
+	Section,
+	Tailwind,
+	Text,
+} from "@vue-email/components";
 
 withDefaults(defineProps<IGiftEmailParams>(), {
-  image_url: '',
+	image_url: "",
 });
 
 const tailwindConfig = {
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: [
-          'system-ui',
-          '-apple-system',
-          "'BlinkMacSystemFont'",
-          "'Segoe UI'",
-          'Roboto',
-          'Helvetica',
-          'Arial',
-          'sans-serif',
-        ],
-      },
-      colors: {
-        primary: '#c5a880',
-        secondary: '#faf8f6',
-        weddingDark: '#1e1a17',
-        weddingBody: '#5a4f4a',
-        weddingBorder: '#e8e2dd',
-        weddingMuted: '#8c7a6b',
-        weddingDivider: '#f5f0eb',
-      },
-    },
-  },
+	theme: {
+		extend: {
+			fontFamily: {
+				sans: [
+					"system-ui",
+					"-apple-system",
+					"'BlinkMacSystemFont'",
+					"'Segoe UI'",
+					"Roboto",
+					"Helvetica",
+					"Arial",
+					"sans-serif",
+				],
+			},
+			colors: {
+				primary: "#c5a880",
+				secondary: "#faf8f6",
+				weddingDark: "#1e1a17",
+				weddingBody: "#5a4f4a",
+				weddingBorder: "#e8e2dd",
+				weddingMuted: "#8c7a6b",
+				weddingDivider: "#f5f0eb",
+			},
+		},
+	},
 };
 </script>
 

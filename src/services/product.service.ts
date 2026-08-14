@@ -27,6 +27,10 @@ export interface IProduct extends Models.Row {
 	claimed_quantity: number;
 	image_url?: string;
 	category?: string;
+	target_amount?: number;
+	collected_amount?: number;
+	is_goal?: boolean;
+	is_custom_amount?: boolean;
 	links?: IProductLink[];
 }
 

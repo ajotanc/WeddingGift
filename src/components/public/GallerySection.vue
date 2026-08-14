@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SectionHeader from "@/components/public/SectionHeader.vue";
 import ImageGallery from "@/components/ui/ImageGallery.vue";
 import { Button } from "@/components/ui/button";
 import type { IGalleryImage } from "@/services/gallery.service";
@@ -15,17 +16,16 @@ defineEmits<(e: "like", img: IGalleryImage) => void>();
 </script>
 
 <template>
-	<section id="gallery" class="space-y-12 scroll-mt-10">
-		<div class="text-center mb-12">
-			<h2 class="text-3xl font-serif text-slate-900 mb-4">Galeria de Fotos</h2>
-			<p class="text-slate-500 font-light max-w-xl mx-auto text-base">
-				Momentos especiais compartilhados por nós. Deixe o seu carinho curtindo suas fotos favoritas!
-			</p>
-		</div>
+	<section id="gallery" class="space-y-12 scroll-mt-16 text-left md:text-center">
+		<SectionHeader
+			tag="Memórias"
+			title="Galeria de Fotos"
+			description="Momentos especiais compartilhados por nós. Deixe o seu carinho curtindo suas fotos favoritas!"
+			responsive />
 
 		<div v-if="images.length > 0">
-			<ImageGallery :images="images" :carousel="true" :autoplay="true"
-				:currentGuestId="currentGuestId" @like="$emit('like', $event)" />
+			<ImageGallery :images="images" :carousel="true" :autoplay="true" :currentGuestId="currentGuestId"
+				@like="$emit('like', $event)" />
 		</div>
 		<div v-else
 			class="text-center text-slate-400 py-12 bg-white/40 border border-dashed rounded-3xl text-sm font-light">

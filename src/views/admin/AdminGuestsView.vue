@@ -4,22 +4,15 @@ import PageHeader from "@/components/reusable/PageHeader.vue";
 import PlanLimitAlert from "@/components/reusable/PlanLimitAlert.vue";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
+import Whatsapp from "@/components/ui/icons/Whatsapp.vue";
 import { useTenant } from "@/composables/useTenant";
 import { useThankYouGenerator } from "@/composables/useThankYouGenerator";
 import type { IGuest } from "@/services/guest.service";
-import { MessageService } from "@/services/message.service";
+import { type IMessage, MessageService } from "@/services/message.service";
 import { useAuthStore } from "@/stores/auth";
 import { formatPhone } from "@brazilian-utils/brazilian-utils";
 import dayjs from "dayjs";
-import {
-	Copy,
-	Download,
-	Lock,
-	MessageCircle,
-	Sparkles,
-	Trash2,
-	Users,
-} from "lucide-vue-next";
+import { Copy, Download, Lock, Sparkles, Trash2, Users } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
@@ -48,7 +41,7 @@ const populatedMessages = computed(() => {
 	}));
 });
 
-const deleteMsg = async (id: string) => {
+const deleteMsg = async (message: IMessage) => {
 	confirm({
 		title: "Excluir Recado",
 		description:
@@ -56,8 +49,8 @@ const deleteMsg = async (id: string) => {
 		confirmText: "Sim, excluir",
 		cancelText: "Não",
 		confirm: async () => {
-			await MessageService.delete(id);
-			messages.value = messages.value.filter((m) => m.$id !== id);
+			await MessageService.delete(message.$id, !!message?.audio_url);
+			messages.value = messages.value.filter((m) => m.$id !== message.$id);
 			toast.success("Recado excluído com sucesso!");
 		},
 		cancel: () =>
@@ -228,10 +221,10 @@ const exportToExcel = () => {
                 </p>
               </div>
             </div>
-            <div v-if="r.status === 'confirmed'" class="flex flex-col justify-center">
+            <div v-if="r.status === 'confirmed'" class="flex flex-row sm:flex-col items-end justify-center gap-2">
               <button @click="generateThanks(r.guest)"
-                class="text-primary text-sm font-medium hover:underline flex items-center gap-1 bg-primary/5 px-3 py-2 rounded-lg transition-colors">
-                <Sparkles :size="14" /> IA
+                class="text-primary text-xs font-semibold hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                <Sparkles :size="14" /> Agradecer IA
               </button>
             </div>
           </div>
@@ -251,7 +244,7 @@ const exportToExcel = () => {
                 <p class="text-sm font-medium text-slate-900 mb-2">{{ m.guest?.name }}</p>
                 <p class="text-slate-600 italic font-serif leading-relaxed">"{{ m.content }}"</p>
               </div>
-              <button @click="deleteMsg(m.$id)"
+              <button @click="deleteMsg(m)"
                 class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50">
                 <Trash2 class="w-4 h-4" />
               </button>
@@ -276,10 +269,10 @@ const exportToExcel = () => {
           </p>
           <div class="flex gap-3">
             <Button @click="copyThanks" variant="outline" class="flex-1 shadow-sm">
-              <Copy class="w-4 h-4 mr-2" /> Copiar
+              <Copy class="w-4 h-4" /> Copiar
             </Button>
             <Button class="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm border-0" @click="openWhatsApp">
-              <MessageCircle class="w-4 h-4 mr-2" /> WhatsApp
+              <Whatsapp class="w-4 h-4 fill-white" /> WhatsApp
             </Button>
           </div>
         </div>

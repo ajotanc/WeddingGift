@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SectionHeader from "@/components/public/SectionHeader.vue";
+import AudioRecorder from "@/components/reusable/AudioRecorder.vue";
 import FormGroup from "@/components/reusable/FormGroup.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +29,7 @@ import { type IUser, useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
 import dayjs from "dayjs";
 import Autoplay from "embla-carousel-autoplay";
+import { MessageSquare, Mic, Pause, Play } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -200,7 +203,7 @@ const submitRsvp = handleSubmit(async (values) => {
 					guest_email: authStore.guest.email,
 					couple_name: props.tenant.couple_name,
 					status: values.status,
-					message: thankYouMessage
+					message: thankYouMessage,
 				}).catch((e) => console.error("Erro ao enviar e-mail de RSVP:", e));
 			}
 		}
@@ -220,27 +223,80 @@ const submitRsvp = handleSubmit(async (values) => {
 
 // Messages wall logic
 const messageContent = ref("");
+const messageMode = ref<"text" | "audio">("text");
+const pendingAudioFile = ref<File | null>(null);
+const messageSubmitting = ref(false);
+const playingAudioId = ref<string | null>(null);
 
-const submitMessage = async () => {
-	if (!props.tenant || !messageContent.value.trim() || !props.currentUser)
-		return;
+let activeAudioElement: HTMLAudioElement | null = null;
 
-	try {
-		const newMsg = await MessageService.create({
-			tenant: props.tenant.$id,
-			content: messageContent.value,
-			guest: authStore.guest as IGuest,
+const onAudioRecorded = (file: File) => {
+	pendingAudioFile.value = file;
+	toast.success("Áudio anexado! Agora você pode enviar seu recado.");
+};
+
+const toggleAudioPlay = (msgId: string, audioUrl: string) => {
+	if (playingAudioId.value === msgId) {
+		if (activeAudioElement) {
+			activeAudioElement.pause();
+			activeAudioElement = null;
+		}
+		playingAudioId.value = null;
+	} else {
+		if (activeAudioElement) {
+			activeAudioElement.pause();
+		}
+		activeAudioElement = new Audio(audioUrl);
+		playingAudioId.value = msgId;
+		activeAudioElement.onended = () => {
+			playingAudioId.value = null;
+			activeAudioElement = null;
+		};
+		activeAudioElement.play().catch((err) => {
+			console.error("Erro ao tocar áudio:", err);
+			toast.error("Não foi possível reproduzir este áudio.");
+			playingAudioId.value = null;
 		});
-
-		props.messages.unshift(newMsg);
-		messageContent.value = "";
-		toast.success("Sua mensagem foi enviada!");
-	} catch (err) {
-		toast.error("Erro ao enviar mensagem.");
 	}
 };
 
-const deleteMessage = (msgId: string) => {
+const submitMessage = async () => {
+	if (!props.tenant) return;
+	if (messageMode.value === "text" && !messageContent.value.trim()) return;
+	if (messageMode.value === "audio" && !pendingAudioFile.value) {
+		toast.error("Por favor, grave um áudio antes de publicar.");
+		return;
+	}
+
+	messageSubmitting.value = true;
+	try {
+		const content =
+			messageMode.value === "audio"
+				? messageContent.value.trim() || "🎙️ Recado de áudio"
+				: messageContent.value.trim();
+
+		const payload = {
+			tenant: props.tenant.$id,
+			content,
+			guest: authStore.guest,
+		} as IMessage;
+
+		const newMsg = await MessageService.create(payload, pendingAudioFile.value);
+
+		props.messages.unshift(newMsg);
+		messageContent.value = "";
+		pendingAudioFile.value = null;
+		messageMode.value = "text";
+		toast.success("Sua mensagem foi enviada!");
+	} catch (err) {
+		console.error("Erro ao publicar recado:", err);
+		toast.error("Erro ao enviar mensagem.");
+	} finally {
+		messageSubmitting.value = false;
+	}
+};
+
+const deleteMessage = (message: IMessage) => {
 	confirm({
 		title: "Apagar Mensagem",
 		description: "Tem certeza de que deseja apagar esta mensagem do mural?",
@@ -248,8 +304,8 @@ const deleteMessage = (msgId: string) => {
 		cancelText: "Não",
 		confirm: async () => {
 			try {
-				await MessageService.delete(msgId);
-				const index = props.messages.findIndex((m) => m.$id === msgId);
+				await MessageService.delete(message.$id, !!message?.audio_url);
+				const index = props.messages.findIndex((m) => m.$id === message.$id);
 				if (index !== -1) {
 					props.messages.splice(index, 1);
 				}
@@ -288,16 +344,12 @@ const toggleLike = async (msg: IMessage) => {
 	<section class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
 
 		<!-- RSVP Column -->
-		<div id="rsvp" class="lg:col-span-7 space-y-8 scroll-mt-16">
+		<div id="rsvp" class="lg:col-span-7 space-y-8 scroll-mt-20">
 			<!-- Column Header -->
-			<div class="border-b border-slate-200/60 pb-6 text-left">
-				<span class="text-[10px] font-bold tracking-[0.25em] uppercase text-primary">Confirmação</span>
-				<h2 class="text-3xl font-serif text-slate-900 mt-1 font-semibold">Presença no Evento</h2>
-				<p class="text-slate-600 font-light leading-relaxed mt-2 text-sm">
-					Ficaremos imensamente felizes em celebrar esse momento único com você. Por favor, confirme suas informações
-					abaixo.
-				</p>
-			</div>
+			<SectionHeader
+				tag="Confirmação"
+				title="Presença no Evento"
+				description="Ficaremos imensamente felizes em celebrar esse momento único com você. Por favor, confirme suas informações abaixo." />
 
 			<!-- Form Container -->
 			<div class="bg-white border border-slate-200 p-8 rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.015)]">
@@ -339,7 +391,8 @@ const toggleLike = async (msg: IMessage) => {
 						</span>
 					</div>
 
-					<Button variant="outline" class="rounded-xl px-8 h-11 border-primary text-primary hover:bg-primary/10 font-semibold"
+					<Button variant="outline"
+						class="rounded-xl px-8 h-11 border-primary text-primary hover:bg-primary/10 font-semibold"
 						@click="isEditingRsvp = true">
 						Alterar Resposta
 					</Button>
@@ -446,20 +499,17 @@ const toggleLike = async (msg: IMessage) => {
 		<!-- Message Wall Column -->
 		<div id="messages" class="lg:col-span-5 space-y-8 scroll-mt-16">
 			<!-- Column Header -->
-			<div class="border-b border-slate-200/60 pb-6 text-left">
-				<span class="text-[10px] font-bold tracking-[0.25em] uppercase text-primary">Afeto</span>
-				<h2 class="text-3xl font-serif text-slate-900 mt-1 font-semibold">Mural de Recados</h2>
-				<p class="text-slate-600 font-light leading-relaxed mt-2 text-sm">
-					Escreva e compartilhe votos sinceros de felicidade, carinho e amor eterno para os noivos.
-				</p>
-			</div>
+			<SectionHeader
+				tag="Afeto"
+				title="Mural de Recados"
+				description="Escreva e compartilhe votos sinceros de felicidade, carinho e amor eterno para os noivos." />
 
 			<!-- Submitting message card -->
 			<div
-				class="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.015)] flex flex-col gap-4">
+				class="bg-white border border-slate-200 p-4 sm:p-6 rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.015)] flex flex-col gap-4">
 
 				<!-- Sender header info -->
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-3 border-b border-slate-100 pb-3">
 					<img v-if="authStore.guest?.photo_url || authStore.user?.prefs?.photo_url"
 						:src="authStore.guest?.photo_url || authStore.user?.prefs?.photo_url" alt="Foto"
 						referrerpolicy="no-referrer"
@@ -475,15 +525,39 @@ const toggleLike = async (msg: IMessage) => {
 					</div>
 				</div>
 
-				<!-- Content input -->
-				<Textarea v-model="messageContent"
-					class="w-full h-28 rounded-2xl bg-slate-50/50 border border-slate-200 focus-visible:ring-0 focus-visible:border-slate-400 placeholder:text-slate-400 text-sm font-light p-4 resize-none leading-relaxed text-slate-900"
-					placeholder="Escreva uma mensagem de carinho para os noivos..." />
+				<!-- Mode Selector Tabs (Below guest info) -->
+				<div class="flex items-center bg-slate-100/90 p-1 rounded-xl gap-1 w-full">
+					<button type="button" @click="messageMode = 'text'"
+						class="flex-1 h-9 px-3 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer border"
+						:class="messageMode === 'text' ? 'bg-primary text-white shadow-xs border-primary' : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'">
+						<MessageSquare class="w-3.5 h-3.5" /> Texto
+					</button>
+					<button type="button" @click="messageMode = 'audio'"
+						class="flex-1 h-9 px-3 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer border"
+						:class="messageMode === 'audio' ? 'bg-primary text-white shadow-xs border-primary' : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'">
+						<Mic class="w-3.5 h-3.5" /> Áudio
+					</button>
+				</div>
 
-				<!-- Submit button (styled with wedding primary_color) -->
-				<Button @click="submitMessage" :disabled="!messageContent.trim()"
+				<!-- Content input: Text Mode -->
+				<div v-if="messageMode === 'text'">
+					<Textarea v-model="messageContent"
+						class="w-full h-28 rounded-2xl bg-slate-50/50 border border-slate-200 focus-visible:ring-0 focus-visible:border-slate-400 placeholder:text-slate-400 text-sm font-light p-4 resize-none leading-relaxed text-slate-900"
+						placeholder="Escreva uma mensagem de carinho para os noivos..." />
+				</div>
+
+				<!-- Content input: Audio Mode -->
+				<div v-else class="space-y-3">
+					<AudioRecorder @recorded="onAudioRecorded" @clear="pendingAudioFile = null" />
+					<Input v-model="messageContent" placeholder="Legenda opcional para seu áudio..."
+						class="rounded-xl border-slate-200 text-xs bg-slate-50/50 h-10" />
+				</div>
+
+				<!-- Submit button -->
+				<Button @click="submitMessage"
+					:disabled="messageSubmitting || (messageMode === 'text' && !messageContent.trim()) || (messageMode === 'audio' && !pendingAudioFile)"
 					class="w-full h-11 rounded-xl text-xs font-semibold uppercase tracking-wider text-white transition-all duration-300 shadow-sm hover:brightness-105 active:scale-[0.98] bg-primary border-primary disabled:opacity-60 disabled:cursor-not-allowed">
-					Publicar Recado
+					{{ messageSubmitting ? 'Enviando Recado...' : 'Publicar Recado' }}
 				</Button>
 			</div>
 
@@ -522,7 +596,28 @@ const toggleLike = async (msg: IMessage) => {
 								</div>
 							</div>
 
-							<!-- Message Content -->
+							<!-- Audio Player Card if msg.audio_url exists -->
+							<div v-if="msg.audio_url"
+								class="z-10 bg-slate-950/10 backdrop-blur border border-white/20 p-3.5 rounded-xl flex items-center gap-3">
+								<button type="button" @click="toggleAudioPlay(msg.$id, msg.audio_url)"
+									class="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 shadow-sm"
+									:class="index % 2 === 0 ? 'bg-primary text-white' : 'bg-white text-primary'">
+									<Pause v-if="playingAudioId === msg.$id" class="w-4 h-4 fill-current" />
+									<Play v-else class="w-4 h-4 fill-current ml-0.5" />
+								</button>
+								<div class="text-left flex-1 min-w-0">
+									<p class="text-xs font-bold font-serif flex items-center gap-1.5"
+										:class="index % 2 === 0 ? 'text-slate-800' : 'text-white'">
+										Recado de Voz
+									</p>
+									<p class="text-[11px] font-sans opacity-80 truncate"
+										:class="index % 2 === 0 ? 'text-slate-500' : 'text-white/80'">
+										{{ playingAudioId === msg.$id ? 'Reproduzindo áudio...' : 'Clique para ouvir' }}
+									</p>
+								</div>
+							</div>
+
+							<!-- Message Content Text -->
 							<p class="font-serif italic leading-relaxed text-sm whitespace-pre-wrap break-words z-10"
 								:class="index % 2 === 0 ? 'text-slate-600' : 'text-white/90'">
 								"{{ msg.content }}"
@@ -550,8 +645,9 @@ const toggleLike = async (msg: IMessage) => {
 								</div>
 
 								<!-- Delete button (admin / author) -->
-								<Button variant="ghost" v-if="currentUser && (currentUser.$id === msg.guest.$id)"
-									@click="deleteMessage(msg.$id)" class="!p-1 h-auto ml-auto"
+								<Button variant="ghost"
+									v-if="(currentUser && currentUser.$id === msg.guest?.$id) || (authStore.guest && authStore.guest.$id === msg.guest?.$id)"
+									@click="deleteMessage(msg)" class="!p-1 h-auto ml-auto"
 									:class="index % 2 === 0 ? 'text-slate-300 hover:text-red-500' : 'text-white/40 hover:text-white'">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

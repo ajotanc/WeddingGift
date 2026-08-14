@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: 197 168 128;      /* era #C5A880 */
-  --color-champagne: 250 248 246;    /* era #FAF8F6 */
-  --color-slate-50: 250 248 246;     /* era #FAF8F6 */
-  --color-slate-100: 245 240 235;    /* era #F5F0EB */
-  --color-slate-200: 232 226 221;    /* era #E8E2DD */
-  --color-slate-300: 212 201 191;    /* era #D4C9BF */
-  --color-slate-400: 184 169 154;    /* era #B8A99A */
-  --color-slate-500: 140 122 107;    /* era #8C7A6B */
-  --color-slate-600: 90 79 74;       /* era #5A4F4A */
-  --color-slate-700: 66 56 52;       /* era #423834 */
-  --color-slate-800: 44 36 33;       /* era #2C2421 */
-  --color-slate-900: 30 26 23;       /* era #1E1A17 */
-  --color-slate-950: 18 15 13;       /* era #120F0D */
-  --font-title: "Playfair Display", serif;
-  --font-body: "Outfit", sans-serif;
+	--color-primary: 197 168 128; /* era #C5A880 */
+	--color-champagne: 250 248 246; /* era #FAF8F6 */
+	--color-slate-50: 250 248 246; /* era #FAF8F6 */
+	--color-slate-100: 245 240 235; /* era #F5F0EB */
+	--color-slate-200: 232 226 221; /* era #E8E2DD */
+	--color-slate-300: 212 201 191; /* era #D4C9BF */
+	--color-slate-400: 184 169 154; /* era #B8A99A */
+	--color-slate-500: 140 122 107; /* era #8C7A6B */
+	--color-slate-600: 90 79 74; /* era #5A4F4A */
+	--color-slate-700: 66 56 52; /* era #423834 */
+	--color-slate-800: 44 36 33; /* era #2C2421 */
+	--color-slate-900: 30 26 23; /* era #1E1A17 */
+	--color-slate-950: 18 15 13; /* era #120F0D */
+	--font-title: "Playfair Display", serif;
+	--font-body: "Outfit", sans-serif;
 }
 
 html {
@@ -71,7 +71,7 @@ h3,
 .quill-content h5,
 .quill-content h6,
 .quill-content a {
-  color: rgb(var(--color-primary));
+	color: rgb(var(--color-primary));
 }
 
 .quill-content h1 {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AddToCalendar from "@/components/reusable/AddToCalendar.vue";
 import LeafletMap from "@/components/ui/LeafletMap.vue";
 import type { IWeatherData } from "@/services/weather.service";
 import {
@@ -11,12 +12,16 @@ import {
 	Sun,
 } from "lucide-vue-next";
 import type { Component } from "vue";
+import SectionHeader from "./SectionHeader.vue";
 
 defineProps<{
 	eventLocation: string;
 	eventLatitude?: string | number | null;
 	eventLongitude?: string | number | null;
 	eventDate?: string | null;
+	eventTime?: string | null;
+	coupleName?: string | null;
+	weddingUrl?: string | null;
 	weatherData?: IWeatherData | null;
 	weatherLoading: boolean;
 	weatherError: boolean;
@@ -41,8 +46,9 @@ const getWeatherIcon = (iconName: string): Component => {
 </script>
 
 <template>
-	<section id="location" class="text-center scroll-mt-10">
-		<h2 class="text-3xl font-serif text-slate-900 mb-6">Local do Evento</h2>
+	<section id="location" class="scroll-mt-16 text-left md:text-center">
+		<SectionHeader tag="O Grande Dia" title="Local do Evento"
+			description="Compartilhe com a gente a alegria de celebrar nosso amor em um lugar especial." responsive />
 
 		<div
 			class="relative bg-white p-2 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
@@ -89,6 +95,10 @@ const getWeatherIcon = (iconName: string): Component => {
 			</div>
 		</div>
 
-		<p class="text-slate-500 font-medium mt-4">{{ eventLocation }}</p>
+		<div class="mt-4 flex flex-col items-center gap-3">
+			<p class="text-slate-500 font-medium text-base">{{ eventLocation }}</p>
+			<AddToCalendar :eventDate="eventDate" :eventTime="eventTime" :coupleName="coupleName"
+				:eventLocation="eventLocation" :weddingUrl="weddingUrl" />
+		</div>
 	</section>
 </template>

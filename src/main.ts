@@ -1,9 +1,9 @@
-import { createApp } from "vue";
-import dayjs from "dayjs";
 import { QuillEditor } from "@vueup/vue-quill";
+import dayjs from "dayjs";
 import { vMaska } from "maska/vue";
 import { createPinia } from "pinia";
 import money from "v-money3";
+import { createApp } from "vue";
 
 import App from "./App.vue";
 import router from "./router";
@@ -33,4 +33,4 @@ app.component("QuillEditor", QuillEditor);
 app.use(router);
 app.mount("#app");
 
-dayjs.locale('pt-br');
+dayjs.locale("pt-br");

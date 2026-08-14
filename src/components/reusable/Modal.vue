@@ -6,6 +6,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import type { HTMLAttributes } from "vue";
 
 const props = withDefaults(
 	defineProps<{
@@ -13,6 +14,7 @@ const props = withDefaults(
 		title?: string;
 		description?: string;
 		preventAutofocus?: boolean;
+		class?: HTMLAttributes["class"];
 	}>(),
 	{
 		preventAutofocus: true,
@@ -24,7 +26,7 @@ const emit = defineEmits<(e: "update:open", v: boolean) => void>();
 
 <template>
 	<Dialog :open="props.open" @update:open="emit('update:open', $event)">
-		<DialogContent aria-describedby="modal-description" @open-auto-focus="(e) => { if (props.preventAutofocus) e.preventDefault(); }">
+		<DialogContent :class="props.class" aria-describedby="modal-description" @open-auto-focus="(e) => { if (props.preventAutofocus) e.preventDefault(); }">
 			<DialogHeader v-if="props.title || props.description">
 				<DialogTitle v-if="props.title">{{ props.title }}</DialogTitle>
 

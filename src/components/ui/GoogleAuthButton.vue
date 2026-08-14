@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from "@/components/ui/button";
 import {
 	DEFAULT_BACKGROUND_COLOR,
 	DEFAULT_PRIMARY_COLOR,
@@ -8,7 +9,6 @@ import type { IUser } from "@/stores/auth";
 import { LogOut } from "lucide-vue-next";
 import { computed } from "vue";
 import type { PropType } from "vue";
-import { Button } from "@/components/ui/button";
 
 const props = defineProps({
 	fill: { type: Boolean, default: false },

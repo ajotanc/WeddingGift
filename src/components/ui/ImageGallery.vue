@@ -8,11 +8,11 @@ import {
 } from "@/components/ui/carousel";
 import type { UnwrapRefCarouselApi } from "@/components/ui/carousel/interface";
 import { useTenant } from "@/composables/useTenant";
+import { handleImageError } from "@/lib/utils";
 import type { IGalleryImage } from "@/services/gallery.service";
+import Autoplay from "embla-carousel-autoplay";
 import { Download, Heart, Trash2, X } from "lucide-vue-next";
 import { nextTick, ref, watch } from "vue";
-
-import Autoplay from "embla-carousel-autoplay";
 
 const { tenant } = useTenant();
 
@@ -115,16 +115,18 @@ const downloadImage = async (url: string, id: string) => {
 <template>
   <div>
     <!-- CAROUSEL MODE -->
-    <div v-if="props.carousel" class="relative w-full">
+    <div v-if="props.carousel" class="relative max-w-5xl mx-auto px-2 sm:px-4">
       <Carousel @init-api="onInitApi"
+        :opts="{ loop: true, align: 'start', containScroll: false }"
         :plugins="props.autoplay ? [Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })] : []"
-        class="w-full relative group/carousel">
-        <CarouselContent class="-ml-4">
-          <CarouselItem v-for="img in props.images" :key="img.$id" class="pl-4 basis-full md:basis-1/5">
+        class="relative group/carousel">
+        <CarouselContent>
+          <CarouselItem v-for="img in props.images" :key="img.$id" class="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
             <div
               class="group relative aspect-square rounded-3xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm cursor-pointer"
               @click="openLightbox(img)">
               <img :src="img.image_url"
+                @error="handleImageError"
                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy" />
 
@@ -161,18 +163,18 @@ const downloadImage = async (url: string, id: string) => {
           </CarouselItem>
         </CarouselContent>
 
-        <!-- Carousel navigation arrows -->
+        <!-- Carousel navigation arrows inside container bounds -->
         <CarouselPrevious
-          class="left-2 md:-left-12 opacity-80 md:opacity-0 md:group-hover/carousel:opacity-100 transition-opacity z-20 bg-white/90 text-slate-800 shadow-md hover:bg-white border-0" />
+          class="left-2 sm:left-3 opacity-90 md:opacity-0 md:group-hover/carousel:opacity-100 transition-all z-30 bg-white/95 text-slate-800 shadow-md hover:bg-white border border-slate-200/80 -translate-y-1/2" />
         <CarouselNext
-          class="right-2 md:-right-12 opacity-80 md:opacity-0 md:group-hover/carousel:opacity-100 transition-opacity z-20 bg-white/90 text-slate-800 shadow-md hover:bg-white border-0" />
+          class="right-2 sm:right-3 opacity-90 md:opacity-0 md:group-hover/carousel:opacity-100 transition-all z-30 bg-white/95 text-slate-800 shadow-md hover:bg-white border border-slate-200/80 -translate-y-1/2" />
       </Carousel>
 
       <!-- Horizontal Dash/Pill Indicators -->
-      <div v-if="count > 1" class="flex justify-center gap-1.5 mt-6">
-        <button v-for="index in count" :key="index" type="button" @click="api?.scrollTo(index - 1)"
+      <div v-if="props.images.length > 1" class="flex justify-center gap-1.5 mt-6">
+        <button v-for="index in props.images.length" :key="index" type="button" @click="api?.scrollTo(index - 1)"
           class="h-1.5 rounded-full transition-all duration-300 cursor-pointer border-0 p-0"
-          :class="current === index ? 'w-8 bg-primary' : 'w-2 bg-slate-300 hover:bg-slate-400'" />
+          :class="((current - 1) % props.images.length) === (index - 1) ? 'w-8 bg-primary' : 'w-2 bg-slate-300 hover:bg-slate-400'" />
       </div>
     </div>
 
@@ -182,6 +184,7 @@ const downloadImage = async (url: string, id: string) => {
         class="group relative aspect-square rounded-3xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm cursor-pointer"
         @click="openLightbox(img)">
         <img :src="img.image_url"
+          @error="handleImageError"
           class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
 
         <!-- Hover Overlay -->

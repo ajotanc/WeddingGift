@@ -30,3 +30,4 @@ appwrite
 .agents
 scratch
 dev-dist
+vite.config.js

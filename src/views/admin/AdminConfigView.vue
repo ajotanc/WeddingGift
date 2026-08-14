@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import QuizSection from "@/components/public/QuizSection.vue";
 import DatePicker from "@/components/reusable/DatePicker.vue";
 import FileUpload from "@/components/reusable/FileUpload.vue";
 import FormGroup from "@/components/reusable/FormGroup.vue";
@@ -45,6 +46,7 @@ import {
 import { sortBy } from "@/lib/utils";
 import { FaqService } from "@/services/faq.service";
 import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
+import { QuizService } from "@/services/quiz.service";
 import { ScheduleService } from "@/services/schedule.service";
 import { StorageService } from "@/services/storage.service";
 import { TenantService } from "@/services/tenant.service";
@@ -57,6 +59,7 @@ import {
 	Camera,
 	CheckCircle,
 	Clock,
+	Eye,
 	Gift,
 	GlassWater,
 	GripVertical,
@@ -67,17 +70,21 @@ import {
 	Lock,
 	MapPin,
 	Music,
+	Plus,
+	RotateCcw,
 	Settings,
 	Sparkles,
 	Trash2,
+	Trophy,
 	Utensils,
+	X,
 } from "lucide-vue-next";
 import { useForm } from "vee-validate";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 import * as z from "zod";
 
-const { tenant, gallery, faqs, schedules } = useTenant();
+const { tenant, gallery, faqs, schedules, quizzes } = useTenant();
 const authStore = useAuthStore();
 const { confirm } = useConfirm();
 const activeTab = ref("general");
@@ -200,6 +207,7 @@ const zodSchema = z.object({
 	show_faq: z.boolean().optional(),
 	show_schedule: z.boolean().optional(),
 	show_dress_code: z.boolean().optional(),
+	show_quiz: z.boolean().optional(),
 	dress_code_text: z.string().optional(),
 	primary_color: z.string(),
 	background_image: z
@@ -274,6 +282,7 @@ const { handleSubmit, errors, setValues, defineField } =
 			show_faq: false,
 			show_schedule: false,
 			show_dress_code: false,
+			show_quiz: false,
 			dress_code_text: "",
 			primary_color: DEFAULT_PRIMARY_COLOR,
 			background_color: DEFAULT_BACKGROUND_COLOR,
@@ -304,6 +313,7 @@ const [show_gallery] = defineField("show_gallery");
 const [show_faq] = defineField("show_faq");
 const [show_schedule] = defineField("show_schedule");
 const [show_dress_code] = defineField("show_dress_code");
+const [show_quiz] = defineField("show_quiz");
 const [dress_code_text] = defineField("dress_code_text");
 const [primary_color] = defineField("primary_color");
 const [background_image] = defineField("background_image");
@@ -323,7 +333,6 @@ const isUploadingLogo = ref(false);
 // Configurações do upload e separação da galeria
 import ImageGallery from "@/components/ui/ImageGallery.vue";
 import { PaymentService } from "@/services/payment.service";
-import { computed } from "vue";
 
 const uploadIsPublic = ref(false);
 const handleChangeUpload = computed({
@@ -405,11 +414,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-						label: "Upgrade",
-						onClick: () => {
-							activeTab.value = "subscription";
+							label: "Upgrade",
+							onClick: () => {
+								activeTab.value = "subscription";
+							},
 						},
-					},
 			});
 			return;
 		}
@@ -424,11 +433,11 @@ const onGalleryImageUpload = async (files: File | File[]) => {
 				action: isPremium
 					? undefined
 					: {
-						label: "Upgrade",
-						onClick: () => {
-							activeTab.value = "subscription";
+							label: "Upgrade",
+							onClick: () => {
+								activeTab.value = "subscription";
+							},
 						},
-					},
 			});
 			return;
 		}
@@ -766,12 +775,292 @@ const selectPredefinedFaq = (predef: { question: string; answer: string }) => {
 	);
 };
 
+// --- Quiz Management Logic ---
+const MAX_QUIZ_QUESTIONS = 10;
+const newQuizQuestion = ref("");
+const newQuizOptions = ref<string[]>([]);
+const newQuizCorrectIndex = ref(0);
+const chipInputText = ref("");
+const isAddingQuiz = ref(false);
+const showQuizPreviewModal = ref(false);
+
+const getPredefinedQuizQuestions = () => {
+	const groom = tenant.value?.groom_name || "O Noivo";
+	const bride = tenant.value?.bride_name || "A Noiva";
+	const couple = tenant.value?.couple_name || "Os Noivos";
+
+	return [
+		{
+			question: `Como ${couple} se conheceram?`,
+			options: [
+				"Através de amigos em comum numa festa",
+				"No trabalho / universidade",
+				"Pelas redes sociais / aplicativo",
+				"Em uma viagem inesquecível",
+			],
+			correct_index: 0,
+		},
+		{
+			question: "Quem disse 'Eu te amo' primeiro?",
+			options: [
+				`${groom}`,
+				`${bride}`,
+				"Os dois falaram juntos",
+				"Ninguém lembra com certeza!",
+			],
+			correct_index: 0,
+		},
+		{
+			question: "Qual o programa de fim de semana preferido do casal?",
+			options: [
+				"Maratonar séries e delivery no sofá",
+				"Viajar para a praia ou natureza",
+				"Explorar novos restaurantes",
+				"Churrasco com família e amigos",
+			],
+			correct_index: 2,
+		},
+		{
+			question: "Quem demora mais para se arrumar no dia a dia?",
+			options: [
+				`${groom}`,
+				`${bride}`,
+				"Os dois demoram bastante",
+				"Ambos são super rápidos!",
+			],
+			correct_index: 1,
+		},
+		{
+			question: "Qual a viagem dos sonhos para a Lua de Mel?",
+			options: [
+				"Praias paradisíacas",
+				"Tour histórico pela Europa",
+				"Aventura nas montanhas e frio",
+				"Resort All Inclusive relaxante",
+			],
+			correct_index: 0,
+		},
+	];
+};
+
+const addChipOption = () => {
+	const val = chipInputText.value.trim();
+	if (!val) return;
+	if (newQuizOptions.value.includes(val)) {
+		toast.warning("Esta opção já foi adicionada.");
+		return;
+	}
+	newQuizOptions.value.push(val);
+	chipInputText.value = "";
+};
+
+const removeChipOption = (index: number) => {
+	newQuizOptions.value.splice(index, 1);
+	if (newQuizCorrectIndex.value >= newQuizOptions.value.length) {
+		newQuizCorrectIndex.value = Math.max(0, newQuizOptions.value.length - 1);
+	}
+};
+
+const setCorrectOption = (index: number) => {
+	newQuizCorrectIndex.value = index;
+};
+
+const addCustomQuizQuestion = async () => {
+	if (!tenant.value) return;
+	if (quizzes.value.length >= MAX_QUIZ_QUESTIONS) {
+		toast.error(
+			`Você pode adicionar no máximo ${MAX_QUIZ_QUESTIONS} perguntas no Quiz.`,
+		);
+		return;
+	}
+	if (!newQuizQuestion.value.trim()) {
+		toast.error("Por favor, digite o título da pergunta.");
+		return;
+	}
+	if (chipInputText.value.trim()) {
+		addChipOption();
+	}
+	if (newQuizOptions.value.length < 2) {
+		toast.error("Adicione pelo menos 2 opções de resposta.");
+		return;
+	}
+
+	isAddingQuiz.value = true;
+	try {
+		const created = await QuizService.create({
+			tenant: tenant.value.$id,
+			question: newQuizQuestion.value.trim(),
+			options: [...newQuizOptions.value],
+			correct_index: newQuizCorrectIndex.value,
+			order: quizzes.value.length,
+		});
+
+		quizzes.value.push(created);
+		newQuizQuestion.value = "";
+		newQuizOptions.value = [];
+		newQuizCorrectIndex.value = 0;
+		chipInputText.value = "";
+		toast.success("Pergunta adicionada ao Quiz!");
+	} catch (e) {
+		console.error(e);
+		toast.error("Erro ao adicionar pergunta ao Quiz.");
+	} finally {
+		isAddingQuiz.value = false;
+	}
+};
+
+const deleteQuizQuestion = (id: string) => {
+	confirm({
+		title: "Excluir Pergunta do Quiz",
+		description: "Tem certeza de que deseja remover esta pergunta do quiz?",
+		confirmText: "Sim, excluir",
+		cancelText: "Não",
+		confirm: async () => {
+			try {
+				await QuizService.delete(id);
+				quizzes.value = quizzes.value.filter((q) => q.$id !== id);
+				toast.success("Pergunta removida do Quiz!");
+			} catch (e) {
+				console.error(e);
+				toast.error("Erro ao excluir pergunta do Quiz.");
+			}
+		},
+	});
+};
+
+const restoreDefaultQuizQuestions = () => {
+	if (!tenant.value) return;
+	if (quizzes.value.length >= MAX_QUIZ_QUESTIONS) {
+		toast.warning(`Limite de ${MAX_QUIZ_QUESTIONS} perguntas já foi atingido.`);
+		return;
+	}
+
+	confirm({
+		title: "Carregar Perguntas Padrão",
+		description:
+			"Deseja adicionar as 5 perguntas sugeridas com os nomes do casal ao seu quiz?",
+		confirmText: "Sim, carregar",
+		cancelText: "Cancelar",
+		confirm: async () => {
+			const tenantId = tenant.value?.$id;
+			if (!tenantId) return;
+			const defs = getPredefinedQuizQuestions();
+			const remainingSlots = MAX_QUIZ_QUESTIONS - quizzes.value.length;
+			const defsToLoad = defs.slice(0, remainingSlots);
+
+			try {
+				for (let i = 0; i < defsToLoad.length; i++) {
+					const def = defsToLoad[i];
+					const created = await QuizService.create({
+						tenant: tenantId,
+						question: def.question,
+						options: def.options,
+						correct_index: def.correct_index,
+						order: quizzes.value.length + i,
+					});
+					quizzes.value.push(created);
+				}
+				toast.success(
+					`${defsToLoad.length} perguntas padrão adicionadas com sucesso!`,
+				);
+			} catch (e) {
+				console.error(e);
+				toast.error("Erro ao carregar perguntas padrão.");
+			}
+		},
+	});
+};
+
+const selectPredefinedQuiz = (predef: {
+	question: string;
+	options: string[];
+	correct_index: number;
+}) => {
+	if (quizzes.value.length >= MAX_QUIZ_QUESTIONS) {
+		toast.warning(`Limite de ${MAX_QUIZ_QUESTIONS} perguntas atingido.`);
+		return;
+	}
+	newQuizQuestion.value = predef.question;
+	newQuizOptions.value = [...predef.options];
+	newQuizCorrectIndex.value = predef.correct_index;
+	chipInputText.value = "";
+	toast.info(
+		"Sugestão carregada! Você pode editar as respostas antes de adicionar.",
+	);
+};
+
+// Quiz Drag and Drop
+const quizDraggedIndex = ref<number | null>(null);
+const quizDragOverIndex = ref<number | null>(null);
+
+const onQuizDragStart = (index: number, event: DragEvent) => {
+	quizDraggedIndex.value = index;
+	if (event.dataTransfer) {
+		event.dataTransfer.effectAllowed = "move";
+	}
+};
+
+const onQuizDragOver = (index: number, event: DragEvent) => {
+	event.preventDefault();
+	if (quizDraggedIndex.value !== index) {
+		quizDragOverIndex.value = index;
+	}
+};
+
+const onQuizDragLeave = (index: number) => {
+	if (quizDragOverIndex.value === index) {
+		quizDragOverIndex.value = null;
+	}
+};
+
+const onQuizDragEnd = () => {
+	quizDraggedIndex.value = null;
+	quizDragOverIndex.value = null;
+};
+
+const onQuizDrop = async (targetIndex: number) => {
+	quizDragOverIndex.value = null;
+	if (quizDraggedIndex.value === null || quizDraggedIndex.value === targetIndex)
+		return;
+
+	const items = [...quizzes.value];
+	const [moved] = items.splice(quizDraggedIndex.value, 1);
+	items.splice(targetIndex, 0, moved);
+
+	quizzes.value = items;
+
+	try {
+		const promises = quizzes.value.map((q, index) => {
+			if (q.order !== index) {
+				q.order = index;
+				return QuizService.update(q.$id, { order: index });
+			}
+			return Promise.resolve();
+		});
+
+		await Promise.all(promises);
+		toast.success("Ordem do Quiz atualizada!");
+	} catch (e) {
+		console.error("Erro ao atualizar ordem do quiz:", e);
+		toast.error("Erro ao atualizar ordem do Quiz.");
+	} finally {
+		quizDraggedIndex.value = null;
+	}
+};
+
+const quizSubmitLabel = computed(() =>
+	quizzes.value.length >= MAX_QUIZ_QUESTIONS
+		? "Limite de 10 Perguntas Atingido"
+		: "Adicionar Pergunta ao Quiz",
+);
+
 const loadSettings = () => {
 	if (tenant.value) {
 		show_gallery.value = tenant.value.show_gallery ?? false;
 		show_faq.value = tenant.value.show_faq ?? false;
 		show_schedule.value = tenant.value.show_schedule ?? false;
 		show_dress_code.value = tenant.value.show_dress_code ?? false;
+		show_quiz.value = tenant.value.show_quiz ?? false;
 		setValues({
 			groom_name: tenant.value.groom_name || "",
 			bride_name: tenant.value.bride_name || "",
@@ -971,6 +1260,12 @@ const connectToMarketPago = () => {
 					<Calendar class="w-4 h-4" />
 					Cronograma
 				</button>
+				<button type="button" @click="activeTab = 'quiz'"
+					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
+					:class="activeTab === 'quiz' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
+					<Trophy class="w-4 h-4" />
+					Quiz
+				</button>
 				<button type="button" @click="activeTab = 'subscription'"
 					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2.5 border-0 shadow-none cursor-pointer shrink-0"
 					:class="activeTab === 'subscription' ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
@@ -1128,6 +1423,20 @@ const connectToMarketPago = () => {
 								<label for="show_dress_code">
 									{{ show_dress_code ? 'Ativo' : 'Inativo' }}
 								</label>
+							</div>
+						</FormGroup>
+
+						<FormGroup label="Exibir Quiz dos Noivos">
+							<div class="flex flex-col gap-2">
+								<div class="flex items-center gap-2">
+									<Switch :model-value="authStore.isPremium ? show_quiz : false"
+										@update:model-value="(val: boolean) => { if (!authStore.isPremium) { showUpgradeToast(); } else { show_quiz = val; } }"
+										id="show_quiz" />
+									<label for="show_quiz" class="flex items-center gap-1.5 text-sm select-none">
+										{{ (authStore.isPremium && show_quiz) ? 'Ativo' : 'Inativo' }}
+									</label>
+								</div>
+								<PlanRequired v-if="!authStore.isPremium" text="Quiz do casal requer Premium" />
 							</div>
 						</FormGroup>
 
@@ -1346,8 +1655,14 @@ const connectToMarketPago = () => {
 									<img src="/images/mp.svg" alt="MercadoPago" class="w-full" />
 								</div>
 								<div>
-									<h4 class="font-bold text-slate-900">{{ tenant?.mp_user_id ? "Mercado Pago Conectado" : "Conectar Mercado Pago" }}</h4>
-									<p class="text-xs text-slate-500">{{ tenant?.mp_user_id ? "Sua conta está conectada." : "Permita o acesso para receber pagamentos diretamente." }}</p>
+									<template v-if="tenant?.mp_user_id">
+										<h4 class="font-bold text-slate-900">Mercado Pago Conectado</h4>
+										<p class="text-xs text-slate-500">Sua conta está conectada.</p>
+									</template>
+									<template v-else>
+										<h4 class="font-bold text-slate-900">Conectar Mercado Pago</h4>
+										<p class="text-xs text-slate-500">Permita o acesso para receber pagamentos diretamente.</p>
+									</template>
 								</div>
 							</div>
 
@@ -1663,6 +1978,186 @@ const connectToMarketPago = () => {
 				</div>
 			</TabsContent>
 
+			<!-- TAB: QUIZ -->
+			<TabsContent value="quiz" class="mt-0">
+				<div
+					class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6">
+					<div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+						<div>
+							<div class="flex items-center gap-2">
+								<h3 class="text-lg font-semibold text-slate-800">Quiz do Casal (Perguntas & Respostas)</h3>
+							</div>
+							<p class="text-xs text-slate-500">Crie perguntas divertidas sobre os noivos para os convidados
+								responderem.</p>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<Button v-if="authStore.isPremium && show_quiz && quizzes.length > 0" type="button" variant="outline" size="sm"
+								@click="showQuizPreviewModal = true" class="text-xs rounded-xl font-medium border-slate-200">
+								<Eye class="w-3.5 h-3.5 mr-1.5" /> Testar Quiz
+							</Button>
+							<Button v-if="authStore.isPremium && show_quiz" type="button" variant="outline" size="sm"
+								@click="restoreDefaultQuizQuestions" class="text-xs rounded-xl font-medium border-slate-200">
+								<RotateCcw class="w-3.5 h-3.5 mr-1.5" /> Restaurar 5 Padrões
+							</Button>
+						</div>
+					</div>
+
+					<!-- Premium Gate -->
+					<div v-if="!authStore.isPremium" class="space-y-6">
+						<PlanLimitAlert variant="premium" :icon="Sparkles" title="O Quiz do Casal é um recurso exclusivo Premium ✨"
+							description="No plano Premium, você pode criar perguntas personalizadas com respostas em chips, definir a alternativa correta e entreter seus convidados com um jogo interativo!"
+							button-label="Fazer Upgrade para Liberar o Quiz" @action="activeTab = 'subscription'" />
+					</div>
+
+					<!-- Disabled in General Tab -->
+					<div v-else-if="!show_quiz"
+						class="py-12 text-center text-slate-400 border border-slate-100 rounded-2xl bg-slate-50/30">
+						<p class="text-sm font-light">O Quiz do Casal está desativado. Ative no interruptor na aba "Geral" para
+							gerenciar
+							as perguntas.</p>
+					</div>
+
+					<!-- Active Manager -->
+					<div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-2">
+						<!-- List of Registered Questions -->
+						<div class="lg:col-span-7 space-y-6">
+							<div>
+								<div class="flex items-center justify-between mb-3">
+									<h4 class="text-sm font-semibold text-slate-700">
+										Perguntas Cadastradas ({{ quizzes.length }}/{{ MAX_QUIZ_QUESTIONS }})
+									</h4>
+									<span class="text-xs text-slate-400">Arraste para reordenar</span>
+								</div>
+
+								<div v-if="quizzes.length > 0" class="space-y-3">
+									<div v-for="(q, index) in quizzes" :key="q.$id" draggable="true"
+										@dragstart="onQuizDragStart(index, $event)" @dragover="onQuizDragOver(index, $event)"
+										@dragleave="onQuizDragLeave(index)" @dragend="onQuizDragEnd" @drop="onQuizDrop(index)"
+										class="p-4 rounded-2xl border flex items-start gap-3.5 shadow-sm cursor-grab active:cursor-grabbing hover:bg-slate-50 transition-all duration-200"
+										:class="[
+											quizDraggedIndex === index ? 'opacity-40 border-slate-200 bg-slate-50/50' : '',
+											quizDragOverIndex === index && quizDraggedIndex !== index
+												? 'border-dashed border-primary bg-primary/5 scale-[1.01] shadow-md'
+												: 'border-slate-100 bg-slate-50/50'
+										]">
+										<GripVertical class="w-4 h-4 text-slate-400 mt-1 shrink-0 cursor-grab" />
+
+										<div class="flex-1 min-w-0 space-y-2">
+											<div class="flex items-center gap-2">
+												<span
+													class="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+													Pergunta {{ index + 1 }}
+												</span>
+												<p class="font-semibold text-slate-900 text-sm truncate">{{ q.question }}</p>
+											</div>
+
+											<!-- Option chips display -->
+											<div class="flex flex-wrap gap-1.5 pt-1">
+												<span v-for="(opt, optIdx) in q.options" :key="optIdx"
+													class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border"
+													:class="optIdx === q.correct_index
+														? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
+														: 'bg-white border-slate-200 text-slate-600'">
+													<span class="w-1.5 h-1.5 rounded-full"
+														:class="optIdx === q.correct_index ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+													<span>{{ opt }}</span>
+													<span v-if="optIdx === q.correct_index"
+														class="text-[9px] font-bold text-emerald-600 uppercase">✓
+														Correta</span>
+												</span>
+											</div>
+										</div>
+
+										<button type="button" @click="deleteQuizQuestion(q.$id)"
+											class="text-slate-400 hover:text-red-500 p-1 bg-transparent border-0 outline-none cursor-pointer transition-colors shrink-0">
+											<Trash2 class="w-4 h-4" />
+										</button>
+									</div>
+								</div>
+								<div v-else class="py-8 text-center text-slate-400 border border-slate-100 rounded-2xl bg-slate-50/30">
+									<p class="text-xs font-light">Nenhuma pergunta cadastrada no quiz.</p>
+								</div>
+							</div>
+
+							<!-- Predefined Suggestions -->
+							<div>
+								<h4 class="text-sm font-semibold text-slate-700 mb-2">Sugestões de Perguntas do Casal</h4>
+								<p class="text-xs text-slate-400 mb-3">Clique em uma sugestão para carregar no formulário:</p>
+								<div class="flex flex-wrap gap-2">
+									<button v-for="item in getPredefinedQuizQuestions()" :key="item.question" type="button"
+										@click="selectPredefinedQuiz(item)"
+										class="px-3.5 py-1.5 text-xs bg-slate-100 hover:bg-primary/10 text-slate-600 hover:text-primary rounded-full transition-all border-0 outline-none cursor-pointer font-medium">
+										{{ item.question }}
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<!-- Add/Edit Question Form -->
+						<form @submit.prevent="addCustomQuizQuestion"
+							class="lg:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4 h-fit">
+							<h4 class="text-sm font-semibold text-slate-800">Nova Pergunta</h4>
+
+							<FormGroup label="Pergunta">
+								<Input v-model="newQuizQuestion" placeholder="Ex: Quem disse 'Eu te amo' primeiro?"
+									class="bg-white border-slate-200 rounded-xl" />
+							</FormGroup>
+
+							<FormGroup label="Respostas / Opções (Chips)">
+								<div class="space-y-3">
+									<div class="flex items-center gap-2">
+										<Input v-model="chipInputText" @keydown.enter.prevent="addChipOption"
+											placeholder="Digite a opção e aperte Enter..." class="bg-white border-slate-200 rounded-xl" />
+										<Button type="button" variant="outline" @click="addChipOption"
+											class="h-10 px-3 rounded-xl shrink-0 font-medium">
+											<Plus class="w-4 h-4 mr-1" /> Adicionar
+										</Button>
+									</div>
+
+									<!-- Chips container -->
+									<div v-if="newQuizOptions.length > 0"
+										class="flex flex-wrap gap-2 p-3 bg-white border border-slate-200 rounded-xl">
+										<div v-for="(opt, idx) in newQuizOptions" :key="idx" @click="setCorrectOption(idx)"
+											class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all border"
+											:class="newQuizCorrectIndex === idx
+												? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-xs'
+												: 'bg-slate-100 border-slate-200 text-slate-700 hover:border-slate-300'">
+											<span class="w-2 h-2 rounded-full"
+												:class="newQuizCorrectIndex === idx ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+											<span>{{ opt }}</span>
+											<span v-if="newQuizCorrectIndex === idx"
+												class="text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-100 px-1 rounded">Correta</span>
+											<button type="button" @click.stop="removeChipOption(idx)"
+												class="text-slate-400 hover:text-red-500 p-0.5 ml-1 transition-colors">
+												<X class="w-3 h-3" />
+											</button>
+										</div>
+									</div>
+									<p v-else class="text-xs text-slate-400 italic">Nenhuma opção adicionada. Digite acima e aperte Enter.
+									</p>
+
+									<p class="text-[11px] text-slate-500 font-light">
+										💡 Clique em um dos chips para defini-lo como a <strong>resposta correta</strong> (destacado em
+										verde).
+									</p>
+
+									<p v-if="quizzes.length >= MAX_QUIZ_QUESTIONS"
+										class="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-center">
+										Você atingiu o limite máximo de {{ MAX_QUIZ_QUESTIONS }} perguntas no Quiz.
+									</p>
+								</div>
+							</FormGroup>
+
+							<Button type="submit" :disabled="isAddingQuiz || quizzes.length >= MAX_QUIZ_QUESTIONS" class="w-full">
+								<Loader2 v-if="isAddingQuiz" class="w-4 h-4 animate-spin mr-2" />
+								{{ quizSubmitLabel }}
+							</Button>
+						</form>
+					</div>
+				</div>
+			</TabsContent>
+
 			<!-- TAB: ASSINATURA -->
 			<TabsContent value="subscription" class="mt-0">
 				<div
@@ -1785,7 +2280,9 @@ const connectToMarketPago = () => {
 			<div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
 				<div class="flex justify-between items-center text-sm">
 					<span class="text-slate-500">Produto:</span>
-					<span class="font-bold text-slate-800">{{PROJECT_NAME}} Premium ({{ selectedPlan === 'quarterly' ? 'Trimestral' :
+					<span class="font-bold text-slate-800">{{ PROJECT_NAME }} Premium ({{ selectedPlan === 'quarterly' ?
+						'Trimestral'
+						:
 						'Semestral' }})</span>
 				</div>
 				<div class="flex justify-between items-center text-sm">
@@ -1826,6 +2323,13 @@ const connectToMarketPago = () => {
 					Cancelar
 				</Button>
 			</div>
+		</div>
+	</Modal>
+
+	<!-- Quiz Preview Modal -->
+	<Modal v-model:open="showQuizPreviewModal" title="Prévia do Quiz dos Noivos" class="sm:max-w-xl">
+		<div class="pt-1">
+			<QuizSection :quizzes="quizzes" :couple-name="tenant?.couple_name" hide-header />
 		</div>
 	</Modal>
 </template>

@@ -38,10 +38,6 @@ export const GalleryService = {
 			data.image_url = await StorageService.uploadFile(id, file, "photo");
 		}
 
-		const ownerId = data.tenant;
-		const guestId =
-			data.guest?.$id || (typeof data.guest === "string" ? data.guest : null);
-
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_GALLERY,
@@ -50,7 +46,7 @@ export const GalleryService = {
 				...data,
 				is_public: data.is_public ?? false,
 			},
-			permissions: getMessagePermissions(ownerId, guestId),
+			permissions: getMessagePermissions(),
 		});
 	},
 
@@ -64,23 +60,12 @@ export const GalleryService = {
 	},
 
 	async updateLikes(rowId: string, likes: string[]): Promise<IGalleryImage> {
-		const existing = await tables.getRow<IGalleryImage>({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_GALLERY,
-			rowId,
-		});
-		const ownerId = existing?.tenant || "";
-		const guestId =
-			existing?.guest?.$id ||
-			(typeof existing?.guest === "string" ? existing.guest : null) ||
-			null;
-
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_GALLERY,
 			rowId,
 			data: { likes },
-			permissions: getMessagePermissions(ownerId, guestId),
+			permissions: getMessagePermissions(),
 		});
 	},
 };

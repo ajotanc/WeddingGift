@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SectionHeader from "@/components/public/SectionHeader.vue";
 import type { IScheduleItem } from "@/services/schedule.service";
 import {
 	Cake,
@@ -12,7 +13,6 @@ import {
 	Sparkles,
 	Utensils,
 } from "lucide-vue-next";
-import { computed } from "vue";
 import type { Component } from "vue";
 
 const props = defineProps<{
@@ -35,16 +35,12 @@ const ICON_MAP: Record<string, Component> = {
 const getIcon = (iconName: string) => {
 	return ICON_MAP[iconName] || Heart;
 };
-
 </script>
 
 <template>
 	<section id="schedule" class="space-y-12 max-w-3xl mx-auto scroll-mt-16 py-8">
 		<!-- Section Header -->
-		<div class="text-left border-b border-slate-200/60 pb-6">
-			<span class="text-[10px] text-primary font-bold tracking-[0.25em] uppercase">Celebração</span>
-			<h2 class="text-3xl md:text-4xl font-serif text-slate-900 mt-2 font-semibold">Cronograma do Dia</h2>
-		</div>
+		<SectionHeader tag="Celebração" title="Cronograma do Dia" responsive />
 
 		<!-- Left-aligned Linear Timeline (Clean and sequential) -->
 		<div class="relative space-y-10">
@@ -54,7 +50,8 @@ const getIcon = (iconName: string) => {
 			<!-- Timeline Items -->
 			<div v-for="item in schedules" :key="item.title" class="relative group pl-12 md:pl-16 text-left">
 				<!-- Bullet Indicator with Icon directly on the timeline line -->
-				<div class="absolute left-4 md:left-5 -translate-x-1/2 top-1.5 w-8 h-8 rounded-full bg-white border flex items-center justify-center transition-all duration-300 group-hover:scale-110 z-10 shadow-xs text-primary border-primary">
+				<div
+					class="absolute left-4 md:left-5 -translate-x-1/2 top-1.5 w-8 h-8 rounded-full bg-white border flex items-center justify-center transition-all duration-300 group-hover:scale-110 z-10 shadow-xs text-primary border-primary">
 					<component :is="getIcon(item.icon)" class="w-3.5 h-3.5" />
 				</div>
 

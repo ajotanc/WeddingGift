@@ -8,9 +8,9 @@ import {
 	TriangleAlertIcon,
 	XIcon,
 } from "lucide-vue-next";
+import { onMounted, onUnmounted } from "vue";
 import type { ToasterProps } from "vue-sonner";
 import { Toaster as Sonner, toast } from "vue-sonner";
-import { onMounted, onUnmounted } from "vue";
 
 const props = defineProps<ToasterProps>();
 
@@ -18,7 +18,8 @@ const handleToastClick = (e: MouseEvent) => {
 	const target = e.target as HTMLElement | null;
 	const toastEl = target?.closest("[data-sonner-toast]");
 	if (toastEl) {
-		const toastId = toastEl.getAttribute("data-styled-id") || toastEl.getAttribute("data-id");
+		const toastId =
+			toastEl.getAttribute("data-styled-id") || toastEl.getAttribute("data-id");
 		if (toastId) {
 			toast.dismiss(toastId);
 		} else {

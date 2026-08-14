@@ -5,16 +5,16 @@ import "dayjs/locale/pt-br";
 import { useTenant } from "@/composables/useTenant";
 import { EFFECT_CONFIGS, type Particle } from "@/lib/effect";
 import { formatMoney, getProductPrice } from "@/lib/money";
-import { generatePixPayload } from "@/lib/utils";
+import { generatePixPayload, isMobile } from "@/lib/utils";
+import { EmailService } from "@/services/email.service";
 import { GalleryService } from "@/services/gallery.service";
 import type { IGalleryImage } from "@/services/gallery.service";
+import { PaymentService } from "@/services/payment.service";
 import { type IProduct, ProductService } from "@/services/product.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
-import { PaymentService } from "@/services/payment.service";
-import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
-import { Loader2 } from "lucide-vue-next";
+import { ChevronUp, Loader2 } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 import GuestProfileModal from "@/components/GuestProfileModal.vue";
@@ -32,14 +32,17 @@ import GallerySection from "@/components/public/GallerySection.vue";
 import HistorySection from "@/components/public/HistorySection.vue";
 import LocationSection from "@/components/public/LocationSection.vue";
 import ProductsSection from "@/components/public/ProductsSection.vue";
+import QuizSection from "@/components/public/QuizSection.vue";
 import RsvpMessageSection from "@/components/public/RsvpMessageSection.vue";
 import ScheduleSection from "@/components/public/ScheduleSection.vue";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useRoute } from "vue-router";
 
 dayjs.locale("pt-br");
 
 const route = useRoute();
+const isDesktop = computed(() => !isMobile());
 
 const {
 	tenant,
@@ -49,6 +52,7 @@ const {
 	rsvps,
 	gallery,
 	faqs,
+	quizzes,
 	loading,
 	error,
 	fetchTenant,
@@ -82,76 +86,51 @@ const logout = async () => {
 const showPixModal = ref(false);
 const showLinksModal = ref(false);
 const selectedProduct = ref<IProduct | null>(null);
-
 const quotaQuantities = ref<Record<string, number>>({});
-
 const pixPayload = ref({ payload: "", base64: "" });
 const isGeneratingMpPix = ref(false);
-const mpPixData = ref<{ qr_code: string; qr_code_base64: string; paymentId?: number } | null>(null);
+const mpPixData = ref<{
+	qr_code: string;
+	qr_code_base64: string;
+	paymentId?: number;
+} | null>(null);
+const customPixAmount = ref<number>(10);
 
-watch(
-	selectedProduct,
-	async (product) => {
-		if (
-			!product ||
-			!tenant.value?.pix_key ||
-			product.type !== "quota"
-		) {
-			pixPayload.value = { payload: "", base64: "" };
-			return;
-		}
-
-		pixPayload.value = await generatePixPayload(
-			tenant.value.pix_key,
-			tenant.value.couple_name || "Noivos",
-			String(getProductPrice(product, currentQty.value)),
-			`Presente: ${product.name}`,
-			product.$id,
-		);
-	},
-	{ immediate: true },
+const isCustomPix = computed(() =>
+	Boolean(
+		selectedProduct.value?.category === "pix" &&
+			selectedProduct.value?.is_custom_amount,
+	),
 );
 
-watch(
-	currentQty,
-	async (qty) => {
-		if (
-			!selectedProduct.value ||
-			!tenant.value?.pix_key ||
-			selectedProduct.value.type !== "quota"
-		) {
-			return;
-		}
+const activePixPrice = computed(() => {
+	if (isCustomPix.value) {
+		return Math.max(1, Number(customPixAmount.value) || 50);
+	}
+	if (!selectedProduct.value) return 0;
+	return getProductPrice(selectedProduct.value, currentQty.value);
+});
 
-		pixPayload.value = await generatePixPayload(
-			tenant.value.pix_key,
-			tenant.value.couple_name || "Noivos",
-			String(getProductPrice(selectedProduct.value, qty)),
-			`Presente: ${selectedProduct.value.name}`,
-			selectedProduct.value.$id,
-		);
-	},
-	{ immediate: true, deep: true },
-);
+const updatePixPaymentData = async () => {
+	if (!selectedProduct.value || !showPixModal.value) return;
 
-const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
-	if (!currentUser.value) return;
-	selectedProduct.value = data.product;
-	const qty = data.quantity || 1;
-	quotaQuantities.value[data.product.$id] = qty;
-	showPixModal.value = true;
+	const price = activePixPrice.value;
 	mpPixData.value = null;
 
-	if (tenant.value?.mp_access_token) {
+	if (tenant.value?.mp_access_token && currentUser.value) {
 		isGeneratingMpPix.value = true;
 		try {
-			const finalPrice = getProductPrice(data.product, qty);
 			const mpRes = await PaymentService.createGiftPixPayment({
 				tenantId: tenant.value.$id,
-				productId: data.product.$id,
-				productName: data.product.name,
-				quantity: qty,
-				price: finalPrice,
+				productId:
+					selectedProduct.value.$id === "custom-pix-amount"
+						? "custom-pix"
+						: selectedProduct.value.$id,
+				productName: isCustomPix.value
+					? "Contribuição Livre (PIX)"
+					: selectedProduct.value.name,
+				quantity: 1,
+				price,
 				guestName: currentUser.value.name,
 				guestEmail: currentUser.value.email,
 				guestId: currentUser.value.$id,
@@ -172,11 +151,36 @@ const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
 		pixPayload.value = await generatePixPayload(
 			tenant.value.pix_key,
 			tenant.value.couple_name || "Noivos",
-			String(getProductPrice(data.product, qty)),
-			`Presente: ${data.product.name}`,
-			data.product.$id,
+			String(price),
+			`Presente: ${isCustomPix.value ? "Valor Livre" : selectedProduct.value.name}`,
+			selectedProduct.value.$id,
 		);
 	}
+};
+
+watch(
+	[activePixPrice, showPixModal],
+	() => {
+		if (showPixModal.value && selectedProduct.value) {
+			updatePixPaymentData();
+		}
+	},
+	{ immediate: false },
+);
+
+const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
+	if (!currentUser.value) return;
+	selectedProduct.value = data.product;
+	const qty = data.quantity || 1;
+	quotaQuantities.value[data.product.$id] = qty;
+	if (
+		data.product.$id === "custom-pix-amount" ||
+		data.product.is_custom_amount
+	) {
+		customPixAmount.value = 10;
+	}
+	showPixModal.value = true;
+	await updatePixPaymentData();
 };
 
 const openLinksModal = async (data: {
@@ -366,12 +370,15 @@ watch(
 
 // Scroll Navigation & Scroll To Top
 const currentSection = ref("home");
+const showBackToTop = ref(false);
 
 const activeSections = computed(() => {
 	if (!tenant.value) return [];
 	const list = [{ id: "home", label: "Início" }];
 	if (tenant.value.couple_history)
 		list.push({ id: "history", label: "Nossa História" });
+	if (tenant.value.show_quiz && quizzes.value?.length)
+		list.push({ id: "quiz", label: "Quiz do Casal" });
 	if (tenant.value.show_schedule && tenant.value.schedules?.length)
 		list.push({ id: "schedule", label: "Cronograma" });
 	if (tenant.value.show_dress_code && tenant.value.dress_code_text)
@@ -382,8 +389,12 @@ const activeSections = computed(() => {
 		list.push({ id: "location", label: "Local do Evento" });
 	if (currentUser.value) {
 		list.push({ id: "gifts", label: "Lista de Presentes" });
-		list.push({ id: "rsvp", label: "Confirmar Presença" });
-		list.push({ id: "messages", label: "Mural de Recados" });
+		if (isDesktop.value) {
+			list.push({ id: "rsvp", label: "Presença & Recados" });
+		} else {
+			list.push({ id: "rsvp", label: "Confirmar Presença" });
+			list.push({ id: "messages", label: "Mural de Recados" });
+		}
 	}
 	if (tenant.value.show_faq && faqs.value?.length)
 		list.push({ id: "faq", label: "Dúvidas Frequentes" });
@@ -393,10 +404,41 @@ const activeSections = computed(() => {
 let observer: IntersectionObserver | null = null;
 const visibleSections = ref<Record<string, boolean>>({});
 
+const customSmoothScroll = (targetY: number, duration = 850) => {
+	if (typeof window === "undefined") return;
+	const startPosition = window.scrollY;
+	const distance = targetY - startPosition;
+	let start: number | null = null;
+
+	// Curva de amortecimento suave (ease-in-out cubic)
+	const ease = (t: number) => {
+		return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+	};
+
+	const step = (timestamp: number) => {
+		if (!start) start = timestamp;
+		const progress = timestamp - start;
+		const time = Math.min(progress / duration, 1);
+		window.scrollTo(0, startPosition + distance * ease(time));
+		if (progress < duration) {
+			window.requestAnimationFrame(step);
+		}
+	};
+
+	window.requestAnimationFrame(step);
+};
+
 const handleScroll = () => {
-	if (typeof window !== "undefined" && window.scrollY < 200) {
-		currentSection.value = "home";
+	if (typeof window !== "undefined") {
+		showBackToTop.value = window.scrollY > 400;
+		if (window.scrollY < 200) {
+			currentSection.value = "home";
+		}
 	}
+};
+
+const scrollToTop = () => {
+	customSmoothScroll(0, 900);
 };
 
 const setupScrollSpy = () => {
@@ -424,11 +466,24 @@ const setupScrollSpy = () => {
 				(s) => visibleSections.value[s.id],
 			);
 			if (intersecting.length > 0) {
-				currentSection.value = intersecting[0].id;
+				let bestSection = intersecting[0].id;
+				let minDistance = Number.POSITIVE_INFINITY;
+				for (const s of intersecting) {
+					const el = document.getElementById(s.id);
+					if (el) {
+						const rect = el.getBoundingClientRect();
+						const dist = Math.abs(rect.top - 80);
+						if (dist < minDistance) {
+							minDistance = dist;
+							bestSection = s.id;
+						}
+					}
+				}
+				currentSection.value = bestSection;
 			}
 		},
 		{
-			rootMargin: "-100px 0px -40% 0px",
+			rootMargin: "-80px 0px -40% 0px",
 			threshold: 0,
 		},
 	);
@@ -451,28 +506,6 @@ watch(
 	{ immediate: true, deep: true, flush: "post" },
 );
 
-const customSmoothScroll = (targetY: number, duration = 800) => {
-	const startPosition = window.scrollY;
-	const distance = targetY - startPosition;
-	let start: number | null = null;
-
-	const ease = (t: number) => {
-		return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-	};
-
-	const step = (timestamp: number) => {
-		if (!start) start = timestamp;
-		const progress = timestamp - start;
-		const time = Math.min(progress / duration, 1);
-		window.scrollTo(0, startPosition + distance * ease(time));
-		if (progress < duration) {
-			window.requestAnimationFrame(step);
-		}
-	};
-
-	window.requestAnimationFrame(step);
-};
-
 const scrollToSection = (id: string, event?: MouseEvent) => {
 	if (event) {
 		(event.currentTarget as HTMLElement)?.blur();
@@ -481,14 +514,14 @@ const scrollToSection = (id: string, event?: MouseEvent) => {
 		document.activeElement.blur();
 	}
 	if (id === "home") {
-		customSmoothScroll(0, 800);
+		customSmoothScroll(0, 850);
 		return;
 	}
 	const el = document.getElementById(id);
 	if (el) {
 		const rect = el.getBoundingClientRect();
-		const targetY = rect.top + window.scrollY - 40;
-		customSmoothScroll(targetY, 800);
+		const targetY = rect.top + window.scrollY - 60;
+		customSmoothScroll(targetY, 850);
 	}
 };
 
@@ -612,7 +645,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	document.removeEventListener("visibilitychange", handleVisibility);
-	
+
 	if (observer) {
 		observer.disconnect();
 	}
@@ -693,6 +726,9 @@ onUnmounted(() => {
 				<!-- Couple History -->
 				<HistorySection v-if="tenant.couple_history" :history-text="tenant.couple_history" />
 
+				<!-- Couple Quiz -->
+				<QuizSection v-if="tenant.show_quiz" :quizzes="quizzes" :couple-name="tenant.couple_name" />
+
 				<!-- Event Timeline -->
 				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
 					:schedules="getTimelineItems" />
@@ -709,8 +745,9 @@ onUnmounted(() => {
 				<!-- Event Location Map -->
 				<LocationSection v-if="tenant.event_location" :event-location="tenant.event_location"
 					:event-latitude="tenant.event_latitude" :event-longitude="tenant.event_longitude"
-					:event-date="tenant.event_date" :weather-data="weatherData" :weather-loading="weatherLoading"
-					:weather-error="weatherError" v-model:is-weather-expanded="isWeatherExpanded" />
+					:event-date="tenant.event_date" :event-time="tenant.event_time" :couple-name="tenant.couple_name"
+					:weather-data="weatherData" :weather-loading="weatherLoading" :weather-error="weatherError"
+					v-model:is-weather-expanded="isWeatherExpanded" />
 
 				<section v-if="!currentUser"
 					class="text-center p-6 bg-white/50 backdrop-blur rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mt-12">
@@ -763,51 +800,69 @@ onUnmounted(() => {
 		<!-- PIX Modal -->
 		<Modal v-model:open="showPixModal"
 			:title="selectedProduct?.type === 'quota' ? 'Pagamento da Cota PIX' : 'Presentear com Valor (PIX)'">
-			<div v-if="selectedProduct" class="space-y-6 pt-4 text-center">
+			<div v-if="selectedProduct" class="space-y-5 pt-2 text-center">
 				<p class="text-xs uppercase tracking-widest font-bold text-primary">Transferência PIX</p>
 				<p class="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">
-					Escaneie o QR Code abaixo para presentear os noivos <strong>{{ tenant?.couple_name }}</strong> de forma
-					direta e
+					Escaneie o QR Code abaixo para presentear os noivos <strong>{{ tenant?.couple_name }}</strong> de forma direta
+					e
 					segura.
 				</p>
 
 				<div
-					class="flex justify-center bg-white p-5 rounded-2xl border border-slate-100 max-w-[230px] mx-auto shadow-sm min-h-[200px] items-center">
+					class="flex justify-center bg-white p-4 rounded-2xl border border-slate-100 max-w-[220px] mx-auto shadow-xs min-h-[190px] items-center">
 					<div v-if="isGeneratingMpPix" class="flex flex-col items-center gap-2 py-6 text-slate-500">
 						<Loader2 class="w-8 h-8 animate-spin text-primary" />
 						<span class="text-xs">Gerando PIX no Mercado Pago...</span>
 					</div>
 					<template v-else>
 						<img v-if="mpPixData?.qr_code_base64" :src="`data:image/png;base64,${mpPixData.qr_code_base64}`"
-							alt="QR Code PIX Mercado Pago" class="w-[180px] h-[180px] object-contain" />
+							alt="QR Code PIX Mercado Pago" class="w-[170px] h-[170px] object-contain" />
 						<qrcode-svg v-else-if="mpPixData?.qr_code || pixPayload.payload"
-							:value="mpPixData?.qr_code || pixPayload.payload" :size="180" level="H" />
+							:value="mpPixData?.qr_code || pixPayload.payload" :size="170" level="H" />
 						<p v-else class="text-xs text-slate-400">QR Code indisponível.</p>
 					</template>
 				</div>
 
-				<div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-					<p class="text-3xl font-serif font-bold text-slate-900 italic">
-						{{ formatMoney(getProductPrice(selectedProduct, currentQty)) }}
-					</p>
+				<div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100/80">
+					<div v-if="isCustomPix" class="space-y-3 text-center">
+						<p class="text-xs uppercase font-bold text-primary">Contribuição Livre</p>
 
-					<div class="flex flex-col gap-0.5 pt-1">
-						<p class="text-sm font-semibold text-primary">{{ selectedProduct.name }}</p>
-						<p class="text-xs text-slate-400 font-light">
-							Quantidade selecionada: {{ currentQty }}
-							{{ selectedProduct.type === 'quota' ? 'cota(s)' : 'unidade(s)' }}
-						</p>
+						<div class="w-40 mx-auto">
+							<Input v-model.number="customPixAmount" type="number" step="0.01" min="1"
+								class="h-11 rounded-xl bg-white border-slate-200 text-center font-bold text-base text-slate-900 shadow-xs focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+						</div>
+
+						<div class="flex justify-center gap-1.5 pt-1 flex-wrap">
+							<button v-for="val in [25, 50, 100, 200]" :key="val" type="button" @click="customPixAmount = val"
+								class="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer"
+								:class="customPixAmount === val ? 'bg-primary text-white border-primary shadow-xs font-bold' : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50'">
+								R$ {{ val }}
+							</button>
+						</div>
 					</div>
+					<template v-else>
+						<p class="text-3xl font-serif font-bold text-slate-900 italic">
+							{{ formatMoney(activePixPrice) }}
+						</p>
+
+						<div class="flex flex-col gap-0.5 pt-1">
+							<p v-if="selectedProduct?.name" class="text-sm font-semibold text-primary">{{ selectedProduct.name }}</p>
+							<p class="text-xs text-slate-400 font-light">
+								Quantidade selecionada: {{ currentQty }}
+								{{ selectedProduct?.type === 'quota' ? 'cota(s)' : 'unidade(s)' }}
+							</p>
+						</div>
+					</template>
 				</div>
 
-				<div class="flex flex-col sm:flex-row gap-3 mt-6">
+				<div class="flex flex-col sm:flex-row gap-3 mt-4">
 					<Button
-						class="flex-1 rounded-xl text-primary border-primary hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5"
+						class="flex-1 rounded-xl text-primary border-primary hover:bg-slate-50 font-semibold text-xs uppercase tracking-wider py-2.5 h-11"
 						variant="outline" @click="copyPix">
 						Copiar Código Pix
 					</Button>
 					<Button v-if="!tenant?.mp_user_id"
-						class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary"
+						class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary h-11"
 						:disabled="confirmingPurchase" @click="confirmPurchase('pix')">
 						{{ confirmingPurchase ? 'Confirmando...' : 'Confirmar Envio' }}
 					</Button>
@@ -885,6 +940,24 @@ onUnmounted(() => {
 				</button>
 			</div>
 		</Teleport>
+
+		<!-- Floating Back To Top Button -->
+		<transition
+			enter-active-class="transition duration-300 ease-out"
+			enter-from-class="opacity-0 translate-y-3"
+			enter-to-class="opacity-100 translate-y-0"
+			leave-active-class="transition duration-200 ease-in"
+			leave-from-class="opacity-100 translate-y-0"
+			leave-to-class="opacity-0 translate-y-3">
+			<button
+				v-if="showBackToTop"
+				@click="scrollToTop"
+				type="button"
+				aria-label="Voltar ao topo"
+				class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-primary hover:border-primary/40 hover:bg-white flex items-center justify-center transition-colors duration-200 cursor-pointer">
+				<ChevronUp class="w-5 h-5" />
+			</button>
+		</transition>
 	</main>
 </template>
 

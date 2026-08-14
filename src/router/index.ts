@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
 import { PROJECT_NAME } from "@/lib/defaults";
+import { useAuthStore } from "@/stores/auth";
+import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -91,7 +91,10 @@ router.beforeEach((to, _from, next) => {
 	const authStore = useAuthStore();
 
 	// Redirecionamento da rota estática /admin/config/mercadopago para a rota dinâmica do casal com o slug (OAuth Mercado Pago)
-	if (to.path === "/admin/config/mercadopago" || to.path === "/admin/config/mercadopago/") {
+	if (
+		to.path === "/admin/config/mercadopago" ||
+		to.path === "/admin/config/mercadopago/"
+	) {
 		if (!authStore.user) {
 			return next({ name: "login", query: { redirect: to.fullPath } });
 		}

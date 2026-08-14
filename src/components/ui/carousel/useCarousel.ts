@@ -1,6 +1,6 @@
 import { createInjectionState } from "@vueuse/core";
 import emblaCarouselVue from "embla-carousel-vue";
-import { onMounted, ref } from "vue";
+import { type ComponentPublicInstance, onMounted, ref, unref } from "vue";
 import type {
 	UnwrapRefCarouselApi as CarouselApi,
 	CarouselEmits,
@@ -24,12 +24,19 @@ const [useProvideCarousel, useInjectCarousel] = createInjectionState(
 			emblaApi.value?.scrollNext();
 		}
 
-		const canScrollNext = ref(false);
-		const canScrollPrev = ref(false);
+		const isLoop = Boolean(unref(opts)?.loop);
+		const canScrollNext = ref(isLoop);
+		const canScrollPrev = ref(isLoop);
 
 		function onSelect(api: CarouselApi) {
-			canScrollNext.value = api?.canScrollNext() || false;
-			canScrollPrev.value = api?.canScrollPrev() || false;
+			const loopActive = Boolean(unref(opts)?.loop);
+			if (loopActive) {
+				canScrollNext.value = true;
+				canScrollPrev.value = true;
+			} else {
+				canScrollNext.value = api?.canScrollNext() || false;
+				canScrollPrev.value = api?.canScrollPrev() || false;
+			}
 		}
 
 		onMounted(() => {
@@ -42,8 +49,15 @@ const [useProvideCarousel, useInjectCarousel] = createInjectionState(
 			emits("init-api", emblaApi.value);
 		});
 
+		const setCarouselRef = (el: Element | ComponentPublicInstance | null) => {
+			if (el instanceof HTMLElement) {
+				emblaNode.value = el;
+			}
+		};
+
 		return {
 			carouselRef: emblaNode,
+			setCarouselRef,
 			carouselApi: emblaApi,
 			canScrollPrev,
 			canScrollNext,

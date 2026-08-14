@@ -34,34 +34,22 @@ export const PurchaseService = {
 		data: Omit<IPurchase, keyof Models.Row>,
 		customId?: string,
 	): Promise<IPurchase> {
-		const ownerId = data.tenant;
-		const guestId =
-			data.guest?.$id || (typeof data.guest === "string" ? data.guest : null);
-
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PURCHASES,
 			rowId: customId || ID.unique(),
 			data,
-			permissions: getRsvpPermissions(ownerId, guestId),
+			permissions: getRsvpPermissions(),
 		});
 	},
 
 	async update(rowId: string, data: Partial<IPurchase>): Promise<IPurchase> {
-		const existing = await PurchaseService.get(rowId);
-		const ownerId = existing?.tenant || data.tenant || "";
-		const guestId =
-			existing?.guest?.$id ||
-			(typeof existing?.guest === "string" ? existing.guest : null) ||
-			data.guest?.$id ||
-			null;
-
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PURCHASES,
 			rowId,
 			data,
-			permissions: getRsvpPermissions(ownerId, guestId),
+			permissions: getRsvpPermissions(),
 		});
 	},
 
@@ -70,28 +58,13 @@ export const PurchaseService = {
 		data: Partial<IPurchase>,
 	): Promise<IPurchase> {
 		const id = rowId || ID.unique();
-		let ownerId = data.tenant || "";
-		let guestId =
-			data.guest?.$id ||
-			(typeof data.guest === "string" ? data.guest : null) ||
-			null;
-
-		if (rowId && (!ownerId || !guestId)) {
-			const existing = await PurchaseService.get(rowId);
-			if (!ownerId) ownerId = existing?.tenant || "";
-			if (!guestId)
-				guestId =
-					existing?.guest?.$id ||
-					(typeof existing?.guest === "string" ? existing.guest : null) ||
-					null;
-		}
 
 		return await tables.upsertRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PURCHASES,
 			rowId: id,
 			data,
-			permissions: getRsvpPermissions(ownerId, guestId),
+			permissions: getRsvpPermissions(),
 		});
 	},
 
