@@ -122,7 +122,7 @@ const startRecording = async () => {
 		}, 1000);
 	} catch (err: unknown) {
 		console.error("Erro ao acessar microfone:", err);
-		if (err instanceof DOMException) {
+		if (err instanceof DOMException || err instanceof Error) {
 			if (
 				err.name === "NotAllowedError" ||
 				err.name === "PermissionDeniedError"
