@@ -55,15 +55,27 @@ const startRecording = async () => {
 		audioUrl.value = null;
 	}
 
+	if (!window.isSecureContext) {
+		errorMessage.value =
+			"O acesso ao microfone exige conexão segura (HTTPS). No celular, acesse via HTTPS.";
+		return;
+	}
+
+	if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+		errorMessage.value =
+			"Seu navegador não suporta gravação de áudio ou o acesso está desabilitado.";
+		return;
+	}
+
 	try {
 		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
 		let mimeType = "audio/webm;codecs=opus";
 		if (!MediaRecorder.isTypeSupported(mimeType)) {
-			if (MediaRecorder.isTypeSupported("audio/webm")) {
-				mimeType = "audio/webm";
-			} else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+			if (MediaRecorder.isTypeSupported("audio/mp4")) {
 				mimeType = "audio/mp4";
+			} else if (MediaRecorder.isTypeSupported("audio/webm")) {
+				mimeType = "audio/webm";
 			} else if (MediaRecorder.isTypeSupported("audio/ogg")) {
 				mimeType = "audio/ogg";
 			} else {
@@ -108,10 +120,28 @@ const startRecording = async () => {
 				stopRecording();
 			}
 		}, 1000);
-	} catch (err) {
+	} catch (err: unknown) {
 		console.error("Erro ao acessar microfone:", err);
+		if (err instanceof DOMException) {
+			if (
+				err.name === "NotAllowedError" ||
+				err.name === "PermissionDeniedError"
+			) {
+				errorMessage.value =
+					"Permissão negada. Ative a permissão de microfone nas configurações do seu navegador para este site.";
+				return;
+			}
+			if (err.name === "NotFoundError") {
+				errorMessage.value = "Nenhum microfone encontrado no dispositivo.";
+				return;
+			}
+			if (err.name === "NotReadableError") {
+				errorMessage.value = "O microfone está em uso por outro aplicativo.";
+				return;
+			}
+		}
 		errorMessage.value =
-			"Não foi possível acessar seu microfone. Verifique as permissões do seu navegador.";
+			"Não foi possível acessar o microfone. Verifique as permissões do seu navegador.";
 	}
 };
 
