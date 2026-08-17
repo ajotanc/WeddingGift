@@ -20,16 +20,16 @@ export function useProductSearch() {
 		searchError.value = null;
 
 		try {
-			const execution = await functions.createExecution(
-				"ai-helper",
-				JSON.stringify({
+			const execution = await functions.createExecution({
+				functionId: "ai-helper",
+				body: JSON.stringify({
 					action: "serper-search",
 					payload: { query: trimmed },
 				}),
-				false,
-				"/",
-				ExecutionMethod.POST,
-			);
+				async: false,
+				xpath: "/",
+				method: ExecutionMethod.POST,
+			});
 
 			if (execution.responseStatusCode >= 400) {
 				const errorBody = JSON.parse(execution.responseBody || "{}");
@@ -48,10 +48,17 @@ export function useProductSearch() {
 		}
 	}
 
+	function resetSearch(): void {
+		links.value = [];
+		isSearching.value = false;
+		searchError.value = null;
+	}
+
 	return {
 		links,
 		isSearching,
 		searchError,
 		searchProducts,
+		resetSearch,
 	};
 }

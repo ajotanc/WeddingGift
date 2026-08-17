@@ -70,18 +70,15 @@ const startRecording = async () => {
 	try {
 		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-		let mimeType = "audio/webm;codecs=opus";
-		if (!MediaRecorder.isTypeSupported(mimeType)) {
-			if (MediaRecorder.isTypeSupported("audio/mp4")) {
-				mimeType = "audio/mp4";
-			} else if (MediaRecorder.isTypeSupported("audio/webm")) {
-				mimeType = "audio/webm";
-			} else if (MediaRecorder.isTypeSupported("audio/ogg")) {
-				mimeType = "audio/ogg";
-			} else {
-				mimeType = "";
-			}
-		}
+		const candidates = [
+			"audio/webm;codecs=opus",
+			"audio/mp4",
+			"audio/webm",
+			"audio/ogg;codecs=opus",
+			"audio/ogg",
+			"audio/wav",
+		];
+		const mimeType = candidates.find((c) => MediaRecorder.isTypeSupported(c)) || "";
 
 		const options = mimeType ? { mimeType } : undefined;
 		mediaRecorder = new MediaRecorder(stream, options);
@@ -93,12 +90,27 @@ const startRecording = async () => {
 		};
 
 		mediaRecorder.onstop = () => {
-			const finalMime = mediaRecorder?.mimeType || "audio/webm";
+			const finalMime = mediaRecorder?.mimeType || mimeType || "audio/webm";
 			const blob = new Blob(audioChunks, { type: finalMime });
+
+			if (blob.size === 0) {
+				errorMessage.value = "Nenhum áudio foi capturado. Tente gravar novamente.";
+				resetRecording();
+				return;
+			}
+
 			audioBlob.value = blob;
+			if (audioUrl.value) URL.revokeObjectURL(audioUrl.value);
 			audioUrl.value = URL.createObjectURL(blob);
 
-			const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+			const ext = blob.type.includes("mp4")
+				? "mp4"
+				: blob.type.includes("ogg")
+					? "ogg"
+					: blob.type.includes("wav")
+						? "wav"
+						: "webm";
+
 			const file = new File([blob], `recado_audio_${Date.now()}.${ext}`, {
 				type: blob.type || "audio/webm",
 			});
@@ -179,22 +191,36 @@ const togglePause = () => {
 	}
 };
 
-const togglePlayPreview = () => {
+const togglePlayPreview = async () => {
 	if (!audioUrl.value) return;
 
-	if (!audioElement) {
-		audioElement = new Audio(audioUrl.value);
-		audioElement.onended = () => {
-			isPlayingPreview.value = false;
-		};
-	}
-
-	if (isPlayingPreview.value) {
+	if (isPlayingPreview.value && audioElement) {
 		audioElement.pause();
 		isPlayingPreview.value = false;
-	} else {
-		audioElement.play();
+		return;
+	}
+
+	if (audioElement) {
+		audioElement.pause();
+		audioElement = null;
+	}
+
+	audioElement = new Audio(audioUrl.value);
+	audioElement.onended = () => {
+		isPlayingPreview.value = false;
+	};
+	audioElement.onerror = (e) => {
+		console.error("Erro na reprodução do áudio:", e);
+		isPlayingPreview.value = false;
+		errorMessage.value = "Não foi possível reproduzir a prévia do áudio.";
+	};
+
+	try {
 		isPlayingPreview.value = true;
+		await audioElement.play();
+	} catch (err: unknown) {
+		console.error("Erro ao iniciar áudio:", err);
+		isPlayingPreview.value = false;
 	}
 };
 

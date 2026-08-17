@@ -38,6 +38,7 @@ const PREDEFINED_CATEGORIES = [
 	"Viagem",
 	"Experiências",
 	"Móveis",
+	"Bem-estar e Casa"
 ];
 
 const categoryOptions = computed(() => {
@@ -432,11 +433,19 @@ const {
 	isSearching: isSearchingLinks,
 	searchError,
 	searchProducts,
+	resetSearch,
 } = useProductSearch();
+
+watch(showPhysicalModal, (isOpen) => {
+	if (!isOpen) {
+		resetSearch();
+	}
+});
 
 const openNewPhysical = () => {
 	editProductId.value = null;
 	resetPhysicalForm();
+	resetSearch();
 	pLinks.value = [];
 	pImageBase64.value = "";
 	pImageFile.value = null;
@@ -445,6 +454,7 @@ const openNewPhysical = () => {
 
 const editPhysical = (p: IProduct) => {
 	editProductId.value = p.$id;
+	resetSearch();
 	const isPredefined = p.category && PREDEFINED_CATEGORIES.includes(p.category);
 
 	setPhysicalValues({
