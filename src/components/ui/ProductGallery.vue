@@ -2,7 +2,7 @@
 import { formatMoney, getProductPrice } from "@/lib/money";
 import type { IProduct } from "@/services/product.service";
 import type { ITenant } from "@/services/tenant.service";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
@@ -54,6 +54,16 @@ const emit = defineEmits<{
   (e: "delete", product: IProduct): void;
 }>();
 
+// --- Referência para Scroll Suave ---
+const galleryRef = ref<HTMLElement | null>(null);
+
+const scrollToGalleryTop = async () => {
+  await nextTick();
+  if (galleryRef.value) {
+    galleryRef.value.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+
 // --- Estado de Filtros ---
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
@@ -79,6 +89,12 @@ const itemsPerPage = ref(6);
 
 watch(selectedCategory, () => {
   currentPage.value = 1;
+});
+
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+    scrollToGalleryTop();
+  }
 });
 
 const paginatedProducts = computed(() => {
@@ -250,7 +266,7 @@ const updateItemsPerPage = (event: Event) => {
       Nenhum presente encontrado nesta categoria.
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 text-left">
+    <div ref="galleryRef" v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 text-left">
       <Card v-for="product in paginatedProducts" :key="product.$id"
         class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
         <div
