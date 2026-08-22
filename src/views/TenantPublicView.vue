@@ -391,16 +391,10 @@ const activeSections = computed(() => {
 	const list = [{ id: "home", label: "Início" }];
 	if (tenant.value.couple_history)
 		list.push({ id: "history", label: "Nossa História" });
-	if (tenant.value.show_quiz && quizzes.value?.length)
-		list.push({ id: "quiz", label: "Quiz do Casal" });
 	if (tenant.value.show_schedule && tenant.value.schedules?.length)
 		list.push({ id: "schedule", label: "Cronograma" });
-	if (tenant.value.show_dress_code && tenant.value.dress_code_text)
-		list.push({ id: "dresscode", label: "Guia de Trajes" });
 	if (tenant.value.show_gallery)
 		list.push({ id: "gallery", label: "Galeria de Fotos" });
-	if (tenant.value.event_location)
-		list.push({ id: "location", label: "Local do Evento" });
 	if (currentUser.value) {
 		list.push({ id: "gifts", label: "Lista de Presentes" });
 		if (isDesktop.value) {
@@ -410,6 +404,12 @@ const activeSections = computed(() => {
 			list.push({ id: "messages", label: "Mural de Recados" });
 		}
 	}
+	if (tenant.value.event_location)
+		list.push({ id: "location", label: "Local do Evento" });
+	if (tenant.value.show_dress_code && tenant.value.dress_code_text)
+		list.push({ id: "dresscode", label: "Guia de Trajes" });
+	if (tenant.value.show_quiz && quizzes.value?.length)
+		list.push({ id: "quiz", label: "Quiz do Casal" });
 	if (tenant.value.show_faq && faqs.value?.length)
 		list.push({ id: "faq", label: "Dúvidas Frequentes" });
 	return list;
@@ -418,22 +418,29 @@ const activeSections = computed(() => {
 let observer: IntersectionObserver | null = null;
 const visibleSections = ref<Record<string, boolean>>({});
 
-const customSmoothScroll = (targetY: number, duration = 850) => {
+const customSmoothScroll = (targetY: number, duration = 350) => {
 	if (typeof window === "undefined") return;
 	const startPosition = window.scrollY;
 	const distance = targetY - startPosition;
+
+	if (Math.abs(distance) < 5) {
+		window.scrollTo({ top: targetY, behavior: "instant" as ScrollBehavior });
+		return;
+	}
+
 	let start: number | null = null;
 
-	// Curva de amortecimento suave (ease-in-out cubic)
-	const ease = (t: number) => {
-		return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-	};
+	// Curva ágil e suave de desaceleração (ease-out cubic)
+	const ease = (t: number) => 1 - (1 - t) ** 3;
 
 	const step = (timestamp: number) => {
 		if (!start) start = timestamp;
 		const progress = timestamp - start;
 		const time = Math.min(progress / duration, 1);
-		window.scrollTo(0, startPosition + distance * ease(time));
+		window.scrollTo({
+			top: startPosition + distance * ease(time),
+			behavior: "instant" as ScrollBehavior,
+		});
 		if (progress < duration) {
 			window.requestAnimationFrame(step);
 		}
@@ -452,7 +459,7 @@ const handleScroll = () => {
 };
 
 const scrollToTop = () => {
-	customSmoothScroll(0, 900);
+	customSmoothScroll(0, 350);
 };
 
 const setupScrollSpy = () => {
@@ -528,14 +535,14 @@ const scrollToSection = (id: string, event?: MouseEvent) => {
 		document.activeElement.blur();
 	}
 	if (id === "home") {
-		customSmoothScroll(0, 850);
+		customSmoothScroll(0, 350);
 		return;
 	}
 	const el = document.getElementById(id);
 	if (el) {
 		const rect = el.getBoundingClientRect();
 		const targetY = rect.top + window.scrollY - 60;
-		customSmoothScroll(targetY, 850);
+		customSmoothScroll(targetY, 350);
 	}
 };
 
@@ -690,7 +697,7 @@ onUnmounted(() => {
 			<GoogleAuthButton @click="currentUser ? showProfileModal = true : requireAuth()" @logout="logout"
 				:user="currentUser || undefined" :fill="false" class="button-google" />
 			<!-- Canvas for Visual Effects -->
-			<canvas ref="effectCanvas" class="fixed inset-0 pointer-events-none z-[40]"></canvas>
+			<canvas ref="effectCanvas" class="fixed inset-0 w-full pointer-events-none z-[40]"></canvas>
 
 			<!-- Header Hero -->
 			<header id="home" :style="{ backgroundColor: tenant.background_color || 'transparent' }"
@@ -723,7 +730,7 @@ onUnmounted(() => {
 							tenant?.quote }}</p>
 
 					<!-- Event Date & Time Display -->
-					<div v-if="tenant.event_date" class="text-slate-800 font-serif italic text-base md:text-xl tracking-wide">
+					<div v-if="tenant.event_date" class="text-slate-800 font-serif italic text-xl tracking-wide">
 						{{ dayjs(tenant.event_date).format('DD [de] MMMM [de] YYYY') }} às {{ tenant.event_time }}
 					</div>
 
@@ -740,28 +747,14 @@ onUnmounted(() => {
 				<!-- Couple History -->
 				<HistorySection v-if="tenant.couple_history" :history-text="tenant.couple_history" />
 
-				<!-- Couple Quiz -->
-				<QuizSection v-if="tenant.show_quiz" :quizzes="quizzes" :couple-name="tenant.couple_name" />
-
 				<!-- Event Timeline -->
 				<ScheduleSection v-if="tenant.show_schedule && tenant.schedules && tenant.schedules.length > 0"
 					:schedules="getTimelineItems" />
-
-				<!-- Dress Code Guide -->
-				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
-					:dress-code-text="tenant.dress_code_text" />
 
 				<!-- Gallery -->
 				<GallerySection v-if="tenant.show_gallery" :images="homePrivateImages"
 					:is-within7-days-of-event="isWithin7DaysOfEvent" :slug="tenant.slug"
 					:current-guest-id="authStore.guest?.$id || ''" @like="toggleGalleryLike" />
-
-				<!-- Event Location Map -->
-				<LocationSection v-if="tenant.event_location" :event-location="tenant.event_location"
-					:event-latitude="tenant.event_latitude" :event-longitude="tenant.event_longitude"
-					:event-date="tenant.event_date" :event-time="tenant.event_time" :couple-name="tenant.couple_name"
-					:weather-data="weatherData" :weather-loading="weatherLoading" :weather-error="weatherError"
-					v-model:is-weather-expanded="isWeatherExpanded" />
 
 				<section v-if="!currentUser"
 					class="text-center p-6 bg-white/50 backdrop-blur rounded-3xl border border-slate-100/80 shadow-[0_8px_30px_rgb(0,0,0,0.02)] mt-12">
@@ -791,6 +784,20 @@ onUnmounted(() => {
 					<!-- RSVP & Message Wall -->
 					<RsvpMessageSection :tenant="tenant" :rsvps="rsvps" :messages="messages" :current-user="currentUser" />
 				</template>
+
+				<!-- Event Location Map -->
+				<LocationSection v-if="tenant.event_location" :event-location="tenant.event_location"
+					:event-latitude="tenant.event_latitude" :event-longitude="tenant.event_longitude"
+					:event-date="tenant.event_date" :event-time="tenant.event_time" :couple-name="tenant.couple_name"
+					:weather-data="weatherData" :weather-loading="weatherLoading" :weather-error="weatherError"
+					v-model:is-weather-expanded="isWeatherExpanded" />
+
+				<!-- Dress Code Guide -->
+				<DressCodeSection v-if="tenant.show_dress_code && tenant.dress_code_text"
+					:dress-code-text="tenant.dress_code_text" />
+
+				<!-- Couple Quiz -->
+				<QuizSection v-if="tenant.show_quiz" :quizzes="quizzes" :couple-name="tenant.couple_name" />
 
 				<!-- FAQ Section -->
 				<FaqSection v-if="tenant.show_faq && faqs && faqs.length > 0" :faqs="faqs" />
@@ -949,7 +956,7 @@ onUnmounted(() => {
 					<!-- Fine vertical bar indicator -->
 					<div class="w-1.5 h-7 rounded-full transition-all duration-300 shadow-sm" :class="currentSection === section.id
 						? 'bg-primary scale-y-125'
-						: 'bg-slate-200'">
+						: 'bg-slate-300'">
 					</div>
 				</button>
 			</div>

@@ -2,10 +2,12 @@
 import { formatMoney, getProductPrice } from "@/lib/money";
 import type { IProduct } from "@/services/product.service";
 import type { ITenant } from "@/services/tenant.service";
+import { useMediaQuery } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
 
 // Importações dos Ícones utilizados nos Cards
 import {
+  ChevronDown,
   ChevronsUpDown,
   Edit2,
   Gift,
@@ -83,25 +85,43 @@ const filteredProducts = computed(() => {
   return props.products.filter((p) => p.category === selectedCategory.value);
 });
 
-// --- Estado de Paginação ---
+// --- Estado de Paginação e Carregamento ---
 const currentPage = ref(1);
 const itemsPerPage = ref(6);
+const mobileVisibleCount = ref(6);
+const isDesktop = useMediaQuery("(min-width: 640px)");
 
 watch(selectedCategory, () => {
   currentPage.value = 1;
+  mobileVisibleCount.value = itemsPerPage.value;
 });
 
 watch(currentPage, (newPage, oldPage) => {
-  if (newPage !== oldPage) {
+  if (newPage !== oldPage && isDesktop.value) {
     scrollToGalleryTop();
   }
 });
 
 const paginatedProducts = computed(() => {
+  if (!isDesktop.value) {
+    return filteredProducts.value.slice(0, mobileVisibleCount.value);
+  }
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
   return filteredProducts.value.slice(start, end);
 });
+
+const hasMoreMobileProducts = computed(() => {
+  return mobileVisibleCount.value < filteredProducts.value.length;
+});
+
+const remainingMobileCount = computed(() => {
+  return Math.max(0, filteredProducts.value.length - mobileVisibleCount.value);
+});
+
+const handleLoadMoreMobile = () => {
+  mobileVisibleCount.value += itemsPerPage.value;
+};
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
 const quotaQuantities = ref<Record<string, number>>({});
@@ -459,59 +479,88 @@ const updateItemsPerPage = (event: Event) => {
       </Card>
     </div>
 
-    <!-- SEÇÃO DO SELETOR DE PAGINAÇÃO EDITORIAL -->
-    <div v-if="filteredProducts.length > itemsPerPage || mode === 'admin'"
-      class="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6">
-
-      <!-- Only show items per page in admin mode -->
-      <div v-if="mode === 'admin'" class="flex items-center gap-3">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Itens por página</span>
-        <div class="relative flex items-center">
-          <select :value="itemsPerPage.toString()" @change="updateItemsPerPage"
-            class="w-[80px] h-9 pl-3 pr-8 rounded-xl border border-slate-200 bg-white shadow-sm text-xs font-medium text-slate-900 focus:outline-none appearance-none cursor-pointer">
-            <option value="6">6</option>
-            <option value="12">12</option>
-            <option value="24">24</option>
-            <option value="48">48</option>
-            <option value="100">100</option>
-          </select>
-          <ChevronsUpDown class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+    <!-- SEÇÃO DE PAGINAÇÃO / CARREGAR MAIS -->
+    <div v-if="filteredProducts.length > 0" class="mt-14">
+      <!-- MOBILE: Botão Elegante 'Carregar Mais' (sm:hidden) -->
+      <div v-if="filteredProducts.length > itemsPerPage"
+        class="flex sm:hidden flex-col items-center gap-4 max-w-xs mx-auto">
+        <!-- Indicador de progresso de visualização -->
+        <div class="w-full text-center space-y-2">
+          <p class="text-xs text-slate-500 font-medium tracking-wide">
+            Exibindo <span class="font-bold text-slate-800">{{ Math.min(mobileVisibleCount, filteredProducts.length)
+              }}</span> de <span class="font-bold text-slate-800">{{ filteredProducts.length }}</span> presentes
+          </p>
+          <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+              :style="{ width: `${Math.min(100, Math.round((Math.min(mobileVisibleCount, filteredProducts.length) / filteredProducts.length) * 100))}%` }">
+            </div>
+          </div>
         </div>
+
+        <!-- Botão Carregar Mais -->
+        <Button v-if="hasMoreMobileProducts" variant="outline" @click="handleLoadMoreMobile"
+          class="w-full h-11 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
+          <ChevronDown class="w-4 h-4" />
+          <span>Carregar mais presentes</span>
+        </Button>
+
+        <!-- Mensagem de fim da lista -->
+        <span v-else class="text-xs font-semibold text-slate-400">Você visualizou todos os presentes</span>
       </div>
 
-      <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges :default-page="1"
-        v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
-        <PaginationContent v-slot="{ items }" class="gap-1 flex items-center">
-          <PaginationFirst
-            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
-            :disabled="currentPage === 1" @click="currentPage = 1" />
+      <!-- DESKTOP: Paginação Editorial Padrão (hidden sm:flex) -->
+      <div v-if="filteredProducts.length > itemsPerPage || mode === 'admin'"
+        class="hidden sm:flex flex-col sm:flex-row items-center justify-center gap-6">
+        <!-- Only show items per page in admin mode -->
+        <div v-if="mode === 'admin'" class="flex items-center gap-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Itens por página</span>
+          <div class="relative flex items-center">
+            <select :value="itemsPerPage.toString()" @change="updateItemsPerPage"
+              class="w-[80px] h-9 pl-3 pr-8 rounded-xl border border-slate-200 bg-white shadow-sm text-xs font-medium text-slate-900 focus:outline-none appearance-none cursor-pointer">
+              <option value="6">6</option>
+              <option value="12">12</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="100">100</option>
+            </select>
+            <ChevronsUpDown class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+          </div>
+        </div>
 
-          <PaginationPrevious
-            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
-            :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)" />
+        <Pagination v-slot="{ page }" :total="filteredProducts.length" :sibling-count="1" show-edges :default-page="1"
+          v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
+          <PaginationContent v-slot="{ items }" class="gap-1.5 flex items-center justify-center">
+            <PaginationFirst
+              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              :disabled="currentPage === 1" @click="currentPage = 1" />
 
-          <template v-for="(item, index) in items">
-            <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
-              :is-active="item.value === page" @click="currentPage = item.value"
-              class="w-9 h-9 p-0 rounded-xl text-sm transition-all cursor-pointer flex items-center justify-center border"
-              :class="item.value === page ? 'border-primary text-primary font-bold bg-primary/10' : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50'">
-              {{ item.value }}
-            </PaginationItem>
-            <PaginationEllipsis v-else :key="item.type" :index="index"
-              class="w-9 h-9 p-0 flex items-center justify-center text-slate-400" />
-          </template>
+            <PaginationPrevious
+              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)" />
 
-          <PaginationNext
-            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
-            :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
-            @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)" />
+            <template v-for="(item, index) in items">
+              <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
+                :is-active="item.value === page" @click="currentPage = item.value"
+                class="w-9 h-9 p-0 rounded-xl text-sm font-medium transition-all cursor-pointer flex items-center justify-center border shadow-2xs"
+                :class="item.value === page ? 'border-primary text-primary font-bold bg-primary/10 shadow-xs' : 'border-slate-200/90 text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900'">
+                {{ item.value }}
+              </PaginationItem>
+              <PaginationEllipsis v-else :key="item.type" :index="index"
+                class="w-8 h-9 p-0 flex items-center justify-center text-slate-400 select-none text-xs" />
+            </template>
 
-          <PaginationLast
-            class="w-9 h-9 p-0 rounded-xl border border-slate-200 bg-white text-slate-400 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 flex items-center justify-center"
-            :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
-            @click="currentPage = Math.ceil(filteredProducts.length / itemsPerPage)" />
-        </PaginationContent>
-      </Pagination>
+            <PaginationNext
+              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
+              @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)" />
+
+            <PaginationLast
+              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
+              @click="currentPage = Math.ceil(filteredProducts.length / itemsPerPage)" />
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   </div>
 </template>

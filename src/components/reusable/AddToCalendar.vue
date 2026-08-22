@@ -137,27 +137,21 @@ const downloadIcs = () => {
 			class="absolute left-0 right-0 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 py-2 space-y-1 animate-in fade-in zoom-in-95 duration-150">
 			<a :href="googleCalendarUrl" target="_blank" rel="noopener noreferrer"
 				@click="isOpen = false"
-				class="flex items-center justify-between px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
-				<span class="flex items-center gap-2 font-medium">
-					<span class="w-2 h-2 rounded-full bg-blue-500"></span> Google Calendar
-				</span>
+				class="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
+				<span class="font-medium">Google Calendar</span>
 				<ExternalLink class="w-3.5 h-3.5 text-slate-400" />
 			</a>
 
 			<button type="button" @click="downloadIcs"
-				class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors text-left cursor-pointer">
-				<span class="flex items-center gap-2 font-medium">
-					<span class="w-2 h-2 rounded-full bg-slate-800"></span> Apple Calendar / iCal
-				</span>
+				class="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors text-left cursor-pointer">
+				<span class="font-medium">Apple Calendar / iCal</span>
 				<Download class="w-3.5 h-3.5 text-slate-400" />
 			</button>
 
 			<a :href="outlookWebUrl" target="_blank" rel="noopener noreferrer"
 				@click="isOpen = false"
-				class="flex items-center justify-between px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
-				<span class="flex items-center gap-2 font-medium">
-					<span class="w-2 h-2 rounded-full bg-sky-600"></span> Outlook Web
-				</span>
+				class="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
+				<span class="font-medium">Outlook Web</span>
 				<ExternalLink class="w-3.5 h-3.5 text-slate-400" />
 			</a>
 		</div>

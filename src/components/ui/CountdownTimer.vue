@@ -38,7 +38,7 @@ const remaining = computed(() => {
 </script>
 
 <template>
-  <div v-if="remaining" class="flex text-slate-900 font-serif text-xl md:text-2xl justify-center items-center">
+  <div v-if="remaining" class="flex text-slate-900 font-serif text-xl md:text-2xl justify-center items-center gap-2">
     <div class="flex flex-col items-center justify-center min-w-[4rem] sm:min-w-[5rem] text-center">
       <div class="text-5xl md:text-6xl font-bold tabular-nums tracking-tight">{{ remaining.days }}</div>
       <div class="text-[10px] font-sans tracking-wide uppercase font-bold">Dias</div>

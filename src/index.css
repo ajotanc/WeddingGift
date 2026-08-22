@@ -64,6 +64,11 @@ h3,
 }
 
 /* Rich text (Quill) typography formatting */
+.ql-editor * {
+	font-family: var(--font-body);
+	color: rgb(var(--color-slate-700));
+}
+
 .quill-content h1,
 .quill-content h2,
 .quill-content h3,
@@ -72,10 +77,10 @@ h3,
 .quill-content h6,
 .quill-content a {
 	color: rgb(var(--color-primary));
+	font-family: var(--font-title);
 }
 
 .quill-content h1 {
-	font-family: var(--font-title);
 	font-size: 2.25rem;
 	line-height: 2.5rem;
 	font-weight: 600;
@@ -84,7 +89,6 @@ h3,
 }
 
 .quill-content h2 {
-	font-family: var(--font-title);
 	font-size: 1.75rem;
 	line-height: 2.125rem;
 	font-weight: 600;
@@ -93,7 +97,6 @@ h3,
 }
 
 .quill-content h3 {
-	font-family: var(--font-title);
 	font-size: 1.35rem;
 	line-height: 1.75rem;
 	font-weight: 600;

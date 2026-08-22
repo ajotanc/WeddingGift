@@ -1,44 +1,24 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
-import {
-	DEFAULT_BACKGROUND_COLOR,
-	DEFAULT_PRIMARY_COLOR,
-	DEFAULT_SLATE_COLORS,
-} from "@/lib/defaults";
 import type { IUser } from "@/stores/auth";
 import { LogOut } from "lucide-vue-next";
-import { computed } from "vue";
 import type { PropType } from "vue";
 
 const props = defineProps({
 	fill: { type: Boolean, default: false },
-	themeColor: { type: String, default: DEFAULT_PRIMARY_COLOR },
 	user: { type: Object as PropType<IUser>, default: null },
 	label: { type: String, default: "Entrar com Google" },
 });
 
-const emit = defineEmits(["click", "logout"]);
-
-const buttonStyle = computed(() => {
-	if (props.fill && !props.user) {
-		return {
-			backgroundColor: props.themeColor,
-			color: DEFAULT_SLATE_COLORS["50"],
-			borderColor: props.themeColor,
-		};
-	}
-	return {
-		backgroundColor: DEFAULT_BACKGROUND_COLOR,
-		color: DEFAULT_SLATE_COLORS["700"],
-		borderColor: DEFAULT_SLATE_COLORS["200"],
-	};
-});
+defineEmits(["click", "logout"]);
 </script>
 
 <template>
-  <Button @click="$emit('click')" variant="outline" size="wg"
-    class="flex items-center gap-3 rounded-full shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:brightness-95 hover:bg-[inherit] hover:text-[inherit] hover:border-[inherit] active:translate-y-0"
-    :style="props.user ? undefined : buttonStyle">
+  <Button
+    @click="$emit('click')"
+    :variant="props.fill && !props.user ? 'default' : 'outline'"
+    size="wg"
+    class="gap-3">
     <template v-if="props.user">
       <img v-if="props.user.prefs?.photo_url" :src="props.user.prefs?.photo_url" referrerpolicy="no-referrer"
         class="w-6 h-6 rounded-full shrink-0" />

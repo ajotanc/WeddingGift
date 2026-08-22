@@ -1,32 +1,61 @@
 <script setup lang="ts">
 import L from "leaflet";
-import { onMounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import "leaflet/dist/leaflet.css";
 
-const props = defineProps<{ address: string }>();
+const props = withDefaults(
+	defineProps<{
+		address?: string | null;
+		latitude?: number | string | null;
+		longitude?: number | string | null;
+		zoom?: number;
+	}>(),
+	{
+		zoom: 18,
+	},
+);
+
 const mapContainer = ref<HTMLElement | null>(null);
 const markerTemplate = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
+let currentMarker: L.Marker | null = null;
 const loading = ref(true);
 
 const initMap = async () => {
-	if (!props.address || !mapContainer.value) return;
+	if (!mapContainer.value) return;
 
 	try {
 		loading.value = true;
-		// Geocode address
-		const res = await fetch(
-			`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(props.address)}&limit=1`,
-		);
-		const data = await res.json();
+		let lat: number | null = null;
+		let lon: number | null = null;
 
-		if (!data || data.length === 0) {
-			console.error("Location not found");
-			return;
+		// 1. Usa latitude e longitude explícitas se existirem
+		if (
+			props.latitude !== undefined &&
+			props.latitude !== null &&
+			props.longitude !== undefined &&
+			props.longitude !== null &&
+			!Number.isNaN(Number(props.latitude)) &&
+			!Number.isNaN(Number(props.longitude))
+		) {
+			lat = Number(props.latitude);
+			lon = Number(props.longitude);
+		} else if (props.address) {
+			// 2. Caso contrário, faz geocodificação do endereço
+			const res = await fetch(
+				`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(props.address)}&limit=1`,
+			);
+			const data = await res.json();
+			if (data && data.length > 0) {
+				lat = Number.parseFloat(data[0].lat);
+				lon = Number.parseFloat(data[0].lon);
+			}
 		}
 
-		const lat = Number.parseFloat(data[0].lat);
-		const lon = Number.parseFloat(data[0].lon);
+		if (lat === null || lon === null) {
+			console.error("Coordenadas não encontradas para o mapa.");
+			return;
+		}
 
 		const customIcon = L.divIcon({
 			className: "bg-transparent border-0",
@@ -39,17 +68,22 @@ const initMap = async () => {
 		if (!map) {
 			map = L.map(mapContainer.value, {
 				scrollWheelZoom: false,
-			}).setView([lat, lon], 16);
-			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-				attribution: "&copy; OpenStreetMap contributors",
+			}).setView([lat, lon], props.zoom);
+			L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+				attribution: "&copy; Esri",
+				maxZoom: 19,
 			}).addTo(map);
 		} else {
-			map.setView([lat, lon], 16);
+			map.setView([lat, lon], props.zoom);
 		}
 
-		L.marker([lat, lon], { icon: customIcon }).addTo(map);
+		if (currentMarker) {
+			map.removeLayer(currentMarker);
+		}
+
+		currentMarker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
 	} catch (err) {
-		console.error("Error fetching map location:", err);
+		console.error("Erro ao carregar mapa:", err);
 	} finally {
 		loading.value = false;
 	}
@@ -59,8 +93,16 @@ onMounted(() => {
 	initMap();
 });
 
+onUnmounted(() => {
+	if (map) {
+		map.remove();
+		map = null;
+		currentMarker = null;
+	}
+});
+
 watch(
-	() => props.address,
+	() => [props.address, props.latitude, props.longitude, props.zoom],
 	() => {
 		initMap();
 	},

@@ -260,7 +260,7 @@ const configSchema = toTypedSchema(zodSchema);
 
 type ConfigFormValues = z.infer<typeof zodSchema>;
 
-const { handleSubmit, errors, setValues, defineField } =
+const { handleSubmit, errors, setValues, defineField, setFieldValue } =
 	useForm<ConfigFormValues>({
 		validationSchema: configSchema,
 		initialValues: {
@@ -1113,13 +1113,15 @@ watch([groom_name, bride_name], ([groom, bride]) => {
 
 function onLocationSelect(payload: {
 	address: string;
-	latitude: number;
-	longitude: number;
+	latitude: number | null;
+	longitude: number | null;
 }) {
-	console.log(payload);
 	event_location.value = payload.address;
 	event_latitude.value = payload.latitude;
 	event_longitude.value = payload.longitude;
+	setFieldValue("event_location", payload.address);
+	setFieldValue("event_latitude", payload.latitude);
+	setFieldValue("event_longitude", payload.longitude);
 }
 
 const slugStatus = ref<"idle" | "checking" | "available" | "unavailable">(
@@ -1287,11 +1289,11 @@ const connectToMarketPago = () => {
 					</div>
 
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<FormGroup label="Nome do Noivo" :error="errors.groom_name">
-							<Input v-model="groom_name" placeholder="Ex: João" class="bg-slate-50/50" />
-						</FormGroup>
 						<FormGroup label="Nome da Noiva" :error="errors.bride_name">
 							<Input v-model="bride_name" placeholder="Ex: Maria" class="bg-slate-50/50" />
+						</FormGroup>
+						<FormGroup label="Nome do Noivo" :error="errors.groom_name">
+							<Input v-model="groom_name" placeholder="Ex: João" class="bg-slate-50/50" />
 						</FormGroup>
 						<FormGroup label="E-mail do(a) Co-Administrador(a)" :error="errors.co_owner_email" class="md:col-span-2">
 							<Input v-model="co_owner_email" type="email" class="bg-slate-50/50" />
@@ -1303,8 +1305,8 @@ const connectToMarketPago = () => {
 						<FormGroup label="Chave PIX" :error="errors.pix_key">
 							<Input v-model="pix_key" placeholder="CPF, Email ou Telefone" class="bg-slate-50/50" />
 							<div class="mt-2.5 p-3.5 bg-amber-50/40 border border-amber-100 rounded-xl space-y-2">
-								<div class="text-[10px] text-amber-800 font-light leading-normal flex items-start gap-1.5">
-									<span class="font-bold shrink-0 mt-0.5">⚠️ Recomendação LGPD:</span>
+								<div class="text-[10px] text-amber-800 font-light leading-normal flex flex-col items-start gap-1.5">
+									<span class="font-bold shrink-0">Recomendação LGPD</span>
 									<span>
 										Para proteger sua privacidade, recomendamos fortemente o uso de uma <strong>chave aleatória
 											(EVP)</strong>.
@@ -1312,7 +1314,7 @@ const connectToMarketPago = () => {
 										na página de presentes.
 									</span>
 								</div>
-								<div class="flex items-start gap-2 pt-1.5 border-t border-amber-100/50">
+								<div class="flex items-start gap-2 border-t border-amber-100/50">
 									<input type="checkbox" id="pix_consent" v-model="pix_consent"
 										class="w-3.5 h-3.5 mt-0.5 rounded border-amber-300 text-amber-600 focus:ring-amber-50/20 accent-amber-600 cursor-pointer" />
 									<label for="pix_consent"
@@ -1372,8 +1374,18 @@ const connectToMarketPago = () => {
 						</FormGroup>
 
 						<FormGroup label="Local do Evento" class="md:col-span-2">
-							<LocationAutocomplete @select="onLocationSelect" />
-							<p class="text-xs text-slate-500 mt-1">Selecionado: {{ event_location }}</p>
+							<LocationAutocomplete
+								:initial-address="event_location"
+								:initial-latitude="event_latitude"
+								:initial-longitude="event_longitude"
+								@select="onLocationSelect"
+							/>
+							<div v-if="event_location" class="flex align-center justify-between text-xs text-slate-500 mt-1">
+								<span>Selecionado: {{ event_location }}</span>
+								<span v-if="event_latitude && event_longitude">
+									{{ event_latitude }}, {{ event_longitude }}
+								</span>
+							</div>
 						</FormGroup>
 
 						<FormGroup label="Exibir Contagem Regressiva">

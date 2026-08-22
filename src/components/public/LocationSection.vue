@@ -8,13 +8,15 @@ import {
 	CloudLightning,
 	CloudRain,
 	CloudSun,
+	ExternalLink,
+	MapPin,
 	Snowflake,
 	Sun,
 } from "lucide-vue-next";
-import type { Component } from "vue";
+import { computed, type Component } from "vue";
 import SectionHeader from "./SectionHeader.vue";
 
-defineProps<{
+const props = defineProps<{
 	eventLocation: string;
 	eventLatitude?: string | number | null;
 	eventLongitude?: string | number | null;
@@ -27,6 +29,16 @@ defineProps<{
 	weatherError: boolean;
 	isWeatherExpanded: boolean;
 }>();
+
+const googleMapsUrl = computed(() => {
+	if (props.eventLatitude && props.eventLongitude) {
+		return `https://www.google.com/maps/search/?api=1&query=${props.eventLatitude},${props.eventLongitude}`;
+	}
+	if (props.eventLocation) {
+		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(props.eventLocation)}`;
+	}
+	return "";
+});
 
 const emit =
 	defineEmits<(e: "update:isWeatherExpanded", val: boolean) => void>();
@@ -53,7 +65,7 @@ const getWeatherIcon = (iconName: string): Component => {
 		<div
 			class="relative bg-white p-2 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
 
-			<LeafletMap :address="eventLocation" class="z-0" />
+			<LeafletMap :address="eventLocation" :latitude="eventLatitude" :longitude="eventLongitude" class="z-0" />
 
 			<div v-if="eventLatitude && eventLongitude && eventDate"
 				class="absolute bottom-5 left-5 right-5 md:left-5 md:right-auto w-95 md:w-full max-w-xs z-10 flex flex-col items-start">
@@ -90,13 +102,22 @@ const getWeatherIcon = (iconName: string): Component => {
 
 				<button v-else @click="emit('update:isWeatherExpanded', true)"
 					class="bg-white/90 backdrop-blur border border-slate-100 p-3 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center justify-center">
-					<CloudSun class="w-6 h-6 text-primary" />
+					<CloudSun class="w-5 h-5 text-primary" />
 				</button>
 			</div>
 		</div>
 
 		<div class="mt-4 flex flex-col items-center gap-3">
-			<p class="text-slate-500 font-medium text-base">{{ eventLocation }}</p>
+			<a
+				v-if="googleMapsUrl"
+				:href="googleMapsUrl"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="group inline-flex items-center justify-center gap-1.5 text-slate-500 hover:text-primary transition-colors text-center font-medium text-sm max-w-xl cursor-pointer"
+				title="Abrir no Google Maps">
+				{{ eventLocation }}</a>
+			<p v-else class="text-slate-500 text-center font-medium text-sm">{{ eventLocation }}</p>
+
 			<AddToCalendar :eventDate="eventDate" :eventTime="eventTime" :coupleName="coupleName"
 				:eventLocation="eventLocation" :weddingUrl="weddingUrl" />
 		</div>
