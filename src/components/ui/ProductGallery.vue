@@ -32,6 +32,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import PriceSortButton, {
+  type PriceSortOrder,
+} from "@/components/ui/PriceSortButton.vue";
 import {
   Select,
   SelectContent,
@@ -39,7 +42,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { handleImageError } from "@/lib/utils";
+import { handleImageError, shuffleArray, sortBy } from "@/lib/utils";
 import Pix from "./icons/Pix.vue";
 
 const props = defineProps<{
@@ -66,7 +69,7 @@ const scrollToGalleryTop = async () => {
   }
 };
 
-// --- Estado de Filtros ---
+// --- Estado de Filtros e Ordenação Sortida ---
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
   const cats = new Set(
@@ -75,14 +78,55 @@ const categories = computed(() => {
   return Array.from(cats).sort();
 });
 
+const shuffledAllProducts = ref<IProduct[]>([]);
+
+// Mantém os produtos do 'all' sortidos fixando o PIX no topo de forma ultra-performática
+watch(
+  () => props.products,
+  (newProducts) => {
+    if (!newProducts || newProducts.length === 0) {
+      shuffledAllProducts.value = [];
+      return;
+    }
+
+    const [first, ...rest] = newProducts;
+    shuffledAllProducts.value = [first, ...shuffleArray(rest)];
+  },
+  { immediate: true },
+);
+
+// --- Estado de Ordenação por Preço (Normal -> Menor -> Maior) ---
+const priceSort = ref<PriceSortOrder>("default");
+
+watch(priceSort, () => {
+  currentPage.value = 1;
+  mobileVisibleCount.value = itemsPerPage.value;
+});
+
 const getCategoryCount = (categoryName: string) => {
   if (categoryName === "all") return props.products.length;
   return props.products.filter((p) => p.category === categoryName).length;
 };
 
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === "all") return props.products;
-  return props.products.filter((p) => p.category === selectedCategory.value);
+  const baseList =
+    selectedCategory.value === "all"
+      ? shuffledAllProducts.value
+      : props.products.filter((p) => p.category === selectedCategory.value);
+
+  if (priceSort.value === "default") {
+    return baseList;
+  }
+
+  // Mantém o item de PIX fixo no topo se ele for o primeiro da lista
+  const [first, ...rest] = baseList;
+  const isFirstPix =
+    first && (first.$id === "custom-pix-amount" || first.category === "pix");
+
+  const itemsToSort = isFirstPix ? rest : baseList;
+  const sorted = sortBy(itemsToSort, (p) => Number.parseFloat(p.price) || 0, priceSort.value);
+
+  return isFirstPix ? [first, ...sorted] : sorted;
 });
 
 // --- Estado de Paginação e Carregamento ---
@@ -195,61 +239,68 @@ const updateItemsPerPage = (event: Event) => {
 <template>
   <div class="space-y-12">
     <div v-if="categories.length > 0" class="w-full mb-8">
-      <!-- Seletor Dropdown Shadcn no Mobile (sm:hidden) -->
+      <!-- Seletor Dropdown Shadcn + Botão de Ordenação no Mobile (sm:hidden) -->
       <div class="block sm:hidden w-full">
-        <Select v-model="selectedCategory">
-          <SelectTrigger
-            class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
-            :class="selectedCategory !== 'all'
-              ? 'bg-primary/10 text-primary border-primary/40 font-bold'
-              : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-            <div class="flex items-center justify-between w-full pr-1">
-              <div class="flex items-center gap-2.5 truncate">
-                <div class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                  <SlidersHorizontal class="w-3.5 h-3.5" />
-                </div>
-                <span class="truncate font-bold text-slate-700">
-                  {{ selectedCategory === 'all' ? 'Todas as Categorias' : selectedCategory }}
-                </span>
-              </div>
-              <div
-                class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
-                {{ getCategoryCount(selectedCategory) }}
-              </div>
-            </div>
-          </SelectTrigger>
-          <SelectContent
-            class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
-            <SelectGroup>
-              <SelectItem value="all"
-                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
-                <div class="flex items-center justify-between w-full gap-4">
-                  <span>Todas as Categorias</span>
+        <div class="flex items-center gap-2">
+          <div class="flex-1 min-w-0">
+            <Select v-model="selectedCategory">
+              <SelectTrigger
+                class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
+                :class="selectedCategory !== 'all'
+                  ? 'bg-primary/10 text-primary border-primary/40 font-bold'
+                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                <div class="flex items-center justify-between w-full pr-1">
+                  <div class="flex items-center gap-2.5 truncate">
+                    <div class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      <SlidersHorizontal class="w-3.5 h-3.5" />
+                    </div>
+                    <span class="truncate font-bold text-slate-700">
+                      {{ selectedCategory === 'all' ? 'Todas' : selectedCategory }}
+                    </span>
+                  </div>
                   <div
-                    class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
-                    :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
-                    {{ props.products.length }}
+                    class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
+                    {{ getCategoryCount(selectedCategory) }}
                   </div>
                 </div>
-              </SelectItem>
-              <SelectItem v-for="cat in categories" :key="cat" :value="cat"
-                class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
-                <div class="flex items-center justify-between w-full gap-4">
-                  <span>{{ cat }}</span>
-                  <div
-                    class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
-                    :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
-                    {{ getCategoryCount(cat) }}
-                  </div>
-                </div>
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+              </SelectTrigger>
+              <SelectContent
+                class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
+                <SelectGroup>
+                  <SelectItem value="all"
+                    class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
+                    <div class="flex items-center justify-between w-full gap-4">
+                      <span>Todas as Categorias</span>
+                      <div
+                        class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                        :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
+                        {{ props.products.length }}
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem v-for="cat in categories" :key="cat" :value="cat"
+                    class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
+                    <div class="flex items-center justify-between w-full gap-4">
+                      <span>{{ cat }}</span>
+                      <div
+                        class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                        :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
+                        {{ getCategoryCount(cat) }}
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Botão Único de Ordenação por Preço no Mobile -->
+          <PriceSortButton v-model="priceSort" />
+        </div>
       </div>
 
-      <!-- Abas de Pílula no Desktop (hidden sm:flex) -->
-      <div class="hidden sm:flex items-center justify-center gap-2.5 max-w-3xl mx-auto flex-wrap">
+      <!-- Abas de Pílula e Botão de Ordenação no Desktop (hidden sm:flex) -->
+      <div class="hidden sm:flex items-center justify-center gap-2.5 max-w-4xl mx-auto flex-wrap">
         <button @click="selectedCategory = 'all'"
           class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
           :class="selectedCategory === 'all'
@@ -279,6 +330,12 @@ const updateItemsPerPage = (event: Event) => {
             {{ getCategoryCount(cat) }}
           </div>
         </button>
+
+        <!-- Separador sutil -->
+        <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
+
+        <!-- Botão Único de Ordenação por Preço no Desktop -->
+        <PriceSortButton v-model="priceSort" show-text-on-mobile />
       </div>
     </div>
 
@@ -488,7 +545,7 @@ const updateItemsPerPage = (event: Event) => {
         <div class="w-full text-center space-y-2">
           <p class="text-xs text-slate-500 font-medium tracking-wide">
             Exibindo <span class="font-bold text-slate-800">{{ Math.min(mobileVisibleCount, filteredProducts.length)
-              }}</span> de <span class="font-bold text-slate-800">{{ filteredProducts.length }}</span> presentes
+            }}</span> de <span class="font-bold text-slate-800">{{ filteredProducts.length }}</span> presentes
           </p>
           <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
             <div class="bg-primary h-full rounded-full transition-all duration-500 ease-out"

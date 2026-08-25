@@ -38,28 +38,47 @@ export async function generatePixPayload(
 
 export function sortBy<T>(
 	array: T[],
-	key: keyof T,
+	keyOrGetter: keyof T | ((item: T) => number | string | null | undefined),
 	direction: "asc" | "desc" = "asc",
 ): T[] {
 	return [...array].sort((a, b) => {
-		const valA = a[key];
-		const valB = b[key];
+		const valA =
+			typeof keyOrGetter === "function" ? keyOrGetter(a) : a[keyOrGetter];
+		const valB =
+			typeof keyOrGetter === "function" ? keyOrGetter(b) : b[keyOrGetter];
 
 		if (valA === valB) return 0;
 		if (valA == null) return direction === "asc" ? 1 : -1;
 		if (valB == null) return direction === "asc" ? -1 : 1;
 
-		if (typeof valA === "number" && typeof valB === "number") {
-			return direction === "asc" ? valA - valB : valB - valA;
+		const numA = typeof valA === "number" ? valA : Number(valA);
+		const numB = typeof valB === "number" ? valB : Number(valB);
+
+		if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+			return direction === "asc" ? numA - numB : numB - numA;
 		}
 
 		const strA = String(valA).toLowerCase();
 		const strB = String(valB).toLowerCase();
 
 		return direction === "asc"
-			? strA.localeCompare(strB)
-			: strB.localeCompare(strA);
+			? strA.localeCompare(strB, undefined, { numeric: true })
+			: strB.localeCompare(strA, undefined, { numeric: true });
 	});
+}
+
+/**
+ * Embaralha os elementos de um array utilizando o algoritmo Fisher-Yates
+ */
+export function shuffleArray<T>(array: T[]): T[] {
+	const result = [...array];
+	for (let i = result.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		const temp = result[i];
+		result[i] = result[j];
+		result[j] = temp;
+	}
+	return result;
 }
 
 export const cleanHtml = (html: string) => {
