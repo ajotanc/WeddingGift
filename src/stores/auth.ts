@@ -48,6 +48,11 @@ export const useAuthStore = defineStore("auth", {
 			}
 			return false;
 		},
+		isAdmin: (state): boolean => {
+			return (
+				!!state.user && !!state.tenant && state.user.$id === state.tenant.$id
+			);
+		},
 	},
 	actions: {
 		async init() {
@@ -67,15 +72,15 @@ export const useAuthStore = defineStore("auth", {
 						accepted_terms: true,
 						confirmed_age: true,
 					},
-					$createdAt: new Date().toISOString(),
-					$updatedAt: new Date().toISOString(),
+					$createdAt: dayjs().toISOString(),
+					$updatedAt: dayjs().toISOString(),
 					status: true,
 					emailVerification: true,
 					phoneVerification: true,
-					registration: new Date().toISOString(),
-					passwordUpdate: new Date().toISOString(),
+					registration: dayjs().toISOString(),
+					passwordUpdate: dayjs().toISOString(),
 					phone: "+5511999999999",
-					accessedAt: new Date().toISOString(),
+					accessedAt: dayjs().toISOString(),
 				} as IUser;
 
 				this.guest = {
@@ -83,8 +88,8 @@ export const useAuthStore = defineStore("auth", {
 					name: "Convidado de Teste",
 					email: "test@example.com",
 					phone: "+5511999999999",
-					$createdAt: new Date().toISOString(),
-					$updatedAt: new Date().toISOString(),
+					$createdAt: dayjs().toISOString(),
+					$updatedAt: dayjs().toISOString(),
 					$databaseId: "DBWG",
 					$collectionId: "guests",
 					$permissions: [],

@@ -3,19 +3,25 @@ import { formatMoney, getProductPrice } from "@/lib/money";
 import type { IProduct } from "@/services/product.service";
 import type { ITenant } from "@/services/tenant.service";
 import { useMediaQuery } from "@vueuse/core";
+import dayjs from "dayjs";
 import { computed, nextTick, ref, watch } from "vue";
+import { useAuthStore } from "@/stores/auth";
 
 // Importações dos Ícones utilizados nos Cards
 import {
   ChevronDown,
   ChevronsUpDown,
+  Clock,
   Edit2,
   Gift,
   Heart,
   Minus,
   Plus,
+  Search,
+  Shuffle,
   SlidersHorizontal,
   Trash2,
+  X,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
@@ -45,6 +51,8 @@ import {
 import { handleImageError, shuffleArray, sortBy } from "@/lib/utils";
 import Pix from "./icons/Pix.vue";
 
+const { isAdmin } = useAuthStore();
+
 const props = defineProps<{
   products: IProduct[];
   tenant: ITenant | null;
@@ -69,7 +77,22 @@ const scrollToGalleryTop = async () => {
   }
 };
 
-// --- Estado de Filtros e Ordenação Sortida ---
+// --- Estado de Filtros, Busca e Ordenação Sortida ---
+const searchQuery = ref<string>("");
+
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .trim();
+};
+
+watch(searchQuery, () => {
+  currentPage.value = 1;
+  mobileVisibleCount.value = itemsPerPage.value;
+});
+
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
   const cats = new Set(
@@ -77,6 +100,15 @@ const categories = computed(() => {
   );
   return Array.from(cats).sort();
 });
+
+// Controla se a lista usa ordem aleatória (sortido) ou ordem cronológica (mais recentes)
+const isShuffle = ref<boolean>(props.mode !== "admin");
+
+const toggleShuffle = () => {
+  isShuffle.value = !isShuffle.value;
+  currentPage.value = 1;
+  mobileVisibleCount.value = itemsPerPage.value;
+};
 
 const shuffledAllProducts = ref<IProduct[]>([]);
 
@@ -95,6 +127,21 @@ watch(
   { immediate: true },
 );
 
+// Ordena itens colocando os mais recentes (criados por último) primeiro
+const sortByRecent = (items: IProduct[]): IProduct[] => {
+  return items
+    .map((item, idx) => ({ item, idx }))
+    .sort((a, b) => {
+      if (a.item.$createdAt && b.item.$createdAt) {
+        const timeDiff =
+          dayjs(b.item.$createdAt).valueOf() - dayjs(a.item.$createdAt).valueOf();
+        if (timeDiff !== 0) return timeDiff;
+      }
+      return b.idx - a.idx;
+    })
+    .map(({ item }) => item);
+};
+
 // --- Estado de Ordenação por Preço (Normal -> Menor -> Maior) ---
 const priceSort = ref<PriceSortOrder>("default");
 
@@ -109,10 +156,34 @@ const getCategoryCount = (categoryName: string) => {
 };
 
 const filteredProducts = computed(() => {
-  const baseList =
-    selectedCategory.value === "all"
-      ? shuffledAllProducts.value
-      : props.products.filter((p) => p.category === selectedCategory.value);
+  let baseList: IProduct[] = [];
+
+  if (selectedCategory.value === "all") {
+    if (isShuffle.value) {
+      baseList = shuffledAllProducts.value;
+    } else {
+      const [first, ...rest] = props.products;
+      const isFirstPix =
+        first && (first.$id === "custom-pix-amount" || first.category === "pix");
+      const listToSort = isFirstPix ? rest : props.products;
+      const sorted = sortByRecent(listToSort);
+      baseList = isFirstPix ? [first, ...sorted] : sorted;
+    }
+  } else {
+    const list = props.products.filter((p) => p.category === selectedCategory.value);
+    baseList = isShuffle.value ? shuffleArray([...list]) : sortByRecent(list);
+  }
+
+  // Filtro de busca por nome do produto
+  if (searchQuery.value.trim()) {
+    const query = normalizeText(searchQuery.value);
+    baseList = baseList.filter((p) => {
+      const nameMatch = normalizeText(p.name || "").includes(query);
+      const isPix = p.$id === "custom-pix-amount" || p.category === "pix";
+      const pixMatch = isPix && normalizeText("pix presente").includes(query);
+      return nameMatch || pixMatch;
+    });
+  }
 
   if (priceSort.value === "default") {
     return baseList;
@@ -238,109 +309,163 @@ const updateItemsPerPage = (event: Event) => {
 
 <template>
   <div class="space-y-12">
-    <div v-if="categories.length > 0" class="w-full mb-8">
-      <!-- Seletor Dropdown Shadcn + Botão de Ordenação no Mobile (sm:hidden) -->
-      <div class="block sm:hidden w-full">
-        <div class="flex items-center gap-2">
-          <div class="flex-1 min-w-0">
-            <Select v-model="selectedCategory">
-              <SelectTrigger
-                class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
-                :class="selectedCategory !== 'all'
-                  ? 'bg-primary/10 text-primary border-primary/40 font-bold'
-                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                <div class="flex items-center justify-between w-full pr-1">
-                  <div class="flex items-center gap-2.5 truncate">
-                    <div class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                      <SlidersHorizontal class="w-3.5 h-3.5" />
-                    </div>
-                    <span class="truncate font-bold text-slate-700">
-                      {{ selectedCategory === 'all' ? 'Todas' : selectedCategory }}
-                    </span>
-                  </div>
-                  <div
-                    class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
-                    {{ getCategoryCount(selectedCategory) }}
-                  </div>
-                </div>
-              </SelectTrigger>
-              <SelectContent
-                class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
-                <SelectGroup>
-                  <SelectItem value="all"
-                    class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
-                    <div class="flex items-center justify-between w-full gap-4">
-                      <span>Todas as Categorias</span>
-                      <div
-                        class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
-                        :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
-                        {{ props.products.length }}
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem v-for="cat in categories" :key="cat" :value="cat"
-                    class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
-                    <div class="flex items-center justify-between w-full gap-4">
-                      <span>{{ cat }}</span>
-                      <div
-                        class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
-                        :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
-                        {{ getCategoryCount(cat) }}
-                      </div>
-                    </div>
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <!-- Botão Único de Ordenação por Preço no Mobile -->
-          <PriceSortButton v-model="priceSort" />
+    <div class="flex flex-1 flex-col gap-6">
+      <!-- Barra de Busca por Nome do Produto (Disponível em Modo Público e Admin) -->
+      <div v-if="props.products.length > 0" class="w-full max-w-md mx-auto">
+        <div class="relative group flex items-center">
+          <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-20 group-focus-within:text-primary" />
+          <Input v-model="searchQuery" type="text" placeholder="Buscar presente por nome..."
+            class="pl-10 px-10 h-11 bg-white/90 backdrop-blur-sm border-slate-200/90 rounded-xl text-sm placeholder:text-slate-400 focus-visible:ring-primary/20 focus-visible:border-primary shadow-xs transition-all" />
+          <button v-if="searchQuery" type="button" @click="searchQuery = ''"
+            class="p-2.5 absolute right-1 top-1/2 -translate-y-1/2 text-slate-500 z-20 hover:text-slate-600 transition-colors cursor-pointer"
+            title="Limpar busca" aria-label="Limpar busca">
+            <X class="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
-      <!-- Abas de Pílula e Botão de Ordenação no Desktop (hidden sm:flex) -->
-      <div class="hidden sm:flex items-center justify-center gap-2.5 max-w-4xl mx-auto flex-wrap">
-        <button @click="selectedCategory = 'all'"
-          class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
-          :class="selectedCategory === 'all'
-            ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
-            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'">
-          <span>Todas</span>
-          <div
-            class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+      <template v-if="categories.length > 0">
+        <!-- Seletor Dropdown Shadcn + Botão de Ordenação no Mobile (sm:hidden) -->
+        <div class="block sm:hidden w-full">
+          <div class="flex items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <Select v-model="selectedCategory">
+                <SelectTrigger
+                  class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
+                  :class="selectedCategory !== 'all'
+                    ? 'bg-primary/10 text-primary border-primary/40 font-bold'
+                    : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                  <div class="flex items-center justify-between w-full pr-1">
+                    <div class="flex items-center gap-2.5 truncate">
+                      <div
+                        class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <SlidersHorizontal class="w-3.5 h-3.5" />
+                      </div>
+                      <span class="truncate font-bold text-slate-700">
+                        {{ selectedCategory === 'all' ? 'Todas' : selectedCategory }}
+                      </span>
+                    </div>
+                    <div
+                      class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
+                      {{ getCategoryCount(selectedCategory) }}
+                    </div>
+                  </div>
+                </SelectTrigger>
+                <SelectContent
+                  class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
+                  <SelectGroup>
+                    <SelectItem value="all"
+                      class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
+                      <div class="flex items-center justify-between w-full gap-4">
+                        <span>Todas as Categorias</span>
+                        <div
+                          class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                          :class="selectedCategory === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
+                          {{ props.products.length }}
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem v-for="cat in categories" :key="cat" :value="cat"
+                      class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
+                      <div class="flex items-center justify-between w-full gap-4">
+                        <span>{{ cat }}</span>
+                        <div
+                          class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                          :class="selectedCategory === cat ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-slate-100 text-slate-500 border border-slate-200/60'">
+                          {{ getCategoryCount(cat) }}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <!-- Botão de Alternar Aleatório / Recentes no Mobile -->
+            <button v-if="isAdmin" type="button" @click="toggleShuffle"
+              :title="isShuffle ? 'Ordem: Aleatória (clique para ver mais recentes)' : 'Ordem: Mais Recentes (clique para modo aleatório)'"
+              aria-label="Alternar ordem de exibição"
+              class="h-11 px-3 rounded-xl border flex items-center justify-center gap-1.5 shrink-0 transition-all duration-300 cursor-pointer shadow-xs text-xs uppercase tracking-wider font-semibold"
+              :class="isShuffle
+                ? 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800'
+                : 'bg-primary/10 text-primary border-primary/40 font-bold shadow-xs'">
+              <Shuffle v-if="isShuffle" class="w-3.5 h-3.5 text-slate-400" />
+              <Clock v-else class="w-3.5 h-3.5 text-primary" />
+              <span class="hidden min-[400px]:inline">{{ isShuffle ? 'Sortido' : 'Recentes' }}</span>
+            </button>
+
+            <!-- Botão Único de Ordenação por Preço no Mobile -->
+            <PriceSortButton v-model="priceSort" />
+          </div>
+        </div>
+
+        <!-- Abas de Pílula e Botão de Ordenação no Desktop (hidden sm:flex) -->
+        <div class="hidden sm:flex items-center justify-center gap-2.5 max-w-4xl mx-auto flex-wrap">
+          <button @click="selectedCategory = 'all'"
+            class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
             :class="selectedCategory === 'all'
-              ? 'bg-primary/20 text-primary border border-primary/30'
-              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'">
-            {{ props.products.length }}
-          </div>
-        </button>
+              ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
+              : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'">
+            <span>Todas</span>
+            <div
+              class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+              :class="selectedCategory === 'all'
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'">
+              {{ props.products.length }}
+            </div>
+          </button>
 
-        <button v-for="cat in categories" :key="cat" @click="selectedCategory = cat"
-          class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
-          :class="selectedCategory === cat
-            ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
-            : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'">
-          <span>{{ cat }}</span>
-          <div
-            class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+          <button v-for="cat in categories" :key="cat" @click="selectedCategory = cat"
+            class="h-11 px-4 rounded-xl text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer border flex items-center gap-2 group"
             :class="selectedCategory === cat
-              ? 'bg-primary/20 text-primary border border-primary/30'
-              : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'">
-            {{ getCategoryCount(cat) }}
-          </div>
-        </button>
+              ? 'bg-primary/10 text-primary border-primary/40 shadow-xs font-bold'
+              : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'">
+            <span>{{ cat }}</span>
+            <div
+              class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+              :class="selectedCategory === cat
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-slate-100 text-slate-500 border border-slate-200/60 group-hover:bg-slate-200/80 group-hover:text-slate-700'">
+              {{ getCategoryCount(cat) }}
+            </div>
+          </button>
 
-        <!-- Separador sutil -->
-        <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
+          <!-- Separador sutil -->
+          <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
 
-        <!-- Botão Único de Ordenação por Preço no Desktop -->
-        <PriceSortButton v-model="priceSort" show-text-on-mobile />
-      </div>
+          <!-- Botão de Alternar Aleatório / Recentes no Desktop -->
+          <button type="button" @click="toggleShuffle"
+            :title="isShuffle ? 'Ordem: Aleatória (clique para ver mais recentes)' : 'Ordem: Mais Recentes (clique para modo aleatório)'"
+            aria-label="Alternar ordem de exibição"
+            class="h-11 px-3.5 rounded-xl border flex items-center justify-center gap-1.5 shrink-0 transition-all duration-300 cursor-pointer shadow-xs text-xs uppercase tracking-wider font-semibold group"
+            :class="isShuffle
+              ? 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'
+              : 'bg-primary/10 text-primary border-primary/40 font-bold shadow-xs'">
+            <Shuffle v-if="isShuffle" class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            <Clock v-else class="w-3.5 h-3.5 text-primary" />
+            <span>{{ isShuffle ? 'Aleatório' : 'Recentes' }}</span>
+          </button>
+
+          <!-- Botão Único de Ordenação por Preço no Desktop -->
+          <PriceSortButton v-model="priceSort" show-text-on-mobile />
+        </div>
+      </template>
     </div>
 
-    <div v-if="paginatedProducts.length === 0" class="text-center py-20 text-slate-400">
-      Nenhum presente encontrado nesta categoria.
+    <div v-if="paginatedProducts.length === 0" class="text-center py-20 px-4">
+      <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+        <Search class="w-5 h-5" />
+      </div>
+      <p class="text-sm font-medium text-slate-600">
+        <span v-if="searchQuery">Nenhum presente encontrado para "{{ searchQuery }}".</span>
+        <span v-else>Nenhum presente encontrado nesta categoria.</span>
+      </p>
+      <button v-if="searchQuery || selectedCategory !== 'all'" type="button"
+        @click="searchQuery = ''; selectedCategory = 'all'"
+        class="mt-3 text-xs font-semibold text-primary hover:underline cursor-pointer">
+        Limpar filtros
+      </button>
     </div>
 
     <div ref="galleryRef" v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 text-left">
@@ -392,7 +517,8 @@ const updateItemsPerPage = (event: Event) => {
             Contribuição Livre
           </h3>
           <p class="text-xs text-slate-500 font-light leading-relaxed">
-            Prefere nos abençoar com um valor de sua escolha? Sinta-se à vontade para contribuir com a quantia que tocar
+            Prefere nos abençoar com um valor de sua escolha? Sinta-se à vontade para contribuir com a quantia que
+            tocar
             o seu coração e nos ajudar a construir nosso novo lar.
           </p>
 

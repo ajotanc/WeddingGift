@@ -22,7 +22,7 @@ defineEmits<{
 		<SectionHeader
 			tag="Presentes"
 			title="Nossa Lista"
-			description="Com muito carinho, selecionamos alguns itens e experiências. Fique à vontade para nos presentear com o que tocar o seu coração."
+			description="Preparamos esta lista com muito carinho para servir de inspiração. Sintam-se livres para presentear por aqui ou adquirir em qualquer loja."
 			responsive />
 
 		<ProductGallery :products="products" :tenant="tenant" mode="public" :currentUser="currentUser"

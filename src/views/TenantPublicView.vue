@@ -725,12 +725,12 @@ onUnmounted(() => {
 							tenant.couple_name }}</h1>
 
 					<p v-if="tenant?.quote"
-						class="text-xs text-primary md:text-sm uppercase tracking-[0.2em] font-medium max-w-[500px] leading-relaxed text-center mb-6">
+						class="text-xs md:text-base text-slate-900/60 font-medium max-w-md leading-relaxed text-center mb-6">
 						{{
 							tenant?.quote }}</p>
 
 					<!-- Event Date & Time Display -->
-					<div v-if="tenant.event_date" class="text-slate-800 font-serif italic text-xl tracking-wide">
+					<div v-if="tenant.event_date" class="text-primary font-serif font-bold italic text-xl tracking-wide">
 						{{ dayjs(tenant.event_date).format('DD [de] MMMM [de] YYYY') }} às {{ tenant.event_time }}
 					</div>
 

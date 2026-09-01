@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useProductSearch } from "@/composables/useProductSearch";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney } from "@/lib/money";
+import { extractStoreName } from "@/lib/utils";
 import {
 	type IProduct,
 	type IProductLink,
@@ -19,7 +20,7 @@ import {
 } from "@/services/product.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import { ExternalLink, Plus, X } from "lucide-vue-next";
+import { ExternalLink, Loader2, Plus, Search, X } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -442,11 +443,14 @@ watch(showPhysicalModal, (isOpen) => {
 	}
 });
 
+const manualLinkUrl = ref("");
+
 const openNewPhysical = () => {
 	editProductId.value = null;
 	resetPhysicalForm();
 	resetSearch();
 	pLinks.value = [];
+	manualLinkUrl.value = "";
 	pImageBase64.value = "";
 	pImageFile.value = null;
 	showPhysicalModal.value = true;
@@ -455,6 +459,7 @@ const openNewPhysical = () => {
 const editPhysical = (p: IProduct) => {
 	editProductId.value = p.$id;
 	resetSearch();
+	manualLinkUrl.value = "";
 	const isPredefined = p.category && PREDEFINED_CATEGORIES.includes(p.category);
 
 	setPhysicalValues({
@@ -483,6 +488,37 @@ const searchExternalLinks = async () => {
 	} else if (searchResults.value.length === 0) {
 		toast.info("Nenhum link encontrado para este produto.");
 	}
+};
+
+const addManualLink = () => {
+	const trimmed = manualLinkUrl.value.trim();
+	if (!trimmed) {
+		toast.info("Cole ou digite a URL do produto.");
+		return;
+	}
+
+	const normalizedUrl =
+		trimmed.startsWith("http://") || trimmed.startsWith("https://")
+			? trimmed
+			: `https://${trimmed}`;
+
+	const storeName = extractStoreName(normalizedUrl);
+
+	const alreadyExists = pLinks.value.some(
+		(l) => l.url.toLowerCase() === normalizedUrl.toLowerCase(),
+	);
+	if (alreadyExists) {
+		toast.info("Este link já foi adicionado à lista.");
+		return;
+	}
+
+	pLinks.value.push({
+		store: storeName,
+		url: normalizedUrl,
+	} as IProductLink);
+
+	manualLinkUrl.value = "";
+	toast.success(`Link de "${storeName}" adicionado ao produto!`);
 };
 
 const addLinkToProduct = (item: IProductLink) => {
@@ -717,25 +753,42 @@ const deleteProduct = async (product: IProduct) => {
 				</FormGroup>
 
 				<FormGroup label="Links Externos (Lojas)">
+					<!-- Campo para Inserção Manual de Link -->
+					<div class="flex items-center gap-2 mb-3">
+						<Input v-model="manualLinkUrl" placeholder="Cole a URL da loja (ex: https://www.amazon.com.br/...)"
+							class="flex-1 text-sm bg-white" @keydown.enter.prevent="addManualLink" />
+						<Button type="button" variant="secondary"
+							class="h-10 px-4 text-xs font-semibold uppercase tracking-wider shrink-0 cursor-pointer flex items-center gap-1.5"
+							@click="addManualLink">
+							<Plus class="w-3.5 h-3.5" />
+							<span>Adicionar</span>
+						</Button>
+					</div>
+
+					<!-- Lista de Links Adicionados -->
 					<div v-if="pLinks.length > 0" class="space-y-2 mb-2">
 						<div v-for="(link, idx) in pLinks" :key="idx"
-							class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
-							<div class="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-400">
+							class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+							<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
 								<ExternalLink class="w-4 h-4" />
 							</div>
 							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium text-slate-900 truncate">{{ link.store }}</p>
+								<p class="text-xs font-bold text-slate-900 truncate">{{ link.store }}</p>
+								<a :href="link.url" target="_blank" class="text-[11px] text-primary/80 truncate block hover:underline"
+									:title="link.url">{{ link.url }}</a>
 							</div>
-							<Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600 hover:bg-red-50"
-								@click="removeLink(idx)">
+							<Button variant="ghost" size="sm"
+								class="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg shrink-0" @click="removeLink(idx)">
 								<X class="w-4 h-4" />
 							</Button>
 						</div>
 					</div>
 
+					<!-- Resultados da Busca Serper (se houver) -->
 					<div v-if="searchResults.length > 0"
 						class="space-y-2 mt-4 p-4 border border-primary/20 bg-primary/5 rounded-xl">
-						<h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-3">Resultados da Busca (Serper)</h4>
+						<h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-3">Resultados da Busca (Google /
+							Serper)</h4>
 						<div v-for="(res, idx) in searchResults" :key="idx"
 							class="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm">
 							<div class="flex-1 min-w-0">
@@ -749,13 +802,15 @@ const deleteProduct = async (product: IProduct) => {
 						</div>
 					</div>
 					<div v-else-if="pLinks.length === 0"
-						class="text-sm text-slate-500 text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-						Nenhum link adicionado. Use a busca abaixo para encontrar ofertas.
+						class="text-xs text-slate-500 text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+						Nenhum link adicionado. Cole uma URL acima ou clique em "Buscar Links (Google)".
 					</div>
 				</FormGroup>
 			</div>
 			<div class="pt-4 border-t border-slate-100 flex gap-3">
 				<Button variant="outline" class="flex-1" @click="searchExternalLinks" :disabled="isSearchingLinks">
+					<Loader2 v-if="isSearchingLinks" class="w-4 h-4 mr-2 animate-spin" />
+					<Search v-else class="w-4 h-4 mr-2" />
 					{{ isSearchingLinks ? 'Buscando...' : 'Buscar Links (Google)' }}
 				</Button>
 				<Button class="flex-1" @click="productSubmit">Salvar</Button>

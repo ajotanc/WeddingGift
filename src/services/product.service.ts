@@ -62,35 +62,63 @@ export const ProductService = {
 		return res.rows;
 	},
 
-	async upsert(
-		rowId: string | null,
-		data: Partial<Omit<IProduct, "links"> & { links?: IProductLink[] }>,
+	async create(
+		data: Omit<IProduct, keyof Models.Row>,
 		file?: File | null,
 	): Promise<IProduct> {
-		const isUpdate = !!rowId;
-		const id = rowId || ID.unique();
+		const rowId = ID.unique();
 
 		if (file instanceof File) {
-			if (isUpdate) {
-				await StorageService.deleteFile(id, "product");
-			}
+			data.image_url = await StorageService.uploadFile(rowId, file, "product");
+		}
 
-			data.image_url = await StorageService.uploadFile(id, file, "product");
+		return await tables.createRow({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_PRODUCTS,
+			rowId,
+			data,
+			permissions: getProductPermissions(data.tenant),
+		});
+	},
+
+	async update(
+		rowId: string,
+		data: Partial<Omit<IProduct, keyof Models.Row>>,
+		file?: File | null,
+	): Promise<IProduct> {
+		if (file instanceof File) {
+			await StorageService.deleteFile(rowId, "product");
+			data.image_url = await StorageService.uploadFile(rowId, file, "product");
 		}
 
 		let ownerId = data.tenant || "";
-		if (id && !ownerId) {
-			const existing = await ProductService.get(id);
+		if (!ownerId) {
+			const existing = await ProductService.get(rowId);
 			ownerId = existing?.tenant || "";
 		}
 
-		return await tables.upsertRow({
+		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
-			rowId: id,
+			rowId,
 			data,
 			permissions: getProductPermissions(ownerId),
 		});
+	},
+
+	async upsert(
+		rowId: string | null | undefined,
+		data: Omit<IProduct, keyof Models.Row> | (Partial<Omit<IProduct, keyof Models.Row>> & { tenant?: string }),
+		file?: File | null,
+	): Promise<IProduct> {
+		if (rowId) {
+			return await ProductService.update(rowId, data, file);
+		}
+
+		return await ProductService.create(
+			data as Omit<IProduct, keyof Models.Row>,
+			file,
+		);
 	},
 
 	async delete(id: string, hasFile: boolean): Promise<void> {

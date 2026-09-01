@@ -61,7 +61,7 @@ const toggleSort = () => {
     class="h-11 px-3.5 rounded-xl border flex items-center justify-center gap-1.5 shrink-0 transition-all duration-300 cursor-pointer shadow-xs text-xs uppercase tracking-wider font-semibold group"
     :class="modelValue !== 'default'
       ? 'bg-primary/10 text-primary border-primary/40 font-bold shadow-xs'
-      : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'"
+      : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'"
   >
     <ArrowUpDown v-if="modelValue === 'default'" class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
     <ArrowDownNarrowWide v-else-if="modelValue === 'asc'" class="w-3.5 h-3.5 text-primary" />

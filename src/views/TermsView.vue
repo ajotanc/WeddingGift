@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { PROJECT_NAME } from "@/lib/defaults";
+import dayjs from "dayjs";
 import { ArrowLeft, Scale } from "lucide-vue-next";
 import { computed } from "vue";
 
-const currentYear = computed(() => new Date().getFullYear());
+const currentYear = computed(() => dayjs().year());
 </script>
 
 <template>
