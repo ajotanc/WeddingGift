@@ -12,6 +12,7 @@ import type { IGalleryImage } from "@/services/gallery.service";
 import { PaymentService } from "@/services/payment.service";
 import { type IProduct, ProductService } from "@/services/product.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
+import { AppwriteException } from "appwrite";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
 import { useAuthStore } from "@/stores/auth";
 import { ChevronUp, Loader2 } from "lucide-vue-next";
@@ -215,7 +216,12 @@ const copyPix = () => {
 const confirmingPurchase = ref(false);
 
 const confirmPurchase = async (method: MethodType) => {
-	if (!tenant.value || !selectedProduct.value || !authStore.guest) return;
+	if (!tenant.value || !selectedProduct.value) return;
+	if (!authStore.guest) {
+		toast.error("Por favor, identifique-se para confirmar a sua reserva.");
+		requireAuth();
+		return;
+	}
 
 	confirmingPurchase.value = true;
 	const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
@@ -265,13 +271,29 @@ const confirmPurchase = async (method: MethodType) => {
 				total_paid: finalPrice,
 				image_url: updatedProduct.image_url,
 				method,
-			}).catch((e) => console.error("Erro ao enviar e-mail de presente:", e));
+			}).catch((err: unknown) => {
+				const msg = err instanceof Error ? err.message : "Erro desconhecido";
+				console.error("Erro ao enviar e-mail de presente:", msg);
+			});
 		}
 
 		toast.success("Presente confirmado! Muito obrigado pelo carinho.");
-	} catch (error) {
-		console.error(error);
-		toast.error("Erro ao confirmar presente. Tente novamente.");
+	} catch (err) {
+		console.error("Erro ao confirmar compra:", err);
+		if (err instanceof AppwriteException) {
+			if (err.code === 401 || err.code === 403) {
+				toast.error(
+					"Sua identificação expirou ou não foi reconhecida pelo navegador. Por favor, identifique-se novamente.",
+				);
+				requireAuth();
+				return;
+			}
+			toast.error(`Erro ao confirmar presente: ${err.message}`);
+		} else if (err instanceof Error) {
+			toast.error(`Erro ao confirmar presente: ${err.message}`);
+		} else {
+			toast.error("Erro ao confirmar presente. Tente novamente.");
+		}
 	} finally {
 		confirmingPurchase.value = false;
 		showPixModal.value = false;
@@ -910,6 +932,7 @@ onUnmounted(() => {
 
 				<div class="space-y-3 max-w-xs mx-auto">
 					<a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
+						rel="noopener noreferrer"
 						class="flex items-center justify-center text-center h-12 rounded-xl border border-slate-200 hover:border-primary hover:bg-slate-50/50 transition-all group px-4">
 						<span
 							class="text-xs font-semibold uppercase tracking-wider text-slate-700 group-hover:text-primary transition-colors">
@@ -926,7 +949,7 @@ onUnmounted(() => {
 						class="w-full rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary"
 						:disabled="confirmingPurchase" @click="confirmPurchase('link')">
 						<span v-if="confirmingPurchase">Confirmando...</span>
-						<span v-else>Confirmar Compra</span>
+						<span v-else>Confirmar Reserva</span>
 					</Button>
 				</div>
 			</div>

@@ -96,6 +96,7 @@ export default async ({ req, res, log, error }) => {
 			{ key: "casasbahia", name: "Casas Bahia" },
 			{ key: "pontofrio", name: "Ponto Frio" },
 			{ key: "extra.com", name: "Extra" },
+			{ key: "whatsapp", name: "WhatsApp da Loja" },
 			{ key: "extra", name: "Extra" },
 			{ key: "fastshop", name: "Fast Shop" },
 			{ key: "carrefour", name: "Carrefour" },
