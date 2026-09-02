@@ -711,7 +711,7 @@ onUnmounted(() => {
 				<!-- Blur Overlay Layer (Smooth fade to background_color at bottom) -->
 				<div class="absolute inset-0 bg-white/10"></div>
 				<div
-					class="absolute inset-0 backdrop-blur-md [-webkit-mask-image:linear-gradient(to_top,black,transparent)] [mask-image:linear-gradient(to_top,black,transparent)]"
+					class="hidden absolute inset-0 backdrop-blur-md [-webkit-mask-image:linear-gradient(to_top,black,transparent)] [mask-image:linear-gradient(to_top,black,transparent)]"
 					:style="tenant.background_color ? { background: `linear-gradient(to top, ${tenant.background_color}, transparent)` } : {}"
 					:class="!tenant.background_color ? 'bg-gradient-to-t from-slate-50 to-transparent' : ''">
 				</div>
