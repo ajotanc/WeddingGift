@@ -76,7 +76,7 @@ const toggleSpotifyExpand = () => {
 									<Music class="w-3.5 h-3.5" />
 								</div>
 								<span class="text-xs font-medium text-slate-800">
-									{{ music.spotifyData?.type === 'playlist' ? 'Playlist dos Noivos' : 'Música dos Noivos' }}
+									{{ music.spotifyData?.type === 'playlist' ? 'Playlist do Casal' : 'Música do Casal' }}
 								</span>
 							</div>
 
@@ -121,7 +121,7 @@ const toggleSpotifyExpand = () => {
 						</div>
 
 						<span class="text-xs font-medium text-slate-700">
-							{{ isExpanded ? 'Minimizar Player' : (music.spotifyData?.type === 'playlist' ? 'Playlist dos Noivos' : 'Música dos Noivos') }}
+							{{ isExpanded ? 'Minimizar Player' : (music.spotifyData?.type === 'playlist' ? 'Playlist do Casal' : 'Música do Casal') }}
 						</span>
 
 						<component :is="isExpanded ? ChevronDown : ChevronUp" class="w-4 h-4 text-slate-400" />
