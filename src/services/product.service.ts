@@ -165,15 +165,11 @@ export const ProductService = {
 		rowId: string,
 		data: Partial<IProduct>,
 	): Promise<IProduct> {
-		const existing = await ProductService.get(rowId);
-		const ownerId = existing?.tenant || "";
-
 		return await tables.updateRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId,
 			data,
-			permissions: getProductPermissions(ownerId),
 		});
 	},
 };
