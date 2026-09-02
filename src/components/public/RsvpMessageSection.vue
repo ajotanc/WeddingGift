@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useThankYouGenerator } from "@/composables/useThankYouGenerator";
 import { ConsentService } from "@/services/consent.service";
 import { EmailService } from "@/services/email.service";
-import type { IGuest } from "@/services/guest.service";
+import { GuestService, type IGuest } from "@/services/guest.service";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type IRsvp, RsvpService } from "@/services/rsvp.service";
 import { formatPhone } from "@brazilian-utils/brazilian-utils";
@@ -184,6 +184,19 @@ const submitRsvp = handleSubmit(async (values) => {
 	if (!props.tenant || !authStore.guest) return;
 	rsvpLoading.value = true;
 	try {
+		// Sincroniza o telefone no registro do convidado se preenchido
+		const cleanedPhone = values.phone.replace(/\D/g, "");
+		if (cleanedPhone && authStore.guest.phone !== cleanedPhone) {
+			await GuestService.upsert(authStore.guest.$id, {
+				phone: cleanedPhone,
+			});
+
+			authStore.guest = {
+				...authStore.guest,
+				phone: cleanedPhone,
+			};
+		}
+
 		let thankYouMessage = "";
 		if (values.status === "confirmed") {
 			await generateThankYou({
@@ -375,9 +388,7 @@ const toggleLike = async (msg: IMessage) => {
 		<!-- RSVP Column -->
 		<div id="rsvp" class="lg:col-span-7 space-y-8 scroll-mt-20">
 			<!-- Column Header -->
-			<SectionHeader
-				tag="Confirmação"
-				title="Presença no Evento"
+			<SectionHeader tag="Confirmação" title="Presença no Evento"
 				description="Ficaremos imensamente felizes em celebrar esse momento único com você. Por favor, confirme suas informações abaixo." />
 
 			<!-- Form Container -->
@@ -462,13 +473,8 @@ const toggleLike = async (msg: IMessage) => {
 
 						<!-- WhatsApp / Telefone Field -->
 						<FormGroup label="WhatsApp / Telefone *" :error="errors.phone">
-							<Input
-								v-model="phone"
-								v-maska="'(##) #####-####'"
-								type="tel"
-								placeholder="(11) 99999-9999"
-								class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-0 focus-visible:border-slate-400 bg-slate-50/50 h-11 text-sm text-slate-900 font-medium"
-							/>
+							<Input v-model="phone" v-maska="'(##) #####-####'" type="tel" placeholder="(11) 99999-9999"
+								class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-0 focus-visible:border-slate-400 bg-slate-50/50 h-11 text-sm text-slate-900 font-medium" />
 						</FormGroup>
 
 						<!-- Attendance select -->
@@ -539,9 +545,7 @@ const toggleLike = async (msg: IMessage) => {
 		<!-- Message Wall Column -->
 		<div id="messages" class="lg:col-span-5 space-y-8 scroll-mt-16">
 			<!-- Column Header -->
-			<SectionHeader
-				tag="Afeto"
-				title="Mural de Recados"
+			<SectionHeader tag="Afeto" title="Mural de Recados"
 				description="Escreva e compartilhe votos sinceros de felicidade, carinho e amor eterno para os noivos." />
 
 			<!-- Submitting message card -->
