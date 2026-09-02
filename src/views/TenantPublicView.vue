@@ -233,12 +233,23 @@ const confirmPurchase = async (method: MethodType) => {
 		let updatedProduct = selectedProduct.value;
 
 		if (!isCustomPix.value) {
-			updatedProduct = await ProductService.updateQuantity(
-				selectedProduct.value.$id,
-				{
+			try {
+				updatedProduct = await ProductService.updateQuantity(
+					selectedProduct.value.$id,
+					{
+						claimed_quantity: (selectedProduct.value.claimed_quantity || 0) + qty,
+					},
+				);
+			} catch (updateErr) {
+				console.warn(
+					"Atualização direta da quantidade não permitida para convidados. Mantendo atualização de estado local:",
+					updateErr,
+				);
+				updatedProduct = {
+					...selectedProduct.value,
 					claimed_quantity: (selectedProduct.value.claimed_quantity || 0) + qty,
-				},
-			);
+				};
+			}
 
 			const productIndex = products.value.findIndex(
 				(p) => p.$id === updatedProduct.$id,
@@ -281,16 +292,9 @@ const confirmPurchase = async (method: MethodType) => {
 	} catch (err) {
 		console.error("Erro ao confirmar compra:", err);
 		if (err instanceof AppwriteException) {
-			if (err.code === 401 || err.code === 403) {
-				toast.error(
-					"Sua identificação expirou ou não foi reconhecida pelo navegador. Por favor, identifique-se novamente.",
-				);
-				requireAuth();
-				return;
-			}
-			toast.error(`Erro ao confirmar presente: ${err.message}`);
+			toast.error(`Erro (${err.code}): ${err.message}`);
 		} else if (err instanceof Error) {
-			toast.error(`Erro ao confirmar presente: ${err.message}`);
+			toast.error(`Erro: ${err.message}`);
 		} else {
 			toast.error("Erro ao confirmar presente. Tente novamente.");
 		}

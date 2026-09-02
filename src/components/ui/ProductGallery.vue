@@ -478,7 +478,7 @@ const updateItemsPerPage = (event: Event) => {
       <Card v-for="product in paginatedProducts" :key="product.$id"
         class="flex flex-col overflow-hidden bg-white group relative p-5 transition-all duration-500 border border-slate-100 hover:border-primary/20 rounded-2xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.025)]">
         <div
-          class="relative rounded-xl overflow-hidden aspect-[4/3] bg-slate-50/70 border border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
+          class="relative rounded-xl overflow-hidden aspect-[1/1] bg-slate-50/70 border border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:bg-white">
           <div v-if="product.type === 'physical' && product?.image_url"
             class="p-4 w-full h-full flex items-center justify-center">
             <img :src="product.image_url" alt="Produto" @error="handleImageError"
