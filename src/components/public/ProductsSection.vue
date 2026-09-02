@@ -23,6 +23,7 @@ defineEmits<{
 			tag="Presentes"
 			title="Nossa Lista"
 			description="Preparamos esta lista com muito carinho para servir de inspiração. Sintam-se livres para presentear por aqui ou adquirir em qualquer loja."
+			observation="Fique à vontade para apenas reservar o presente que escolher no site, sem precisar comprar na hora. Os links indicados são apenas sugestões para ajudar na sua busca!"
 			responsive />
 
 		<ProductGallery :products="products" :tenant="tenant" mode="public" :currentUser="currentUser"

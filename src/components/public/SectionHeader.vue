@@ -4,6 +4,7 @@ withDefaults(
 		tag?: string;
 		title: string;
 		description?: string;
+		observation?: string;
 		responsive?: boolean;
 		border?: boolean;
 		center?: boolean;
@@ -30,6 +31,10 @@ withDefaults(
 		<p v-if="description" class="text-slate-600 font-light leading-relaxed mt-2 text-sm max-w-md"
 			:class="{ 'mx-auto': center || responsive }">
 			{{ description }}
+		</p>
+		<p v-if="observation" class="bg-yellow-100 text-yellow-700 border-yellow-500 border rounded-xl font-medium p-2 mt-4 text-xs max-w-md"
+			:class="{ 'mx-auto': center || responsive }">
+			{{ observation }}
 		</p>
 		<slot />
 	</div>
