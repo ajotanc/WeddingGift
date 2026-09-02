@@ -26,7 +26,8 @@ const emit = defineEmits<(e: "update:open", v: boolean) => void>();
 
 <template>
 	<Dialog :open="props.open" @update:open="emit('update:open', $event)">
-		<DialogContent :class="props.class" aria-describedby="modal-description" @open-auto-focus="(e) => { if (props.preventAutofocus) e.preventDefault(); }">
+		<DialogContent :class="props.class" aria-describedby="modal-description"
+			@open-auto-focus="(e) => { if (props.preventAutofocus) e.preventDefault(); }">
 			<DialogHeader v-if="props.title || props.description">
 				<DialogTitle v-if="props.title">{{ props.title }}</DialogTitle>
 

@@ -202,7 +202,7 @@ const exportToExcel = () => {
           <div v-for="r in rsvps" :key="r.$id" class="p-6 flex flex-col sm:flex-row justify-between gap-4">
             <div>
               <p class="font-medium text-slate-900">{{ r.guest.name }}</p>
-              <p class="text-sm text-slate-500 mt-1">{{ formatPhone(r.guest.phone!, { mask: 'auto' }) }} • {{
+              <p class="text-sm text-slate-500 mt-1">{{ r.guest?.phone ? formatPhone(r.guest.phone, { mask: 'auto' }) : 'Sem telefone' }} • {{
                 r.guest?.email || 'Sem email' }}</p>
               <div class="mt-3 flex flex-wrap gap-2">
                 <span v-if="r.status === 'confirmed'"

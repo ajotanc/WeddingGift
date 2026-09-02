@@ -24,6 +24,7 @@ import { EmailService } from "@/services/email.service";
 import type { IGuest } from "@/services/guest.service";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type IRsvp, RsvpService } from "@/services/rsvp.service";
+import { formatPhone } from "@brazilian-utils/brazilian-utils";
 import type { ITenant } from "@/services/tenant.service";
 import { type IUser, useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -68,6 +69,13 @@ const isEditingRsvp = ref(false);
 
 const rsvpSchema = toTypedSchema(
 	z.object({
+		phone: z
+			.string()
+			.min(1, "O WhatsApp / Telefone é obrigatório")
+			.refine((val) => {
+				const cleaned = val.replace(/\D/g, "");
+				return cleaned.length >= 10 && cleaned.length <= 11;
+			}, "Informe um número de WhatsApp válido com DDD (Ex: 11 99999-9999)"),
 		totalAdults: z
 			.union([
 				z.number(),
@@ -91,6 +99,9 @@ const rsvpSchema = toTypedSchema(
 const { handleSubmit, errors, defineField, resetForm } = useForm({
 	validationSchema: rsvpSchema,
 	initialValues: {
+		phone: authStore.guest?.phone
+			? formatPhone(authStore.guest.phone, { mask: "auto" })
+			: "",
 		totalAdults: 1,
 		totalChildren: 0,
 		status: "confirmed",
@@ -99,6 +110,7 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
 	},
 });
 
+const [phone] = defineField("phone");
 const [totalAdults] = defineField("totalAdults");
 const [totalChildren] = defineField("totalChildren");
 const [status] = defineField("status");
@@ -118,13 +130,29 @@ watch(totalAdults, (newAdults) => {
 	}
 });
 
+// Sincroniza o telefone se o convidado for carregado posteriormente
+watch(
+	() => authStore.guest?.phone,
+	(newPhone) => {
+		if (newPhone && !phone.value) {
+			phone.value = formatPhone(newPhone, { mask: "auto" });
+		}
+	},
+);
+
 // Whenever existingRsvp changes or editing starts, populate form
 watch(
 	[existingRsvp, isEditingRsvp],
 	([rsvp]) => {
+		const rawPhone = rsvp?.guest?.phone || authStore.guest?.phone || "";
+		const formattedPhone = rawPhone
+			? formatPhone(rawPhone, { mask: "auto" })
+			: "";
+
 		if (rsvp) {
 			resetForm({
 				values: {
+					phone: formattedPhone,
 					totalAdults: rsvp.total_adults || 1,
 					totalChildren: rsvp.total_children || 0,
 					status: (rsvp.status as "confirmed" | "declined") || "confirmed",
@@ -138,6 +166,7 @@ watch(
 		} else {
 			resetForm({
 				values: {
+					phone: formattedPhone,
 					totalAdults: 1,
 					totalChildren: 0,
 					status: "confirmed",
@@ -431,6 +460,17 @@ const toggleLike = async (msg: IMessage) => {
 							</FormGroup>
 						</div>
 
+						<!-- WhatsApp / Telefone Field -->
+						<FormGroup label="WhatsApp / Telefone *" :error="errors.phone">
+							<Input
+								v-model="phone"
+								v-maska="'(##) #####-####'"
+								type="tel"
+								placeholder="(11) 99999-9999"
+								class="rounded-xl border-slate-200 shadow-sm focus-visible:ring-0 focus-visible:border-slate-400 bg-slate-50/50 h-11 text-sm text-slate-900 font-medium"
+							/>
+						</FormGroup>
+
 						<!-- Attendance select -->
 						<FormGroup label="Você irá ao evento?">
 							<Select v-model="status">
@@ -468,7 +508,7 @@ const toggleLike = async (msg: IMessage) => {
 					<div class="space-y-1 pt-2">
 						<div class="flex items-start gap-3 py-1">
 							<input type="checkbox" id="accept-rsvp-terms" v-model="acceptedTerms"
-								class="w-4 h-4 mt-0.5 rounded border-slate-300 cursor-pointer accent-primary" required />
+								class="w-4 h-4 mt-0.5 rounded border-slate-300 cursor-pointer accent-primary" />
 							<label for="accept-rsvp-terms"
 								class="text-[10px] text-slate-500 font-light leading-relaxed cursor-pointer select-none">
 								Autorizo o tratamento de meus dados em conformidade com os <a href="/terms" target="_blank"

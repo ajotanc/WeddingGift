@@ -305,15 +305,6 @@ const confirmPurchase = async (method: MethodType) => {
 	}
 };
 
-watch(
-	() => authStore.guest,
-	(guest) => {
-		if (guest && !guest.phone) {
-			showProfileModal.value = true;
-		}
-	},
-	{ immediate: true },
-);
 
 // Toggle Gallery Like (emitted by GallerySection)
 const toggleGalleryLike = async (img: IGalleryImage) => {

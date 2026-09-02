@@ -18,7 +18,7 @@ const props = defineProps<{
 	tenantPurchases?: IPurchase[];
 }>();
 
-const emit = defineEmits(["update:open"]);
+const emit = defineEmits<(e: "update:open", value: boolean) => void>();
 
 const authStore = useAuthStore();
 
@@ -28,6 +28,7 @@ const profilePhone = ref("");
 
 const purchases = ref<IPurchase[]>([]);
 
+// Se o convidado abrir o modal, popula os dados atuais
 watch(
 	() => props.open,
 	async (isOpen) => {
@@ -46,27 +47,41 @@ watch(
 	{ immediate: true },
 );
 
+const handleModalOpenUpdate = (value: boolean) => {
+	emit("update:open", value);
+};
+
 const saveProfile = async () => {
 	if (!authStore.guest) return;
+
+	const trimmedName = profileName.value.trim();
+	if (trimmedName.length < 2) {
+		toast.error("Por favor, informe seu nome completo.");
+		return;
+	}
+
+	const cleanedPhone = profilePhone.value.replace(/\D/g, "");
+	if (cleanedPhone && (cleanedPhone.length < 10 || cleanedPhone.length > 11)) {
+		toast.error("Por favor, informe um número de WhatsApp válido com DDD.");
+		return;
+	}
+
 	isLoading.value = true;
 
 	try {
-		const cleanedPhone = profilePhone.value
-			? profilePhone.value.replace(/\D/g, "")
-			: undefined;
 		const updated = await GuestService.upsert(authStore.guest.$id, {
-			name: profileName.value,
+			name: trimmedName,
 			phone: cleanedPhone,
 		});
 
 		authStore.guest = updated;
 
-		toast.success("Perfil atualizado com sucesso!");
-
+		toast.success("Dados salvos com sucesso!");
 		emit("update:open", false);
-	} catch (e) {
-		console.error(e);
-		toast.error("Erro", { description: "Não foi possível salvar o perfil." });
+	} catch (err: unknown) {
+		const errorMsg = err instanceof Error ? err.message : "Erro desconhecido";
+		console.error("Erro ao salvar perfil do convidado:", errorMsg);
+		toast.error("Não foi possível salvar os dados. Tente novamente.");
 	} finally {
 		isLoading.value = false;
 	}
@@ -74,7 +89,8 @@ const saveProfile = async () => {
 </script>
 
 <template>
-  <Modal :open="open" @update:open="$emit('update:open', $event)" title="Minha Conta"
+  <Modal :open="open" :persistent="false" :show-close-button="true" @update:open="handleModalOpenUpdate"
+    title="Minha Conta"
     description="Gerencie seu perfil e acompanhe os presentes enviados.">
 
     <Tabs default-value="profile" class="w-full mt-4 min-w-0">
@@ -90,16 +106,6 @@ const saveProfile = async () => {
       </TabsList>
 
       <TabsContent value="profile" class="space-y-6 mt-6">
-        <div v-if="!authStore.guest?.phone"
-          class="bg-yellow-50 text-yellow-800 p-4 rounded-xl text-sm border border-yellow-200/50 mb-6 flex gap-3 items-start">
-          <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-            </path>
-          </svg>
-          <p>Por favor, adicione seu telefone para facilitar o contato.</p>
-        </div>
-
         <FormGroup label="Nome Completo">
           <Input v-model="profileName" placeholder="Seu nome"
             class="h-12 bg-slate-50/50 rounded-xl border-slate-200" />
@@ -110,7 +116,7 @@ const saveProfile = async () => {
             class="h-12 bg-slate-50/50 rounded-xl border-slate-200" />
         </FormGroup>
 
-        <Button @click="saveProfile" :disabled="isLoading" class="w-full h-12 rounded-xl mt-4">
+        <Button @click="saveProfile" :disabled="isLoading" class="w-full h-12 rounded-xl mt-4 font-semibold">
           <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin mr-2" />
           Salvar Alterações
         </Button>
