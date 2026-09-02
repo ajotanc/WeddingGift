@@ -1,54 +1,55 @@
 <script setup lang="ts">
 import {
-  ArrowDownNarrowWide,
-  ArrowUpNarrowWide,
-  ArrowUpDown,
+	ArrowDownNarrowWide,
+	ArrowUpNarrowWide,
+	ArrowUpDown,
 } from "lucide-vue-next";
 import { computed } from "vue";
 
 export type PriceSortOrder = "default" | "asc" | "desc";
 
 const props = withDefaults(
-  defineProps<{
-    modelValue?: PriceSortOrder;
-    showTextOnMobile?: boolean;
-  }>(),
-  {
-    modelValue: "default",
-    showTextOnMobile: false,
-  },
+	defineProps<{
+		modelValue?: PriceSortOrder;
+		showTextOnMobile?: boolean;
+	}>(),
+	{
+		modelValue: "default",
+		showTextOnMobile: false,
+	},
 );
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: PriceSortOrder): void;
-  (e: "change", value: PriceSortOrder): void;
+	(e: "update:modelValue", value: PriceSortOrder): void;
+	(e: "change", value: PriceSortOrder): void;
 }>();
 
 const title = computed(() => {
-  if (props.modelValue === "default") return "Clique para ordenar por menor preço";
-  if (props.modelValue === "asc") return "Clique para ordenar por maior preço";
-  return "Clique para voltar à ordem padrão";
+	if (props.modelValue === "default")
+		return "Clique para ordenar por menor preço";
+	if (props.modelValue === "asc") return "Clique para ordenar por maior preço";
+	return "Clique para voltar à ordem padrão";
 });
 
 const label = computed(() => {
-  if (props.modelValue === "default") return "Preço";
-  if (props.modelValue === "asc") return "Menor";
-  return "Maior";
+	if (props.modelValue === "default") return "Preço";
+	if (props.modelValue === "asc") return "Menor";
+	return "Maior";
 });
 
 // Alterna os estados ciclicamente: Padrão -> Menor -> Maior -> Padrão
 const toggleSort = () => {
-  let nextValue: PriceSortOrder = "default";
-  if (props.modelValue === "default") {
-    nextValue = "asc";
-  } else if (props.modelValue === "asc") {
-    nextValue = "desc";
-  } else {
-    nextValue = "default";
-  }
+	let nextValue: PriceSortOrder = "default";
+	if (props.modelValue === "default") {
+		nextValue = "asc";
+	} else if (props.modelValue === "asc") {
+		nextValue = "desc";
+	} else {
+		nextValue = "default";
+	}
 
-  emit("update:modelValue", nextValue);
-  emit("change", nextValue);
+	emit("update:modelValue", nextValue);
+	emit("change", nextValue);
 };
 </script>
 

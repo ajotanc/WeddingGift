@@ -68,8 +68,7 @@ const financialEvolutionData = computed(() => {
 	const sorted = [...purchases.value]
 		.filter((p) => p.method === "pix")
 		.sort(
-			(a, b) =>
-				dayjs(a.$createdAt).valueOf() - dayjs(b.$createdAt).valueOf(),
+			(a, b) => dayjs(a.$createdAt).valueOf() - dayjs(b.$createdAt).valueOf(),
 		);
 
 	if (sorted.length === 0) {

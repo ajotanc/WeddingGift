@@ -78,7 +78,8 @@ const startRecording = async () => {
 			"audio/ogg",
 			"audio/wav",
 		];
-		const mimeType = candidates.find((c) => MediaRecorder.isTypeSupported(c)) || "";
+		const mimeType =
+			candidates.find((c) => MediaRecorder.isTypeSupported(c)) || "";
 
 		const options = mimeType ? { mimeType } : undefined;
 		mediaRecorder = new MediaRecorder(stream, options);
@@ -94,7 +95,8 @@ const startRecording = async () => {
 			const blob = new Blob(audioChunks, { type: finalMime });
 
 			if (blob.size === 0) {
-				errorMessage.value = "Nenhum áudio foi capturado. Tente gravar novamente.";
+				errorMessage.value =
+					"Nenhum áudio foi capturado. Tente gravar novamente.";
 				resetRecording();
 				return;
 			}

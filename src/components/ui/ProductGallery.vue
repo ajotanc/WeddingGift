@@ -9,19 +9,19 @@ import { useAuthStore } from "@/stores/auth";
 
 // Importações dos Ícones utilizados nos Cards
 import {
-  ChevronDown,
-  ChevronsUpDown,
-  Clock,
-  Edit2,
-  Gift,
-  Heart,
-  Minus,
-  Plus,
-  Search,
-  Shuffle,
-  SlidersHorizontal,
-  Trash2,
-  X,
+	ChevronDown,
+	ChevronsUpDown,
+	Clock,
+	Edit2,
+	Gift,
+	Heart,
+	Minus,
+	Plus,
+	Search,
+	Shuffle,
+	SlidersHorizontal,
+	Trash2,
+	X,
 } from "lucide-vue-next";
 
 // Importação dos Componentes de UI do Shadcn
@@ -29,24 +29,24 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationFirst,
+	PaginationItem,
+	PaginationLast,
+	PaginationNext,
+	PaginationPrevious,
 } from "@/components/ui/pagination";
 import PriceSortButton, {
-  type PriceSortOrder,
+	type PriceSortOrder,
 } from "@/components/ui/PriceSortButton.vue";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
 } from "@/components/ui/select";
 import { handleImageError, shuffleArray, sortBy } from "@/lib/utils";
 import Pix from "./icons/Pix.vue";
@@ -54,150 +54,156 @@ import Pix from "./icons/Pix.vue";
 const { isAdmin } = useAuthStore();
 
 const props = defineProps<{
-  products: IProduct[];
-  tenant: ITenant | null;
-  mode: "public" | "admin";
-  currentUser?: Record<string, unknown> | null;
+	products: IProduct[];
+	tenant: ITenant | null;
+	mode: "public" | "admin";
+	currentUser?: Record<string, unknown> | null;
 }>();
 
 const emit = defineEmits<{
-  (e: "open-pix", product: IProduct, quantity: number): void;
-  (e: "open-links", product: IProduct, quantity: number): void;
-  (e: "edit", product: IProduct): void;
-  (e: "delete", product: IProduct): void;
+	(e: "open-pix", product: IProduct, quantity: number): void;
+	(e: "open-links", product: IProduct, quantity: number): void;
+	(e: "edit", product: IProduct): void;
+	(e: "delete", product: IProduct): void;
 }>();
 
 // --- Referência para Scroll Suave ---
 const galleryRef = ref<HTMLElement | null>(null);
 
 const scrollToGalleryTop = async () => {
-  await nextTick();
-  if (galleryRef.value) {
-    galleryRef.value.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+	await nextTick();
+	if (galleryRef.value) {
+		galleryRef.value.scrollIntoView({ behavior: "smooth", block: "start" });
+	}
 };
 
 // --- Estado de Filtros, Busca e Ordenação Sortida ---
 const searchQuery = ref<string>("");
 
 const normalizeText = (text: string): string => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .trim();
+	return text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").trim();
 };
 
 watch(searchQuery, () => {
-  currentPage.value = 1;
-  mobileVisibleCount.value = itemsPerPage.value;
+	currentPage.value = 1;
+	mobileVisibleCount.value = itemsPerPage.value;
 });
 
 const selectedCategory = ref<string>("all");
 const categories = computed(() => {
-  const cats = new Set(
-    props.products.map((p) => p.category).filter((c): c is string => !!c && c !== 'pix'),
-  );
-  return Array.from(cats).sort();
+	const cats = new Set(
+		props.products
+			.map((p) => p.category)
+			.filter((c): c is string => !!c && c !== "pix"),
+	);
+	return Array.from(cats).sort();
 });
 
 // Controla se a lista usa ordem aleatória (sortido) ou ordem cronológica (mais recentes)
 const isShuffle = ref<boolean>(props.mode !== "admin");
 
 const toggleShuffle = () => {
-  isShuffle.value = !isShuffle.value;
-  currentPage.value = 1;
-  mobileVisibleCount.value = itemsPerPage.value;
+	isShuffle.value = !isShuffle.value;
+	currentPage.value = 1;
+	mobileVisibleCount.value = itemsPerPage.value;
 };
 
 const shuffledAllProducts = ref<IProduct[]>([]);
 
 // Mantém os produtos do 'all' sortidos fixando o PIX no topo de forma ultra-performática
 watch(
-  () => props.products,
-  (newProducts) => {
-    if (!newProducts || newProducts.length === 0) {
-      shuffledAllProducts.value = [];
-      return;
-    }
+	() => props.products,
+	(newProducts) => {
+		if (!newProducts || newProducts.length === 0) {
+			shuffledAllProducts.value = [];
+			return;
+		}
 
-    const [first, ...rest] = newProducts;
-    shuffledAllProducts.value = [first, ...shuffleArray(rest)];
-  },
-  { immediate: true },
+		const [first, ...rest] = newProducts;
+		shuffledAllProducts.value = [first, ...shuffleArray(rest)];
+	},
+	{ immediate: true },
 );
 
 // Ordena itens colocando os mais recentes (criados por último) primeiro
 const sortByRecent = (items: IProduct[]): IProduct[] => {
-  return items
-    .map((item, idx) => ({ item, idx }))
-    .sort((a, b) => {
-      if (a.item.$createdAt && b.item.$createdAt) {
-        const timeDiff =
-          dayjs(b.item.$createdAt).valueOf() - dayjs(a.item.$createdAt).valueOf();
-        if (timeDiff !== 0) return timeDiff;
-      }
-      return b.idx - a.idx;
-    })
-    .map(({ item }) => item);
+	return items
+		.map((item, idx) => ({ item, idx }))
+		.sort((a, b) => {
+			if (a.item.$createdAt && b.item.$createdAt) {
+				const timeDiff =
+					dayjs(b.item.$createdAt).valueOf() -
+					dayjs(a.item.$createdAt).valueOf();
+				if (timeDiff !== 0) return timeDiff;
+			}
+			return b.idx - a.idx;
+		})
+		.map(({ item }) => item);
 };
 
 // --- Estado de Ordenação por Preço (Normal -> Menor -> Maior) ---
 const priceSort = ref<PriceSortOrder>("default");
 
 watch(priceSort, () => {
-  currentPage.value = 1;
-  mobileVisibleCount.value = itemsPerPage.value;
+	currentPage.value = 1;
+	mobileVisibleCount.value = itemsPerPage.value;
 });
 
 const getCategoryCount = (categoryName: string) => {
-  if (categoryName === "all") return props.products.length;
-  return props.products.filter((p) => p.category === categoryName).length;
+	if (categoryName === "all") return props.products.length;
+	return props.products.filter((p) => p.category === categoryName).length;
 };
 
 const filteredProducts = computed(() => {
-  let baseList: IProduct[] = [];
+	let baseList: IProduct[] = [];
 
-  if (selectedCategory.value === "all") {
-    if (isShuffle.value) {
-      baseList = shuffledAllProducts.value;
-    } else {
-      const [first, ...rest] = props.products;
-      const isFirstPix =
-        first && (first.$id === "custom-pix-amount" || first.category === "pix");
-      const listToSort = isFirstPix ? rest : props.products;
-      const sorted = sortByRecent(listToSort);
-      baseList = isFirstPix ? [first, ...sorted] : sorted;
-    }
-  } else {
-    const list = props.products.filter((p) => p.category === selectedCategory.value);
-    baseList = isShuffle.value ? shuffleArray([...list]) : sortByRecent(list);
-  }
+	if (selectedCategory.value === "all") {
+		if (isShuffle.value) {
+			baseList = shuffledAllProducts.value;
+		} else {
+			const [first, ...rest] = props.products;
+			const isFirstPix =
+				first &&
+				(first.$id === "custom-pix-amount" || first.category === "pix");
+			const listToSort = isFirstPix ? rest : props.products;
+			const sorted = sortByRecent(listToSort);
+			baseList = isFirstPix ? [first, ...sorted] : sorted;
+		}
+	} else {
+		const list = props.products.filter(
+			(p) => p.category === selectedCategory.value,
+		);
+		baseList = isShuffle.value ? shuffleArray([...list]) : sortByRecent(list);
+	}
 
-  // Filtro de busca por nome do produto
-  if (searchQuery.value.trim()) {
-    const query = normalizeText(searchQuery.value);
-    baseList = baseList.filter((p) => {
-      const nameMatch = normalizeText(p.name || "").includes(query);
-      const isPix = p.$id === "custom-pix-amount" || p.category === "pix";
-      const pixMatch = isPix && normalizeText("pix presente").includes(query);
-      return nameMatch || pixMatch;
-    });
-  }
+	// Filtro de busca por nome do produto
+	if (searchQuery.value.trim()) {
+		const query = normalizeText(searchQuery.value);
+		baseList = baseList.filter((p) => {
+			const nameMatch = normalizeText(p.name || "").includes(query);
+			const isPix = p.$id === "custom-pix-amount" || p.category === "pix";
+			const pixMatch = isPix && normalizeText("pix presente").includes(query);
+			return nameMatch || pixMatch;
+		});
+	}
 
-  if (priceSort.value === "default") {
-    return baseList;
-  }
+	if (priceSort.value === "default") {
+		return baseList;
+	}
 
-  // Mantém o item de PIX fixo no topo se ele for o primeiro da lista
-  const [first, ...rest] = baseList;
-  const isFirstPix =
-    first && (first.$id === "custom-pix-amount" || first.category === "pix");
+	// Mantém o item de PIX fixo no topo se ele for o primeiro da lista
+	const [first, ...rest] = baseList;
+	const isFirstPix =
+		first && (first.$id === "custom-pix-amount" || first.category === "pix");
 
-  const itemsToSort = isFirstPix ? rest : baseList;
-  const sorted = sortBy(itemsToSort, (p) => Number.parseFloat(p.price) || 0, priceSort.value);
+	const itemsToSort = isFirstPix ? rest : baseList;
+	const sorted = sortBy(
+		itemsToSort,
+		(p) => Number.parseFloat(p.price) || 0,
+		priceSort.value,
+	);
 
-  return isFirstPix ? [first, ...sorted] : sorted;
+	return isFirstPix ? [first, ...sorted] : sorted;
 });
 
 // --- Estado de Paginação e Carregamento ---
@@ -207,35 +213,35 @@ const mobileVisibleCount = ref(6);
 const isDesktop = useMediaQuery("(min-width: 640px)");
 
 watch(selectedCategory, () => {
-  currentPage.value = 1;
-  mobileVisibleCount.value = itemsPerPage.value;
+	currentPage.value = 1;
+	mobileVisibleCount.value = itemsPerPage.value;
 });
 
 watch(currentPage, (newPage, oldPage) => {
-  if (newPage !== oldPage && isDesktop.value) {
-    scrollToGalleryTop();
-  }
+	if (newPage !== oldPage && isDesktop.value) {
+		scrollToGalleryTop();
+	}
 });
 
 const paginatedProducts = computed(() => {
-  if (!isDesktop.value) {
-    return filteredProducts.value.slice(0, mobileVisibleCount.value);
-  }
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredProducts.value.slice(start, end);
+	if (!isDesktop.value) {
+		return filteredProducts.value.slice(0, mobileVisibleCount.value);
+	}
+	const start = (currentPage.value - 1) * itemsPerPage.value;
+	const end = start + itemsPerPage.value;
+	return filteredProducts.value.slice(start, end);
 });
 
 const hasMoreMobileProducts = computed(() => {
-  return mobileVisibleCount.value < filteredProducts.value.length;
+	return mobileVisibleCount.value < filteredProducts.value.length;
 });
 
 const remainingMobileCount = computed(() => {
-  return Math.max(0, filteredProducts.value.length - mobileVisibleCount.value);
+	return Math.max(0, filteredProducts.value.length - mobileVisibleCount.value);
 });
 
 const handleLoadMoreMobile = () => {
-  mobileVisibleCount.value += itemsPerPage.value;
+	mobileVisibleCount.value += itemsPerPage.value;
 };
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
@@ -243,67 +249,67 @@ const quotaQuantities = ref<Record<string, number>>({});
 
 // Métodos auxiliares para calcular limites individuais de cada produto na lista
 const isProductSoldOut = (product: IProduct) => {
-  return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
+	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
 };
 
 const getRemainingQuantity = (product: IProduct) => {
-  return Math.max(
-    0,
-    (product.desired_quantity || 1) - (product.claimed_quantity || 0),
-  );
+	return Math.max(
+		0,
+		(product.desired_quantity || 1) - (product.claimed_quantity || 0),
+	);
 };
 
 const getLocalQuantity = (productId: string) => {
-  return quotaQuantities.value[productId] || 1;
+	return quotaQuantities.value[productId] || 1;
 };
 
 const setLocalQuantity = (productId: string, val: number, maxQty: number) => {
-  quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
+	quotaQuantities.value[productId] = Math.max(1, Math.min(maxQty, val));
 };
 
 const getGoalCollected = (product: IProduct) => {
-  if (
-    product.collected_amount !== undefined &&
-    product.collected_amount !== null
-  ) {
-    return product.collected_amount;
-  }
-  return (
-    (product.claimed_quantity || 0) * (Number.parseFloat(product.price) || 0)
-  );
+	if (
+		product.collected_amount !== undefined &&
+		product.collected_amount !== null
+	) {
+		return product.collected_amount;
+	}
+	return (
+		(product.claimed_quantity || 0) * (Number.parseFloat(product.price) || 0)
+	);
 };
 
 const getGoalTarget = (product: IProduct) => {
-  if (product.target_amount) return product.target_amount;
-  return (
-    (product.desired_quantity || 1) * (Number.parseFloat(product.price) || 0)
-  );
+	if (product.target_amount) return product.target_amount;
+	return (
+		(product.desired_quantity || 1) * (Number.parseFloat(product.price) || 0)
+	);
 };
 
 const getGoalPercentage = (product: IProduct) => {
-  const target = getGoalTarget(product);
-  if (!target || target <= 0) return 0;
-  const collected = getGoalCollected(product);
-  return Math.min(100, Math.round((collected / target) * 100));
+	const target = getGoalTarget(product);
+	if (!target || target <= 0) return 0;
+	const collected = getGoalCollected(product);
+	return Math.min(100, Math.round((collected / target) * 100));
 };
 
 // --- Handlers de Ação de Envio ---
 const handleOpenPix = (product: IProduct) => {
-  const qty = getLocalQuantity(product.$id);
-  emit("open-pix", product, qty);
+	const qty = getLocalQuantity(product.$id);
+	emit("open-pix", product, qty);
 };
 
 const handleOpenLinks = (product: IProduct) => {
-  const qty = getLocalQuantity(product.$id);
-  emit("open-links", product, qty);
+	const qty = getLocalQuantity(product.$id);
+	emit("open-links", product, qty);
 };
 
 // TIPAGEM ESTRITA SEM ANY/UNKNOWN USANDO INTERFACES NATIVAS DO DOM
 const updateItemsPerPage = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  if (target) {
-    itemsPerPage.value = Number.parseInt(target.value, 10);
-  }
+	const target = event.target as HTMLSelectElement;
+	if (target) {
+		itemsPerPage.value = Number.parseInt(target.value, 10);
+	}
 };
 </script>
 

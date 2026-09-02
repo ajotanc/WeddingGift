@@ -70,13 +70,13 @@ const currentQty = computed(() => {
 const productList = computed(() => {
 	const productPix = {
 		$id: "custom-pix-amount",
-		type: 'quota',
-		name: 'Contribuição Livre',
-		price: '10',
+		type: "quota",
+		name: "Contribuição Livre",
+		price: "10",
 		desired_quantity: 9999,
 		claimed_quantity: 0,
 		is_custom_amount: true,
-		category: 'pix'
+		category: "pix",
 	} as IProduct;
 
 	return [productPix, ...products.value];
@@ -114,7 +114,7 @@ const customPixAmount = ref<number>(10);
 const isCustomPix = computed(() =>
 	Boolean(
 		selectedProduct.value?.category === "pix" &&
-		selectedProduct.value?.is_custom_amount,
+			selectedProduct.value?.is_custom_amount,
 	),
 );
 
@@ -183,7 +183,7 @@ const openPixModal = async (data: { product: IProduct; quantity?: number }) => {
 	selectedProduct.value = data.product;
 	const qty = data.quantity || 1;
 	quotaQuantities.value[data.product.$id] = qty;
-	if (data.product.category === 'pix') {
+	if (data.product.category === "pix") {
 		customPixAmount.value = 10;
 	}
 	showPixModal.value = true;
@@ -230,8 +230,7 @@ const confirmPurchase = async (method: MethodType) => {
 			updatedProduct = await ProductService.updateQuantity(
 				selectedProduct.value.$id,
 				{
-					claimed_quantity:
-						(selectedProduct.value.claimed_quantity || 0) + qty,
+					claimed_quantity: (selectedProduct.value.claimed_quantity || 0) + qty,
 				},
 			);
 
@@ -709,7 +708,7 @@ onUnmounted(() => {
 					:style="{ backgroundImage: `url(${tenant.background_image})` }"></div>
 
 				<!-- Blur Overlay Layer (Smooth fade to background_color at bottom) -->
-				<div class="absolute inset-0 bg-white/10"></div>
+				<div class="hidden absolute inset-0 bg-white/10"></div>
 				<div
 					class="hidden absolute inset-0 backdrop-blur-md [-webkit-mask-image:linear-gradient(to_top,black,transparent)] [mask-image:linear-gradient(to_top,black,transparent)]"
 					:style="tenant.background_color ? { background: `linear-gradient(to top, ${tenant.background_color}, transparent)` } : {}"

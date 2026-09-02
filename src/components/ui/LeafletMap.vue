@@ -69,10 +69,13 @@ const initMap = async () => {
 			map = L.map(mapContainer.value, {
 				scrollWheelZoom: false,
 			}).setView([lat, lon], props.zoom);
-			L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-				attribution: "&copy; Esri",
-				maxZoom: 19,
-			}).addTo(map);
+			L.tileLayer(
+				"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+				{
+					attribution: "&copy; Esri",
+					maxZoom: 19,
+				},
+			).addTo(map);
 		} else {
 			map.setView([lat, lon], props.zoom);
 		}

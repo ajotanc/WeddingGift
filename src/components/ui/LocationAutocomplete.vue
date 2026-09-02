@@ -106,7 +106,9 @@ const extractCoordinatesFromText = (
 	}
 
 	// 2. Query param pattern: ?q=(-?\d+\.\d+),(-?\d+\.\d+) ou ll=(-?\d+\.\d+),(-?\d+\.\d+)
-	const queryMatch = trimmed.match(/[?&](?:q|ll)=(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/);
+	const queryMatch = trimmed.match(
+		/[?&](?:q|ll)=(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,
+	);
 	if (queryMatch) {
 		const lat = Number.parseFloat(queryMatch[1]);
 		const lon = Number.parseFloat(queryMatch[2]);
@@ -125,7 +127,9 @@ const extractCoordinatesFromText = (
 };
 
 // Resolução de CEP brasileiro com múltiplos provedores em cascata (BrasilAPI -> AwesomeAPI -> ViaCEP)
-const resolveBrazilianCep = async (rawCep: string): Promise<ICepData | null> => {
+const resolveBrazilianCep = async (
+	rawCep: string,
+): Promise<ICepData | null> => {
 	const cleanCep = rawCep.replace(/\D/g, "");
 	if (cleanCep.length !== 8) return null;
 
@@ -267,7 +271,11 @@ const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
 	return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
 };
 
-const emitLocation = (address: string, lat?: number | null, lon?: number | null) => {
+const emitLocation = (
+	address: string,
+	lat?: number | null,
+	lon?: number | null,
+) => {
 	const finalLat = lat !== undefined ? lat : currentLat.value;
 	const finalLon = lon !== undefined ? lon : currentLon.value;
 	emit("select", {
@@ -300,7 +308,9 @@ const fetchSuggestions = async (search: string) => {
 	showList.value = true;
 
 	try {
-		const cepMatch = trimmed.match(/\b\d{5}-?\d{3}\b/) || (trimmed.replace(/\D/g, "").length === 8 ? [trimmed] : null);
+		const cepMatch =
+			trimmed.match(/\b\d{5}-?\d{3}\b/) ||
+			(trimmed.replace(/\D/g, "").length === 8 ? [trimmed] : null);
 		let cepData: ICepData | null = null;
 
 		if (cepMatch) {
@@ -322,8 +332,10 @@ const fetchSuggestions = async (search: string) => {
 
 			list = await fetchNominatim(cepAddressQuery);
 
-			const fallbackLat = cepData.lat || (list[0] ? Number.parseFloat(list[0].lat) : -12.9714);
-			const fallbackLon = cepData.lon || (list[0] ? Number.parseFloat(list[0].lon) : -38.5014);
+			const fallbackLat =
+				cepData.lat || (list[0] ? Number.parseFloat(list[0].lat) : -12.9714);
+			const fallbackLon =
+				cepData.lon || (list[0] ? Number.parseFloat(list[0].lon) : -38.5014);
 
 			const synthesizedItem: INominatimItem = {
 				place_id: Date.now(),
@@ -350,7 +362,10 @@ const fetchSuggestions = async (search: string) => {
 				},
 			};
 
-			list = [synthesizedItem, ...list.filter((x) => x.lat !== synthesizedItem.lat)];
+			list = [
+				synthesizedItem,
+				...list.filter((x) => x.lat !== synthesizedItem.lat),
+			];
 		} else {
 			const normalized = normalizeSearchQuery(trimmed);
 			list = await fetchNominatim(normalized || trimmed);
@@ -398,7 +413,9 @@ const getSecondaryAddress = (item: INominatimItem): string => {
 			item.address.municipality;
 		const state = item.address.state;
 		const country = item.address.country;
-		const postcode = item.address.postcode ? ` - CEP ${item.address.postcode}` : "";
+		const postcode = item.address.postcode
+			? ` - CEP ${item.address.postcode}`
+			: "";
 		return [city, state, country].filter(Boolean).join(", ") + postcode;
 	}
 	const parts = item.display_name.split(",");
@@ -450,10 +467,13 @@ const initMiniMap = async () => {
 			zoomControl: true,
 		}).setView([lat, lon], 17);
 
-		L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-			attribution: "&copy; Esri",
-			maxZoom: 19
-		}).addTo(miniMap);
+		L.tileLayer(
+			"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+			{
+				attribution: "&copy; Esri",
+				maxZoom: 19,
+			},
+		).addTo(miniMap);
 
 		miniMap.on("click", (e: L.LeafletMouseEvent) => {
 			const { lat: clickLat, lng: clickLon } = e.latlng;

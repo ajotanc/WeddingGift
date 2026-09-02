@@ -12,7 +12,7 @@ import { useTenant } from "@/composables/useTenant";
 import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import { Pause, Play } from "lucide-vue-next";
+import BackgroundMusicPlayer from "@/components/music/BackgroundMusicPlayer.vue";
 import { useForm } from "vee-validate";
 import { ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -27,11 +27,9 @@ import {
 	SelectValue,
 } from "./components/ui/select";
 import { PROJECT_NAME } from "./lib/defaults";
-import { useMusicStore } from "./stores/music";
 
 const authStore = useAuthStore();
 const route = useRoute();
-const music = useMusicStore();
 const { tenant: currentTenant } = useTenant();
 const { isFeedbackOpen } = useFeedback();
 
@@ -127,28 +125,8 @@ watch(
 	<Toaster position="top-right" richColors />
 	<CookieConsent />
 
-	<!-- Monta uma vez, nunca desmonta -->
-	<template v-if="music.isPremium && music.videoId">
-		<iframe v-if="music.isPlaying"
-			:src="`https://www.youtube-nocookie.com/embed/${music.videoId}?autoplay=1&loop=1&playlist=${music.videoId}&controls=0`"
-			class="fixed w-0 h-0 opacity-0 pointer-events-none"
-			allow="autoplay"
-			frameborder="0">
-		</iframe>
-
-		<div class="fixed bottom-6 left-6 z-50 flex items-center gap-3">
-			<button @click="music.toggle()"
-				class="text-primary bg-white/80 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none">
-				<Pause v-if="music.isPlaying" class="w-5 h-5" />
-				<Play v-else class="w-5 h-5" />
-			</button>
-
-			<div v-if="!music.isPlaying"
-				class="bg-white/80 backdrop-blur-md border border-slate-200/60 px-3.5 py-2 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-xs font-light text-slate-500">
-				Tocar música de fundo? 🎵
-			</div>
-		</div>
-	</template>
+	<!-- Player de Música / Playlist Flutuante (YouTube ou Spotify) -->
+	<BackgroundMusicPlayer />
 
 	<!-- Feedback Modal -->
 	<Modal v-model:open="isFeedbackOpen" title="Sugestões / Dúvidas / Críticas"

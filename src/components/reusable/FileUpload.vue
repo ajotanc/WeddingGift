@@ -62,10 +62,10 @@ const helperText = computed(() => {
 	const types = props.accept?.includes("image/*")
 		? "PNG, JPG, WEBP, GIF, AVIF"
 		: props.accept
-			?.replace(/\./g, "")
-			.replace(/\*/g, "")
-			.replace(/,/g, ", ")
-			.toUpperCase() || "Arquivos";
+				?.replace(/\./g, "")
+				.replace(/\*/g, "")
+				.replace(/,/g, ", ")
+				.toUpperCase() || "Arquivos";
 	return `${types} / ${props.maxSizeMb ? `${props.maxSizeMb}MB` : ""}`;
 });
 

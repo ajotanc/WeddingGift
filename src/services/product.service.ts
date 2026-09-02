@@ -108,7 +108,9 @@ export const ProductService = {
 
 	async upsert(
 		rowId: string | null | undefined,
-		data: Omit<IProduct, keyof Models.Row> | (Partial<Omit<IProduct, keyof Models.Row>> & { tenant?: string }),
+		data:
+			| Omit<IProduct, keyof Models.Row>
+			| (Partial<Omit<IProduct, keyof Models.Row>> & { tenant?: string }),
 		file?: File | null,
 	): Promise<IProduct> {
 		if (rowId) {

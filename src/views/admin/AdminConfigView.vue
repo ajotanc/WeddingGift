@@ -1597,12 +1597,12 @@ const connectToMarketPago = () => {
 						</div>
 
 						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100/50">
-							<FormGroup label="Música de Fundo (YouTube)" :error="errors.music_url">
+							<FormGroup label="Música ou Playlist (YouTube ou Spotify)" :error="errors.music_url">
 								<div v-if="authStore.isPremium" class="w-full space-y-1">
-									<Input v-model="music_url" placeholder="https://www.youtube.com/watch?v=..."
+									<Input v-model="music_url"
 										class="bg-slate-50/50 rounded-xl border-slate-200" />
 									<span class="text-[10px] text-slate-400 font-light">
-										Cole o link de um vídeo do YouTube.
+										Cole o link de uma playlist/música do Spotify ou de um vídeo do YouTube.
 									</span>
 								</div>
 								<div v-else class="flex flex-col gap-2">
@@ -2010,7 +2010,7 @@ const connectToMarketPago = () => {
 							</Button>
 							<Button v-if="authStore.isPremium && show_quiz" type="button" variant="outline" size="sm"
 								@click="restoreDefaultQuizQuestions" class="text-xs rounded-xl font-medium border-slate-200">
-								<RotateCcw class="w-3.5 h-3.5 mr-1.5" /> Restaurar 5 Padrões
+								<RotateCcw class="w-3.5 h-3.5 mr-1.5" /> Restaurar Perguntas Padrão
 							</Button>
 						</div>
 					</div>

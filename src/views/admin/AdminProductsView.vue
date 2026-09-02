@@ -39,7 +39,7 @@ const PREDEFINED_CATEGORIES = [
 	"Viagem",
 	"Experiências",
 	"Móveis",
-	"Bem-estar e Casa"
+	"Bem-estar e Casa",
 ];
 
 const categoryOptions = computed(() => {
