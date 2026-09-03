@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import "dayjs/locale/pt-br";
 import { useTenant } from "@/composables/useTenant";
 import { EFFECT_CONFIGS, type Particle } from "@/lib/effect";
@@ -12,9 +12,9 @@ import type { IGalleryImage } from "@/services/gallery.service";
 import { PaymentService } from "@/services/payment.service";
 import { type IProduct, ProductService } from "@/services/product.service";
 import { type MethodType, PurchaseService } from "@/services/purchase.service";
-import { AppwriteException } from "appwrite";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
 import { useAuthStore } from "@/stores/auth";
+import { AppwriteException } from "appwrite";
 import { ChevronUp, Loader2 } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
@@ -38,11 +38,9 @@ import RsvpMessageSection from "@/components/public/RsvpMessageSection.vue";
 import ScheduleSection from "@/components/public/ScheduleSection.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useRoute } from "vue-router";
 
 dayjs.locale("pt-br");
 
-const route = useRoute();
 const isDesktop = computed(() => !isMobile());
 
 const {
@@ -56,7 +54,6 @@ const {
 	quizzes,
 	loading,
 	error,
-	fetchTenant,
 } = useTenant();
 const authStore = useAuthStore();
 
@@ -255,7 +252,8 @@ const confirmPurchase = async (method: MethodType) => {
 				updatedProduct = await ProductService.updateQuantity(
 					selectedProduct.value.$id,
 					{
-						claimed_quantity: (selectedProduct.value.claimed_quantity || 0) + qty,
+						claimed_quantity:
+							(selectedProduct.value.claimed_quantity || 0) + qty,
 					},
 				);
 			} catch (updateErr) {
@@ -322,7 +320,6 @@ const confirmPurchase = async (method: MethodType) => {
 		showLinksModal.value = false;
 	}
 };
-
 
 // Toggle Gallery Like (emitted by GallerySection)
 const toggleGalleryLike = async (img: IGalleryImage) => {
@@ -688,19 +685,7 @@ watch([() => tenant.value?.ambient_effect, effectCanvas], () => {
 	}
 });
 
-const handleVisibility = () => {
-	if (document.visibilityState === "visible" && route.params.slug) {
-		fetchTenant(route.params.slug as string);
-	}
-};
-
-onMounted(() => {
-	document.addEventListener("visibilitychange", handleVisibility);
-});
-
 onUnmounted(() => {
-	document.removeEventListener("visibilitychange", handleVisibility);
-
 	if (observer) {
 		observer.disconnect();
 	}

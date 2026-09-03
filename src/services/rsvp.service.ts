@@ -13,7 +13,7 @@ export interface IRsvp extends Models.Row {
 	total_children: number;
 	guest: IGuest;
 	message?: string;
-	dietary_restrictions?: string | null;
+	dietary_restrictions?: string;
 	companions_names?: string[];
 }
 

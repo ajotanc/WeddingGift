@@ -245,12 +245,12 @@ export const useAuthStore = defineStore("auth", {
 					}
 
 					try {
-							const g = await GuestService.upsert(sessionUser.$id, {
-								name: sessionUser.name || "Convidado",
-								email: sessionUser.email || "",
-								photo_url: sessionUser.prefs?.photo_url || undefined,
-							});
-							this.guest = g;
+						const g = await GuestService.upsert(sessionUser.$id, {
+							name: sessionUser.name || "Convidado",
+							email: sessionUser.email || "",
+							photo_url: sessionUser.prefs?.photo_url || undefined,
+						});
+						this.guest = g;
 					} catch (e) {
 						this.guest = {
 							$id: sessionUser.$id,

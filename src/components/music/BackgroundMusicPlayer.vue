@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useMusicStore } from "@/stores/music";
-import { ChevronDown, ChevronUp, Music, Pause, Play, X } from "lucide-vue-next";
+import { ChevronDown, ChevronUp, Pause, Play } from "lucide-vue-next";
 import { ref } from "vue";
+import Button from "../ui/button/Button.vue";
 
 const music = useMusicStore();
 const isExpanded = ref(false);
@@ -25,15 +26,17 @@ const toggleSpotifyExpand = () => {
 			/>
 
 			<div class="fixed bottom-6 left-6 z-50 flex items-center gap-3">
-				<button
+				<Button
 					type="button"
 					@click="music.toggle()"
-					class="text-primary bg-white/90 backdrop-blur-md border border-slate-200/60 p-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2 outline-none"
+					size="icon-lg"
+					variant="outline"
+					class="rounded-full"
 					:title="music.isPlaying ? 'Pausar música' : 'Tocar música de fundo'"
 				>
 					<Pause v-if="music.isPlaying" class="w-5 h-5" />
 					<Play v-else class="w-5 h-5" />
-				</button>
+				</Button>
 
 				<Transition
 					enter-active-class="transition duration-200 ease-out"
@@ -45,7 +48,7 @@ const toggleSpotifyExpand = () => {
 				>
 					<div
 						v-if="!music.isPlaying"
-						class="bg-white/90 backdrop-blur-md border border-slate-200/60 px-3.5 py-2 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-xs font-light text-slate-600"
+						class="bg-white/90 backdrop-blur-md border border-slate-200/60 px-3.5 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-xs font-light text-slate-600"
 					>
 						Tocar música de fundo? 🎵
 					</div>
@@ -69,27 +72,6 @@ const toggleSpotifyExpand = () => {
 						v-show="isExpanded"
 						class="w-80 sm:w-96 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col gap-2.5 overflow-hidden"
 					>
-						<!-- Cabeçalho do Card -->
-						<div class="flex items-center justify-between px-1">
-							<div class="flex items-center gap-2">
-								<div class="w-6 h-6 rounded-full bg-[#1DB954]/10 text-[#1DB954] flex items-center justify-center">
-									<Music class="w-3.5 h-3.5" />
-								</div>
-								<span class="text-xs font-medium text-slate-800">
-									{{ music.spotifyData?.type === 'playlist' ? 'Playlist do Casal' : 'Música do Casal' }}
-								</span>
-							</div>
-
-							<button
-								type="button"
-								@click="toggleSpotifyExpand"
-								class="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-								title="Minimizar player"
-							>
-								<X class="w-4 h-4" />
-							</button>
-						</div>
-
 						<!-- Iframe Oficial Spotify Embed -->
 						<div class="rounded-2xl overflow-hidden bg-slate-900 shadow-inner">
 							<iframe
@@ -107,10 +89,11 @@ const toggleSpotifyExpand = () => {
 
 				<!-- Botão Flutuante (para alternar entre minimizado e expandido) -->
 				<div class="flex items-center gap-2">
-					<button
+					<Button
 						type="button"
 						@click="toggleSpotifyExpand"
-						class="bg-white/90 backdrop-blur-md border border-slate-200/60 px-4 py-2.5 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2.5 group outline-none"
+						variant="outline"
+						size="default"
 						:title="isExpanded ? 'Minimizar player' : 'Abrir player do Spotify'"
 					>
 						<!-- Ícone Spotify com indicador sutil -->
@@ -125,7 +108,7 @@ const toggleSpotifyExpand = () => {
 						</span>
 
 						<component :is="isExpanded ? ChevronDown : ChevronUp" class="w-4 h-4 text-slate-400" />
-					</button>
+					</Button>
 				</div>
 			</div>
 		</template>

@@ -21,16 +21,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useThankYouGenerator } from "@/composables/useThankYouGenerator";
 import { ConsentService } from "@/services/consent.service";
 import { EmailService } from "@/services/email.service";
-import { GuestService, type IGuest } from "@/services/guest.service";
+import { GuestService } from "@/services/guest.service";
 import { type IMessage, MessageService } from "@/services/message.service";
 import { type IRsvp, RsvpService } from "@/services/rsvp.service";
-import { formatPhone } from "@brazilian-utils/brazilian-utils";
 import type { ITenant } from "@/services/tenant.service";
 import { type IUser, useAuthStore } from "@/stores/auth";
+import { formatPhone } from "@brazilian-utils/brazilian-utils";
 import { toTypedSchema } from "@vee-validate/zod";
 import dayjs from "dayjs";
 import Autoplay from "embla-carousel-autoplay";
-import { MessageSquare, Mic, Pause, Play } from "lucide-vue-next";
+import { Loader2, MessageSquare, Mic, Pause, Play } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -45,7 +45,8 @@ const props = defineProps<{
 
 const authStore = useAuthStore();
 const { confirm } = useConfirm();
-const { message: aiThanks, generateThankYou } = useThankYouGenerator();
+const { isGenerating: isGeneratingAiThanks, generateThankYou } =
+	useThankYouGenerator();
 
 const carouselPlugins = [
 	Autoplay({
@@ -58,10 +59,7 @@ const carouselPlugins = [
 // RSVP logic
 const existingRsvp = computed(() => {
 	if (!authStore.guest) return null;
-	return props.rsvps.find((r) => {
-		const guestId = typeof r.guest === "string" ? r.guest : r.guest?.$id;
-		return guestId === authStore.guest?.$id;
-	});
+	return props.rsvps.find((r) => r.guest?.$id === authStore.guest?.$id);
 });
 
 const rsvpLoading = ref(false);
@@ -155,9 +153,9 @@ watch(
 					phone: formattedPhone,
 					totalAdults: rsvp.total_adults || 1,
 					totalChildren: rsvp.total_children || 0,
-					status: (rsvp.status as "confirmed" | "declined") || "confirmed",
+					status: rsvp.status,
 					acceptedTerms: true,
-					dietaryRestrictions: rsvp.dietary_restrictions || "",
+					dietaryRestrictions: rsvp.dietary_restrictions,
 				},
 			});
 			companionsList.value = rsvp.companions_names
@@ -171,7 +169,7 @@ watch(
 					totalChildren: 0,
 					status: "confirmed",
 					acceptedTerms: false,
-					dietaryRestrictions: "",
+					dietaryRestrictions: undefined,
 				},
 			});
 			companionsList.value = [];
@@ -197,13 +195,12 @@ const submitRsvp = handleSubmit(async (values) => {
 			};
 		}
 
-		let thankYouMessage = "";
+		let thankYouMessage = undefined;
 		if (values.status === "confirmed") {
-			await generateThankYou({
+			thankYouMessage = await generateThankYou({
 				guestName: authStore.guest.name || "Convidado",
 				coupleName: props.tenant.couple_name,
 			});
-			thankYouMessage = aiThanks.value;
 		}
 
 		const payload = {
@@ -214,22 +211,22 @@ const submitRsvp = handleSubmit(async (values) => {
 			guest: authStore.guest,
 			message: thankYouMessage,
 			dietary_restrictions:
-				values.status === "confirmed" ? values.dietaryRestrictions || "" : "",
+				values.status === "confirmed" ? values.dietaryRestrictions : undefined,
 			companions_names:
-				values.status === "confirmed"
-					? companionsList.value.filter((name) => name && name.trim() !== "")
-					: [],
+				values.status === "confirmed" ? companionsList.value : [],
 		};
 
-		if (existingRsvp.value) {
-			await RsvpService.update(existingRsvp.value.$id, payload);
-			Object.assign(existingRsvp.value, payload);
+		const rsvp = await RsvpService.upsert(existingRsvp.value?.$id, payload);
+		const rsvpIndex = props.rsvps.findIndex(
+			(r) => r.$id === existingRsvp.value?.$id,
+		);
+
+		if (rsvpIndex !== -1) {
+			props.rsvps[rsvpIndex] = rsvp;
 		} else {
-			const created = await RsvpService.create(payload);
-			props.rsvps.push(created);
+			props.rsvps.unshift(rsvp);
 		}
 
-		// Log RSVP consent in immutable collection
 		if (authStore.guest) {
 			await ConsentService.log({
 				user_id: authStore.guest.$id,
@@ -245,7 +242,7 @@ const submitRsvp = handleSubmit(async (values) => {
 					guest_email: authStore.guest.email,
 					couple_name: props.tenant.couple_name,
 					status: values.status,
-					message: thankYouMessage,
+					message: thankYouMessage ?? "",
 				}).catch((e) => console.error("Erro ao enviar e-mail de RSVP:", e));
 			}
 		}
@@ -262,6 +259,37 @@ const submitRsvp = handleSubmit(async (values) => {
 		rsvpLoading.value = false;
 	}
 });
+
+// Gera a mensagem sob demanda se o convidado já estiver confirmado mas ainda sem mensagem de agradecimento
+watch(
+	[existingRsvp, () => props.tenant] as const,
+	async ([rsvp, tenantData]) => {
+		if (
+			rsvp &&
+			rsvp.status === "confirmed" &&
+			!rsvp.message &&
+			!isGeneratingAiThanks.value &&
+			tenantData &&
+			authStore.guest
+		) {
+			try {
+				const generated = await generateThankYou({
+					guestName: authStore.guest.name || "Convidado",
+					coupleName: tenantData.couple_name,
+				});
+				if (generated) {
+					rsvp.message = generated;
+					await RsvpService.update(rsvp.$id, { message: generated });
+				}
+			} catch (err) {
+				const errorMsg =
+					err instanceof Error ? err.message : "Erro desconhecido";
+				console.error("Falha ao gerar mensagem para RSVP existente:", errorMsg);
+			}
+		}
+	},
+	{ immediate: true },
+);
 
 // Messages wall logic
 const messageContent = ref("");
@@ -423,12 +451,20 @@ const toggleLike = async (msg: IMessage) => {
 							<span>{{ existingRsvp.dietary_restrictions }}</span>
 						</p>
 					</div>
-					<div v-if="existingRsvp.message"
+					<div v-if="existingRsvp.message || isGeneratingAiThanks"
 						class="relative max-w-md mx-auto my-6 p-5 bg-slate-50/80 rounded-2xl border border-slate-200 italic font-serif text-slate-600 text-sm">
-						"{{ existingRsvp.message }}"
-						<span class="block text-[8px] font-sans font-bold uppercase tracking-widest text-slate-400 mt-3 not-italic">
-							✨ Agradecimento Especial da IA
-						</span>
+						<div v-if="isGeneratingAiThanks && !existingRsvp.message"
+							class="flex items-center justify-center gap-2 text-xs font-sans not-italic text-slate-500 py-1">
+							<Loader2 class="w-4 h-4 animate-spin text-primary" />
+							<span>Gerando seu agradecimento especial...</span>
+						</div>
+						<template v-else-if="existingRsvp.message">
+							"{{ existingRsvp.message }}"
+							<span
+								class="block text-[8px] font-sans font-bold uppercase tracking-widest text-slate-400 mt-3 not-italic">
+								✨ Agradecimento Especial da IA
+							</span>
+						</template>
 					</div>
 
 					<Button variant="outline"

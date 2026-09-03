@@ -4,7 +4,7 @@ import {
 	getProductPermissions,
 	tables,
 } from "@/lib/appwrite";
-import { TABLE_PRODUCTS, TABLE_PRODUCT_LINKS } from "@/lib/collections";
+import { TABLE_PRODUCTS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 import { StorageService } from "./storage.service";
 

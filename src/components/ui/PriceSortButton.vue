@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {
 	ArrowDownNarrowWide,
-	ArrowUpNarrowWide,
 	ArrowUpDown,
+	ArrowUpNarrowWide,
 } from "lucide-vue-next";
 import { computed } from "vue";
 

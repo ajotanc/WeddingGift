@@ -8,12 +8,10 @@ import {
 	CloudLightning,
 	CloudRain,
 	CloudSun,
-	ExternalLink,
-	MapPin,
 	Snowflake,
 	Sun,
 } from "lucide-vue-next";
-import { computed, type Component } from "vue";
+import { type Component, computed } from "vue";
 import SectionHeader from "./SectionHeader.vue";
 
 const props = defineProps<{

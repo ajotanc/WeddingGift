@@ -2,10 +2,10 @@
 import { formatMoney, getProductPrice } from "@/lib/money";
 import type { IProduct } from "@/services/product.service";
 import type { ITenant } from "@/services/tenant.service";
+import { useAuthStore } from "@/stores/auth";
 import { useMediaQuery } from "@vueuse/core";
 import dayjs from "dayjs";
 import { computed, nextTick, ref, watch } from "vue";
-import { useAuthStore } from "@/stores/auth";
 
 // Importações dos Ícones utilizados nos Cards
 import {
@@ -24,6 +24,9 @@ import {
 	X,
 } from "lucide-vue-next";
 
+import PriceSortButton, {
+	type PriceSortOrder,
+} from "@/components/ui/PriceSortButton.vue";
 // Importação dos Componentes de UI do Shadcn
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,9 +41,6 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
-import PriceSortButton, {
-	type PriceSortOrder,
-} from "@/components/ui/PriceSortButton.vue";
 import {
 	Select,
 	SelectContent,
@@ -234,10 +234,6 @@ const paginatedProducts = computed(() => {
 
 const hasMoreMobileProducts = computed(() => {
 	return mobileVisibleCount.value < filteredProducts.value.length;
-});
-
-const remainingMobileCount = computed(() => {
-	return Math.max(0, filteredProducts.value.length - mobileVisibleCount.value);
 });
 
 const handleLoadMoreMobile = () => {
@@ -441,7 +437,7 @@ const updateItemsPerPage = (event: Event) => {
           <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
 
           <!-- Botão de Alternar Aleatório / Recentes no Desktop -->
-          <button type="button" @click="toggleShuffle"
+          <button v-if="isAdmin" type="button" @click="toggleShuffle"
             :title="isShuffle ? 'Ordem: Aleatória (clique para ver mais recentes)' : 'Ordem: Mais Recentes (clique para modo aleatório)'"
             aria-label="Alternar ordem de exibição"
             class="h-11 px-3.5 rounded-xl border flex items-center justify-center gap-1.5 shrink-0 transition-all duration-300 cursor-pointer shadow-xs text-xs uppercase tracking-wider font-semibold group"

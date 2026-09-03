@@ -10,29 +10,29 @@ const { purchases, tenant } = useTenant();
 const loading = ref(false);
 
 const isEventPassedOrToday = computed(() => {
-  if (!tenant.value?.event_date) return false;
+	if (!tenant.value?.event_date) return false;
 
-  const datePart = dayjs(tenant.value.event_date).format("YYYY-MM-DD");
-  const timePart = tenant.value.event_time?.trim() || "00:00";
-  const eventDateTime = dayjs(`${datePart} ${timePart}`);
+	const datePart = dayjs(tenant.value.event_date).format("YYYY-MM-DD");
+	const timePart = tenant.value.event_time?.trim() || "00:00";
+	const eventDateTime = dayjs(`${datePart} ${timePart}`);
 
-  return !dayjs().isBefore(eventDateTime);
+	return !dayjs().isBefore(eventDateTime);
 });
 
 const revealDateFormatted = computed(() => {
-  if (!tenant.value?.event_date) return "no dia do evento";
+	if (!tenant.value?.event_date) return "no dia do evento";
 
-  const datePart = dayjs(tenant.value.event_date).format("DD/MM/YYYY");
-  if (tenant.value.event_time) {
-    return `${datePart} às ${tenant.value.event_time}`;
-  }
-  return datePart;
+	const datePart = dayjs(tenant.value.event_date).format("DD/MM/YYYY");
+	if (tenant.value.event_time) {
+		return `${datePart} às ${tenant.value.event_time}`;
+	}
+	return datePart;
 });
 
 const totalAmount = computed(() => {
-  return purchases.value
-    .filter((p) => p.method === "pix")
-    .reduce((acc, p) => acc + parseMoney(p.price_paid || "0"), 0);
+	return purchases.value
+		.filter((p) => p.method === "pix")
+		.reduce((acc, p) => acc + parseMoney(p.price_paid || "0"), 0);
 });
 </script>
 

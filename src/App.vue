@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from "vue-router";
 
+import BackgroundMusicPlayer from "@/components/music/BackgroundMusicPlayer.vue";
 import Modal from "@/components/reusable/Modal.vue";
 import { Button } from "@/components/ui/button";
 import Confirm from "@/components/ui/confirm/Confirm.vue";
@@ -12,7 +13,6 @@ import { useTenant } from "@/composables/useTenant";
 import { EmailService } from "@/services/email.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import BackgroundMusicPlayer from "@/components/music/BackgroundMusicPlayer.vue";
 import { useForm } from "vee-validate";
 import { ref, watch } from "vue";
 import { toast } from "vue-sonner";

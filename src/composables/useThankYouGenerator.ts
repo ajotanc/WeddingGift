@@ -17,37 +17,62 @@ export function useThankYouGenerator() {
 	const isGenerating = ref(false);
 	const generationError = ref<string | null>(null);
 
-	async function generateThankYou(params: ThankYouParams): Promise<void> {
+	async function generateThankYou(params: ThankYouParams): Promise<string> {
 		isGenerating.value = true;
 		generationError.value = null;
 
 		try {
-			const execution = await functions.createExecution(
-				"ai-helper",
-				JSON.stringify({
+			const execution = await functions.createExecution({
+				functionId: "ai-helper",
+				body: JSON.stringify({
 					action: "ai-thanks",
-					payload: params,
+					payload: {
+						guestName: params.guestName?.trim() || "Convidado",
+						coupleName: params.coupleName?.trim() || "Noivos",
+					},
 				}),
-				false,
-				"/",
-				ExecutionMethod.POST,
-			);
+				async: false,
+				xpath: "/",
+				method: ExecutionMethod.POST,
+			});
 
-			if (execution.responseStatusCode >= 400) {
-				const errorBody = JSON.parse(execution.responseBody || "{}");
-				throw new Error(errorBody.error || "Falha ao gerar a mensagem");
+			if (
+				execution.status === "failed" ||
+				execution.responseStatusCode >= 400
+			) {
+				let errorMsg = "Falha ao gerar a mensagem";
+				try {
+					const errorBody = JSON.parse(execution.responseBody || "{}") as {
+						error?: string;
+						message?: string;
+					};
+					errorMsg =
+						errorBody.error ||
+						errorBody.message ||
+						execution.errors ||
+						errorMsg;
+				} catch {
+					errorMsg = execution.errors || errorMsg;
+				}
+				throw new Error(errorMsg);
 			}
 
 			const data = JSON.parse(
-				execution.responseBody,
+				execution.responseBody || "{}",
 			) as GenerateThankYouResponse;
-			message.value = data.text;
+
+			const generatedText = data.text ? data.text.trim() : "";
+			message.value = generatedText;
+			return generatedText;
 		} catch (err) {
-			generationError.value =
+			const errorMsg =
 				err instanceof Error
 					? err.message
 					: "Erro inesperado ao gerar mensagem";
+			generationError.value = errorMsg;
+			console.error("Erro ao gerar mensagem de agradecimento:", errorMsg);
 			message.value = "";
+			return "";
 		} finally {
 			isGenerating.value = false;
 		}
