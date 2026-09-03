@@ -211,7 +211,7 @@ const submitRsvp = handleSubmit(async (values) => {
 			total_adults: values.status === "confirmed" ? values.totalAdults : 0,
 			total_children: values.status === "confirmed" ? values.totalChildren : 0,
 			status: values.status,
-			guest: authStore.guest as IGuest,
+			guest: authStore.guest,
 			message: thankYouMessage,
 			dietary_restrictions:
 				values.status === "confirmed" ? values.dietaryRestrictions || "" : "",
