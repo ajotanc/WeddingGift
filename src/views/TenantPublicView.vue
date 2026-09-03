@@ -62,6 +62,24 @@ const authStore = useAuthStore();
 
 const currentUser = computed(() => authStore.user);
 const showProfileModal = ref(false);
+const hasPromptedProfile = ref(false);
+
+// Abre o modal de perfil no primeiro acesso caso ainda não tenha telefone cadastrado
+watch(
+	() => authStore.guest,
+	(guest) => {
+		if (guest && !guest.phone && !hasPromptedProfile.value) {
+			const promptKey = `profile_prompt_${guest.$id}`;
+			const alreadyShown = sessionStorage.getItem(promptKey);
+			if (!alreadyShown) {
+				hasPromptedProfile.value = true;
+				sessionStorage.setItem(promptKey, "true");
+				showProfileModal.value = true;
+			}
+		}
+	},
+	{ immediate: true },
+);
 
 const currentQty = computed(() => {
 	if (!selectedProduct.value) return 1;

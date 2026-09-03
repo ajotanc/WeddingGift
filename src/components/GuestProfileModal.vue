@@ -116,10 +116,20 @@ const saveProfile = async () => {
             class="h-12 bg-slate-50/50 rounded-xl border-slate-200" />
         </FormGroup>
 
-        <Button @click="saveProfile" :disabled="isLoading" class="w-full h-12 rounded-xl mt-4 font-semibold">
-          <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin mr-2" />
-          Salvar Alterações
-        </Button>
+        <p v-if="!authStore.guest?.phone" class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
+          💡 Informe seu WhatsApp para facilitar o contato e receber novidades do evento. Se preferir, você pode preencher depois.
+        </p>
+
+        <div class="flex flex-col gap-2 mt-4">
+          <Button @click="saveProfile" :disabled="isLoading" class="w-full">
+            <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin mr-2" />
+            Salvar Alterações
+          </Button>
+          <Button variant="ghost" type="button" @click="emit('update:open', false)"
+            class="w-full text-slate-400 hover:text-slate-600">
+            Pular por enquanto
+          </Button>
+        </div>
       </TabsContent>
 
       <TabsContent value="gifts" class="mt-6">
