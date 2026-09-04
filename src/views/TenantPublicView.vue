@@ -166,21 +166,32 @@ const updatePixPaymentData = async () => {
 				qr_code_base64: mpRes.qr_code_base64,
 				paymentId: mpRes.paymentId,
 			};
-		} catch (err) {
-			console.warn("Mercado Pago PIX indisponível, usando PIX estático:", err);
+		} catch (error) {
+			const err = error instanceof Error ? error : new Error(String(error));
+			console.warn(
+				"Mercado Pago PIX indisponível, usando PIX estático:",
+				err.message,
+			);
 		} finally {
 			isGeneratingMpPix.value = false;
 		}
 	}
 
+	pixPayload.value = { payload: "", base64: "" };
+
 	if (!mpPixData.value?.qr_code && tenant.value?.pix_key) {
-		pixPayload.value = await generatePixPayload(
-			tenant.value.pix_key,
-			tenant.value.couple_name || "Noivos",
-			String(price),
-			`Presente: ${selectedProduct.value.name}`,
-			selectedProduct.value.$id,
-		);
+		try {
+			pixPayload.value = await generatePixPayload(
+				tenant.value.pix_key,
+				tenant.value.couple_name || "Noivos",
+				String(price),
+				`Presente: ${selectedProduct.value.name}`,
+				"***",
+			);
+		} catch (error) {
+			const err = error instanceof Error ? error : new Error(String(error));
+			console.error("Erro ao gerar PIX estático:", err.message);
+		}
 	}
 };
 

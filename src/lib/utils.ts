@@ -5,7 +5,12 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-export { parseCurrency } from "@brazilian-utils/brazilian-utils";
+import {
+	isValidCNPJ,
+	isValidCPF,
+	parseCurrency,
+} from "@brazilian-utils/brazilian-utils";
+export { isValidCNPJ, isValidCPF, parseCurrency };
 
 import { QrCodePix } from "qrcode-pix";
 import { parseMoney } from "./money";
@@ -346,30 +351,164 @@ export function extractStoreName(rawUrl: string): string {
 	}
 }
 
+/**
+ * Normaliza e sanitiza chaves PIX para garantir compatibilidade com o DICT do Banco Central
+ */
+export function sanitizePixKey(rawKey: string): string {
+	if (!rawKey) return "";
+	const clean = rawKey.trim();
+
+	// Chave aleatória / EVP (UUID com hífens)
+	const uuidRegex =
+		/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+	if (uuidRegex.test(clean)) {
+		return clean.toLowerCase();
+	}
+
+	// Chave aleatória / EVP sem hífens (32 caracteres hexadecimais)
+	if (/^[0-9a-f]{32}$/i.test(clean)) {
+		const lower = clean.toLowerCase();
+		return `${lower.slice(0, 8)}-${lower.slice(8, 12)}-${lower.slice(12, 16)}-${lower.slice(16, 20)}-${lower.slice(20)}`;
+	}
+
+	// E-mail
+	if (clean.includes("@")) {
+		return clean.toLowerCase();
+	}
+
+	// Se for telefone internacional já com +
+	if (clean.startsWith("+")) {
+		const digits = clean.replace(/\D/g, "");
+		return `+${digits}`;
+	}
+
+	const digits = clean.replace(/\D/g, "");
+
+	// CNPJ (14 dígitos)
+	if (digits.length === 14) {
+		return digits;
+	}
+
+	// Telefone celular ou fixo já com DDI 55 (12 ou 13 dígitos)
+	if (
+		(digits.length === 12 || digits.length === 13) &&
+		digits.startsWith("55")
+	) {
+		return `+${digits}`;
+	}
+
+	// Telefone fixo nacional (10 dígitos: DDD + 8 dígitos)
+	if (digits.length === 10) {
+		return `+55${digits}`;
+	}
+
+	// 11 dígitos: CPF ou Celular nacional
+	if (digits.length === 11) {
+		// Se tinha pontuação de CPF (. ou -) e é um CPF válido
+		if (/[.-]/.test(clean) && isValidCPF(digits)) {
+			return digits;
+		}
+		// Celular nacional: 2 dígitos de DDD (11-99) seguido de 9 e 8 dígitos
+		if (/^[1-9]{2}9[0-9]{8}$/.test(digits)) {
+			if (/[()\s]/.test(clean)) {
+				return `+55${digits}`;
+			}
+			if (isValidCPF(digits)) {
+				return digits;
+			}
+			return `+55${digits}`;
+		}
+		return digits;
+	}
+
+	return clean;
+}
+
 export async function generatePixPayload(
 	key: string,
 	name: string,
 	value: string,
-	message: string,
+	message?: string,
 	transactionId = "***",
 	city = "SALVADOR",
 ): Promise<{ payload: string; base64: string }> {
 	if (!key || !name) return { payload: "", base64: "" };
 
-	const qrCodePix = QrCodePix({
-		version: "01",
-		key,
-		name,
-		city,
-		transactionId,
-		message,
-		value: parseMoney(value),
-	});
+	try {
+		const cleanKey = sanitizePixKey(key);
+		if (!cleanKey) return { payload: "", base64: "" };
 
-	return {
-		payload: qrCodePix.payload(),
-		base64: await qrCodePix.base64(),
-	};
+		// Sanitização do nome do recebedor (máx 25 chars, sem acentos, maiúsculo - padrão BACEN)
+		const cleanName = name
+			.normalize("NFD")
+			.replace(/\p{Diacritic}/gu, "")
+			.trim()
+			.substring(0, 25)
+			.toUpperCase();
+
+		// Sanitização da cidade (máx 15 chars, sem acentos, maiúsculo - padrão BACEN)
+		const cleanCity = (city || "SALVADOR")
+			.normalize("NFD")
+			.replace(/\p{Diacritic}/gu, "")
+			.trim()
+			.substring(0, 15)
+			.toUpperCase();
+
+		// Sanitização do transactionId (txid): no PIX estático, o padrão oficial BACEN é '***'.
+		// Se fornecido outro txid, sanitiza para alfanumérico com no máximo 25 caracteres.
+		let cleanTxid = "***";
+		if (transactionId && transactionId !== "***") {
+			const sanitized = transactionId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 25);
+			if (sanitized) {
+				cleanTxid = sanitized;
+			}
+		}
+
+		// Sanitização da mensagem: normalizar acentos para não quebrar a contagem de bytes TLV do EMV.
+		// No padrão EMV, o campo Length da Tag 26 suporta no máximo 2 dígitos decimais (até 99 caracteres).
+		// Estrutura interna da Tag 26:
+		// - Subtag 00: "0014BR.GOV.BCB.PIX" (18 caracteres)
+		// - Subtag 01: "01" + len(2) + cleanKey (4 + cleanKey.length caracteres)
+		// - Subtag 02: "02" + len(2) + cleanMessage (4 + cleanMessage.length caracteres)
+		// Espaço disponível para o texto da mensagem = 99 - 18 - 4 - cleanKey.length - 4 = 73 - cleanKey.length.
+		let cleanMessage: string | undefined;
+		if (message?.trim()) {
+			const maxAllowedLen = Math.min(35, Math.max(0, 73 - cleanKey.length));
+			if (maxAllowedLen > 0) {
+				const sanitized = message
+					.normalize("NFD")
+					.replace(/\p{Diacritic}/gu, "")
+					.replace(/[^a-zA-Z0-9 ]/g, "")
+					.trim()
+					.slice(0, maxAllowedLen)
+					.trim();
+				if (sanitized) {
+					cleanMessage = sanitized;
+				}
+			}
+		}
+
+		const parsedValue = parseMoney(value);
+
+		const qrCodePix = QrCodePix({
+			version: "01",
+			key: cleanKey,
+			name: cleanName || "NOIVOS",
+			city: cleanCity || "SALVADOR",
+			transactionId: cleanTxid,
+			message: cleanMessage,
+			value: parsedValue > 0 ? parsedValue : undefined,
+		});
+
+		return {
+			payload: qrCodePix.payload(),
+			base64: await qrCodePix.base64(),
+		};
+	} catch (error) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		console.error("Falha ao gerar payload PIX:", err.message);
+		return { payload: "", base64: "" };
+	}
 }
 
 export function sortBy<T>(
