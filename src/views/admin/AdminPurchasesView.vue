@@ -2,6 +2,7 @@
 import PageHeader from "@/components/reusable/PageHeader.vue";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney, parseMoney } from "@/lib/money";
+import { handleImageError } from "@/lib/utils";
 import dayjs from "dayjs";
 import { Gift, Package, Sparkles } from "lucide-vue-next";
 import { computed, ref } from "vue";
@@ -102,9 +103,23 @@ const totalAmount = computed(() => {
                   </p>
                 </td>
                 <td class="p-4">
-                  <div class="flex items-center gap-2">
-                    <Package class="w-4 h-4 text-slate-400" />
-                    <p class="text-sm text-slate-700">{{ purchase.product.name || 'Produto' }}</p>
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="purchase.product?.image_url"
+                      :src="purchase.product.image_url"
+                      :alt="purchase.product?.name || 'Produto'"
+                      class="w-11 h-11 rounded-xl object-cover bg-slate-50 border border-slate-100 shrink-0 shadow-xs p-1"
+                      @error="handleImageError"
+                    />
+                    <div
+                      v-else
+                      class="w-11 h-11 rounded-xl bg-slate-100/80 flex items-center justify-center shrink-0 border border-slate-100 text-slate-400"
+                    >
+                      <Gift class="w-5 h-5 text-slate-300" />
+                    </div>
+                    <span class="text-sm font-medium text-slate-800">
+                      {{ purchase.product?.name || 'Produto' }}
+                    </span>
                   </div>
                 </td>
                 <td class="p-4 text-sm text-slate-700 text-center font-medium">

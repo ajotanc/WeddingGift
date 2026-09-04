@@ -21,6 +21,7 @@ export interface ITenant extends Models.Row {
 	event_location: string | null;
 	event_latitude?: number | null;
 	event_longitude?: number | null;
+	shipping_address?: string | null;
 	couple_history?: string;
 	quote?: string;
 	plan?: "free" | "premium" | null;

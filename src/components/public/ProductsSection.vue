@@ -5,10 +5,10 @@ import type { IProduct } from "@/services/product.service";
 import type { ITenant } from "@/services/tenant.service";
 import type { IUser } from "@/stores/auth";
 
-defineProps<{
+const props = defineProps<{
 	products: IProduct[];
 	tenant: ITenant | null;
-	currentUser: IUser;
+	currentUser: IUser | null;
 }>();
 
 defineEmits<{

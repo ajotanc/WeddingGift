@@ -15,7 +15,7 @@ import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
 import { useAuthStore } from "@/stores/auth";
 import { AppwriteException } from "appwrite";
-import { ChevronUp, Loader2 } from "lucide-vue-next";
+import { ChevronUp, Copy, Loader2, Package } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 import GuestProfileModal from "@/components/GuestProfileModal.vue";
@@ -225,6 +225,15 @@ const copyPix = () => {
 		toast.success("Chave PIX copiada!");
 	} else {
 		toast.error("Nenhum código PIX disponível.");
+	}
+};
+
+const copyShippingAddress = () => {
+	if (tenant.value?.shipping_address) {
+		navigator.clipboard.writeText(tenant.value.shipping_address);
+		toast.success("Endereço de envio copiado!");
+	} else {
+		toast.error("Nenhum endereço de envio disponível.");
 	}
 };
 
@@ -923,12 +932,39 @@ onUnmounted(() => {
 		<Modal v-model:open="showLinksModal" :title="selectedProduct?.name">
 			<div class="space-y-6 pt-4 text-center">
 				<p class="text-xs text-primary uppercase tracking-widest font-bold">Comprar na Loja</p>
-				<p class="text-sm text-slate-600 font-light max-w-xs mx-auto leading-relaxed">
+				<p class="text-sm text-slate-600 font-light mx-auto leading-relaxed">
 					Escolha uma das lojas abaixo para adquirir as
 					<strong class="text-primary">{{ currentQty }} unidade(s)</strong> de presente.
 				</p>
 
-				<div class="space-y-3 max-w-xs mx-auto">
+				<!-- Endereço para envio do presente -->
+				<div v-if="tenant?.shipping_address"
+					class="flex flex-col gap-2 p-4 bg-slate-50/80 border border-slate-200/70 rounded-xl text-left mx-auto my-6">
+					<div class="flex items-center justify-between gap-2">
+						<div class="flex items-center gap-1.5 text-xs font-semibold text-primary uppercase">
+							<Package class="w-4 h-4 text-primary shrink-0" />
+							<span>Endereço para Envio</span>
+						</div>
+						<Button
+							type="button"
+							size="sm"
+							variant="ghost"
+							class="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1 rounded-lg cursor-pointer"
+							@click="copyShippingAddress"
+						>
+							<Copy class="w-3.5 h-3.5" />
+							Copiar
+						</Button>
+					</div>
+					<p class="text-xs text-slate-600 leading-relaxed font-medium break-words">
+						{{ tenant.shipping_address }}
+					</p>
+					<p class="text-[11px] text-slate-400">
+						Utilize este endereço no momento de fechar a compra na loja.
+					</p>
+				</div>
+
+				<div class="space-y-3 mx-auto">
 					<a v-for="(link, i) in selectedProduct?.links" :key="i" :href="link.url" target="_blank"
 						rel="noopener noreferrer"
 						class="flex items-center justify-center text-center h-12 rounded-xl border border-slate-200 hover:border-primary hover:bg-slate-50/50 transition-all group px-4">
@@ -939,7 +975,7 @@ onUnmounted(() => {
 					</a>
 				</div>
 
-				<div class="pt-4 border-t border-slate-200/60 mt-4 max-w-xs mx-auto">
+				<div class="pt-4 border-t border-slate-200/60 mt-4 mx-auto">
 					<p class="text-xs text-slate-600 mb-4 text-center leading-relaxed">
 						Após finalizar a sua compra no site da loja, confirme a reserva abaixo:
 					</p>

@@ -223,6 +223,14 @@
 					"default": null
 				},
 				{
+					"key": "shipping_address",
+					"type": "string",
+					"required": false,
+					"array": false,
+					"size": 500,
+					"default": null
+				},
+				{
 					"key": "primary_color",
 					"type": "string",
 					"required": false,

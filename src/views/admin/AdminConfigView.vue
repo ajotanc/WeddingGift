@@ -182,11 +182,7 @@ onMounted(() => {
 const zodSchema = z.object({
 	groom_name: z.string().min(2, "Nome muito curto").optional(),
 	bride_name: z.string().min(2, "Nome muito curto").optional(),
-	co_owner_email: z
-		.string()
-		.email("E-mail inválido")
-		.optional()
-		.or(z.literal("")),
+	co_owner_email: z.email("E-mail inválido").optional().or(z.literal("")),
 	slug: z
 		.string()
 		.min(3, "Mínimo de 3 caracteres")
@@ -202,6 +198,11 @@ const zodSchema = z.object({
 	event_location: z.string().nullable().optional(),
 	event_latitude: z.number().nullable().optional(),
 	event_longitude: z.number().nullable().optional(),
+	shipping_address: z
+		.string()
+		.max(500, "Endereço muito longo")
+		.optional()
+		.nullable(),
 	show_countdown: z.boolean().optional(),
 	show_gallery: z.boolean().optional(),
 	show_faq: z.boolean().optional(),
@@ -277,6 +278,7 @@ const { handleSubmit, errors, setValues, defineField, setFieldValue } =
 			event_location: "",
 			event_latitude: null,
 			event_longitude: null,
+			shipping_address: "",
 			show_countdown: true,
 			show_gallery: false,
 			show_faq: false,
@@ -308,6 +310,7 @@ const [event_time] = defineField("event_time");
 const [event_location] = defineField("event_location");
 const [event_latitude] = defineField("event_latitude");
 const [event_longitude] = defineField("event_longitude");
+const [shipping_address] = defineField("shipping_address");
 const [show_countdown] = defineField("show_countdown");
 const [show_gallery] = defineField("show_gallery");
 const [show_faq] = defineField("show_faq");
@@ -1075,6 +1078,7 @@ const loadSettings = () => {
 			event_location: tenant.value.event_location || "",
 			event_latitude: tenant.value.event_latitude || null,
 			event_longitude: tenant.value.event_longitude || null,
+			shipping_address: tenant.value.shipping_address || "",
 			show_countdown: tenant.value.show_countdown ?? true,
 			primary_color: tenant.value.primary_color || DEFAULT_PRIMARY_COLOR,
 			background_image: tenant.value.background_image || "",
@@ -1297,7 +1301,7 @@ const connectToMarketPago = () => {
 						</FormGroup>
 						<FormGroup label="E-mail do(a) Co-Administrador(a)" :error="errors.co_owner_email" class="md:col-span-2">
 							<Input v-model="co_owner_email" type="email" class="bg-slate-50/50" />
-							<p class="text-xs text-slate-500 mt-1">
+							<p class="text-xs text-slate-500">
 								Cadastre o e-mail do(a) co-administrador(a) para que ele(a) também consiga fazer login com a própria
 								conta do Google e gerenciar o painel administrativo.
 							</p>
@@ -1374,18 +1378,22 @@ const connectToMarketPago = () => {
 						</FormGroup>
 
 						<FormGroup label="Local do Evento" class="md:col-span-2">
-							<LocationAutocomplete
-								:initial-address="event_location"
-								:initial-latitude="event_latitude"
-								:initial-longitude="event_longitude"
-								@select="onLocationSelect"
-							/>
-							<div v-if="event_location" class="flex align-center justify-between text-xs text-slate-500 mt-1">
+							<LocationAutocomplete :initial-address="event_location" :initial-latitude="event_latitude"
+								:initial-longitude="event_longitude" @select="onLocationSelect" />
+							<div v-if="event_location" class="flex align-center justify-between text-xs text-slate-500">
 								<span>Selecionado: {{ event_location }}</span>
 								<span v-if="event_latitude && event_longitude">
 									{{ event_latitude }}, {{ event_longitude }}
 								</span>
 							</div>
+						</FormGroup>
+
+						<FormGroup label="Endereço de Envio dos Presentes" :error="errors.shipping_address" class="md:col-span-2">
+							<Input v-model="shipping_address" class="bg-slate-50/50" />
+							<p class="text-xs text-slate-500">
+								Endereço onde os noivos desejam receber os presentes físicos enviados pelos convidados através de lojas
+								parceiras ou correios.
+							</p>
 						</FormGroup>
 
 						<FormGroup label="Exibir Contagem Regressiva">
@@ -1599,8 +1607,7 @@ const connectToMarketPago = () => {
 						<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100/50">
 							<FormGroup label="Música ou Playlist (YouTube ou Spotify)" :error="errors.music_url">
 								<div v-if="authStore.isPremium" class="w-full space-y-1">
-									<Input v-model="music_url"
-										class="bg-slate-50/50 rounded-xl border-slate-200" />
+									<Input v-model="music_url" class="bg-slate-50/50 rounded-xl border-slate-200" />
 									<span class="text-[10px] text-slate-400 font-light">
 										Cole o link de uma playlist/música do Spotify ou de um vídeo do YouTube.
 									</span>
@@ -2004,8 +2011,8 @@ const connectToMarketPago = () => {
 						</div>
 
 						<div class="flex items-center gap-2">
-							<Button v-if="authStore.isPremium && show_quiz && quizzes.length > 0" type="button" variant="outline" size="sm"
-								@click="showQuizPreviewModal = true" class="text-xs rounded-xl font-medium border-slate-200">
+							<Button v-if="authStore.isPremium && show_quiz && quizzes.length > 0" type="button" variant="outline"
+								size="sm" @click="showQuizPreviewModal = true" class="text-xs rounded-xl font-medium border-slate-200">
 								<Eye class="w-3.5 h-3.5 mr-1.5" /> Testar Quiz
 							</Button>
 							<Button v-if="authStore.isPremium && show_quiz" type="button" variant="outline" size="sm"

@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { CalendarIcon } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
+import Input from "../ui/input/Input.vue";
 
 dayjs.extend(customParseFormat);
 
@@ -69,13 +70,13 @@ const onInputBlur = () => {
 
 <template>
 	<div class="relative flex items-center w-full">
-		<input v-model="displayValue" v-maska="'##/##/####'" type="text" placeholder="DD/MM/AAAA"
-			class="flex h-12 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-12"
+		<Input v-model="displayValue" v-maska="'##/##/####'" type="text" placeholder="DD/MM/AAAA"
+			class="flex w-full bg-slate-50/50 transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 pr-11"
 			@blur="onInputBlur" @keydown.enter="onInputBlur" />
 		<Popover v-model:open="popoverOpen">
 			<PopoverTrigger as-child>
 				<Button type="button" variant="ghost" size="icon"
-					class="absolute right-1 w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100">
+					class="absolute right-0 w-11 h-11 text-slate-500 hover:text-primary">
 					<CalendarIcon class="h-4 w-4" />
 				</Button>
 			</PopoverTrigger>

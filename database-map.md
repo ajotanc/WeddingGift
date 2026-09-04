@@ -21,6 +21,7 @@ WeddingGift relies on an Appwrite Database named `DBWG` (ID: `6a2cb37d0034ac2b40
   * `event_location` (string, size: 255): Physical address details.
   * `event_latitude` (float): Latitude coordinate for rendering maps.
   * `event_longitude` (float): Longitude coordinate for rendering maps.
+  * `shipping_address` (string, size: 500): Shipping and delivery address for physical gifts sent to the couple.
   * `primary_color` (string, size: 7): Main theme color (Hex format).
   * `background_color` (string, size: 7): Base background color (Hex format).
   * `text_color` (string, size: 7): Text layout color (Hex format).
