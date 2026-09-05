@@ -15,10 +15,11 @@ import { type MethodType, PurchaseService } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
 import { useAuthStore } from "@/stores/auth";
 import { AppwriteException } from "appwrite";
-import { ChevronUp, Copy, Loader2, Package } from "lucide-vue-next";
+import { ChevronUp, Copy, Loader2, Package, PlayCircle } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 import GuestProfileModal from "@/components/GuestProfileModal.vue";
+import TutorialModal from "@/components/public/TutorialModal.vue";
 import Modal from "@/components/reusable/Modal.vue";
 import CountdownTimer from "@/components/ui/CountdownTimer.vue";
 // UI Components
@@ -116,6 +117,7 @@ const logout = async () => {
 // Modals State
 const showPixModal = ref(false);
 const showLinksModal = ref(false);
+const showTutorialModal = ref(false);
 const selectedProduct = ref<IProduct | null>(null);
 const quotaQuantities = ref<Record<string, number>>({});
 const pixPayload = ref({ payload: "", base64: "" });
@@ -130,7 +132,7 @@ const customPixAmount = ref<number>(10);
 const isCustomPix = computed(() =>
 	Boolean(
 		selectedProduct.value?.category === "pix" &&
-			selectedProduct.value?.is_custom_amount,
+		selectedProduct.value?.is_custom_amount,
 	),
 );
 
@@ -733,8 +735,14 @@ onUnmounted(() => {
 		</div>
 		<div v-else-if="error" class="text-center p-20 text-red-500 font-medium">{{ error }}</div>
 		<template v-else-if="tenant">
-			<GoogleAuthButton @click="currentUser ? showProfileModal = true : requireAuth()" @logout="logout"
-				:user="currentUser || undefined" :fill="false" class="button-google" />
+			<div class="actions-header">
+				<Button variant="outline" @click="showTutorialModal = true">
+					<PlayCircle class="w-5 h-5 text-primary shrink-0" />
+					<span class="text-sm font-medium text-slate-700">Como Funciona</span>
+				</Button>
+				<GoogleAuthButton @click="currentUser ? showProfileModal = true : requireAuth()" @logout="logout"
+					:user="currentUser || undefined" :fill="false" />
+			</div>
 			<!-- Canvas for Visual Effects -->
 			<canvas ref="effectCanvas" class="fixed inset-0 w-full pointer-events-none z-[40]"></canvas>
 
@@ -811,7 +819,13 @@ onUnmounted(() => {
 							poderá confirmar sua presença (RSVP), escolher um presente especial de nossa lista e nos enviar uma
 							mensagem de felicitações!
 						</p>
-						<GoogleAuthButton @click="requireAuth" :fill="true" class="mx-auto" />
+						<div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+							<GoogleAuthButton @click="requireAuth" :fill="true" />
+							<Button type="button" variant="outline" @click="showTutorialModal = true">
+								<PlayCircle class="w-5! h-5! text-primary shrink-0" />
+								<span class="text-sm font-medium text-slate-700">Como Funciona</span>
+							</Button>
+						</div>
 					</div>
 				</section>
 
@@ -953,16 +967,12 @@ onUnmounted(() => {
 					class="flex flex-col gap-2 p-4 bg-slate-50/80 border border-slate-200/70 rounded-xl text-left mx-auto my-6">
 					<div class="flex items-center justify-between gap-2">
 						<div class="flex items-center gap-1.5 text-xs font-semibold text-primary uppercase">
-							<Package class="w-4 h-4 text-primary shrink-0" />
+							<Package class="w-5 h-5 text-primary shrink-0" />
 							<span>Endereço para Envio</span>
 						</div>
-						<Button
-							type="button"
-							size="sm"
-							variant="ghost"
+						<Button type="button" size="sm" variant="ghost"
 							class="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1 rounded-lg cursor-pointer"
-							@click="copyShippingAddress"
-						>
+							@click="copyShippingAddress">
 							<Copy class="w-3.5 h-3.5" />
 							Copiar
 						</Button>
@@ -1002,6 +1012,9 @@ onUnmounted(() => {
 
 		<!-- Guest Profile Modal -->
 		<GuestProfileModal v-model:open="showProfileModal" :tenantPurchases="purchases" />
+
+		<!-- Tutorial Video Modal -->
+		<TutorialModal v-model:open="showTutorialModal" />
 
 		<!-- Teleport Floating Index Navigation -->
 		<Teleport to="body">
@@ -1052,10 +1065,13 @@ onUnmounted(() => {
 	opacity: 0;
 }
 
-.button-google {
+.actions-header {
 	position: absolute;
-	z-index: 1;
+	z-index: 20;
 	right: 1rem;
 	top: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
 }
 </style>
