@@ -149,6 +149,20 @@ watch(priceSort, () => {
 	mobileVisibleCount.value = itemsPerPage.value;
 });
 
+// Métodos auxiliares para calcular limites individuais de cada produto na lista
+const isProductSoldOut = (product: IProduct): boolean => {
+	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
+};
+
+// --- Estado do Filtro de Presentes Já Presenteados ---
+const showOnlyGifted = ref<boolean>(false);
+
+const toggleOnlyGifted = () => {
+	showOnlyGifted.value = !showOnlyGifted.value;
+	currentPage.value = 1;
+	mobileVisibleCount.value = itemsPerPage.value;
+};
+
 const getCategoryCount = (categoryName: string) => {
 	if (categoryName === "all") return props.products.length;
 	return props.products.filter((p) => p.category === categoryName).length;
@@ -185,6 +199,11 @@ const filteredProducts = computed(() => {
 			const pixMatch = isPix && normalizeText("pix presente").includes(query);
 			return nameMatch || pixMatch;
 		});
+	}
+
+	// Filtro para mostrar apenas presentes já presenteados
+	if (showOnlyGifted.value) {
+		baseList = baseList.filter((p) => isProductSoldOut(p));
 	}
 
 	if (priceSort.value === "default") {
@@ -242,11 +261,6 @@ const handleLoadMoreMobile = () => {
 
 // --- Dicionário reativo para controlar as quantidades selecionadas por produto ---
 const quotaQuantities = ref<Record<string, number>>({});
-
-// Métodos auxiliares para calcular limites individuais de cada produto na lista
-const isProductSoldOut = (product: IProduct) => {
-	return (product.claimed_quantity || 0) >= (product.desired_quantity || 1);
-};
 
 const getRemainingQuantity = (product: IProduct) => {
 	return Math.max(
@@ -333,12 +347,12 @@ const updateItemsPerPage = (event: Event) => {
             <div class="flex-1 min-w-0">
               <Select v-model="selectedCategory">
                 <SelectTrigger
-                  class="w-full h-11 backdrop-blur-sm rounded-xl px-4 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
+                  class="w-full h-11 backdrop-blur-sm rounded-xl pl-3 pr-2.5 text-xs font-semibold uppercase tracking-wider shadow-sm transition-all duration-300 border"
                   :class="selectedCategory !== 'all'
                     ? 'bg-primary/10 text-primary border-primary/40 font-bold'
                     : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                  <div class="flex items-center justify-between w-full pr-1">
-                    <div class="flex items-center gap-2.5 truncate">
+                  <div class="flex-1 min-w-0 flex items-center justify-between gap-1.5">
+                    <div class="flex items-center gap-2 min-w-0">
                       <div
                         class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                         <SlidersHorizontal class="w-3.5 h-3.5" />
@@ -348,16 +362,16 @@ const updateItemsPerPage = (event: Event) => {
                       </span>
                     </div>
                     <div
-                      class="ml-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
+                      class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0 transition-colors">
                       {{ getCategoryCount(selectedCategory) }}
                     </div>
                   </div>
                 </SelectTrigger>
                 <SelectContent
-                  class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50 min-w-[220px]">
+                  class="bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl shadow-xl p-1 z-50">
                   <SelectGroup>
                     <SelectItem value="all"
-                      class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
+                      class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 pl-3 pr-8 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
                       <div class="flex items-center justify-between w-full gap-4">
                         <span>Todas as Categorias</span>
                         <div
@@ -368,7 +382,7 @@ const updateItemsPerPage = (event: Event) => {
                       </div>
                     </SelectItem>
                     <SelectItem v-for="cat in categories" :key="cat" :value="cat"
-                      class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 px-3 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
+                      class="rounded-lg text-xs uppercase tracking-wider font-semibold cursor-pointer py-2.5 pl-3 pr-8 border border-transparent data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:border-primary/40 focus:bg-primary/10 focus:text-primary transition-colors">
                       <div class="flex items-center justify-between w-full gap-4">
                         <span>{{ cat }}</span>
                         <div
@@ -384,20 +398,41 @@ const updateItemsPerPage = (event: Event) => {
             </div>
 
             <!-- Botão de Alternar Aleatório / Recentes no Mobile -->
-            <button v-if="isAdmin" type="button" @click="toggleShuffle"
+            <Button
+              v-if="isAdmin"
+              type="button"
+              variant="outline"
+              size="icon"
+              @click="toggleShuffle"
               :title="isShuffle ? 'Ordem: Aleatória (clique para ver mais recentes)' : 'Ordem: Mais Recentes (clique para modo aleatório)'"
               aria-label="Alternar ordem de exibição"
-              class="h-11 px-3 rounded-xl border flex items-center justify-center gap-1.5 shrink-0 transition-all duration-300 cursor-pointer shadow-xs text-xs uppercase tracking-wider font-semibold"
+              class="cursor-pointer group"
               :class="isShuffle
-                ? 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800'
-                : 'bg-primary/10 text-primary border-primary/40 font-bold shadow-xs'">
-              <Shuffle v-if="isShuffle" class="w-3.5 h-3.5 text-slate-400" />
-              <Clock v-else class="w-3.5 h-3.5 text-primary" />
-              <span class="hidden min-[400px]:inline">{{ isShuffle ? 'Sortido' : 'Recentes' }}</span>
-            </button>
+                ? 'hover:border-slate-300'
+                : 'bg-primary/10 text-primary border-primary/40 font-bold hover:bg-primary/15 hover:text-primary'"
+            >
+              <Shuffle v-if="isShuffle" class="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              <Clock v-else class="w-4 h-4 text-primary" />
+            </Button>
 
             <!-- Botão Único de Ordenação por Preço no Mobile -->
             <PriceSortButton v-model="priceSort" />
+
+            <!-- Botão de Presentes Já Presenteados no Mobile -->
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              @click="toggleOnlyGifted"
+              :title="showOnlyGifted ? 'Mostrar todos os presentes' : 'Mostrar apenas presentes já presenteados'"
+              aria-label="Filtrar presentes já presenteados"
+              class="cursor-pointer group"
+              :class="showOnlyGifted
+                ? 'bg-primary/10 text-primary border-primary/40 font-bold hover:bg-primary/15 hover:text-primary'
+                : 'hover:border-slate-300'"
+            >
+              <Gift class="w-4 h-4 transition-colors" :class="showOnlyGifted ? 'text-primary' : 'text-slate-400 group-hover:text-slate-600'" />
+            </Button>
           </div>
         </div>
 
@@ -437,20 +472,41 @@ const updateItemsPerPage = (event: Event) => {
           <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
 
           <!-- Botão de Alternar Aleatório / Recentes no Desktop -->
-          <button v-if="isAdmin" type="button" @click="toggleShuffle"
+          <Button
+            v-if="isAdmin"
+            type="button"
+            variant="outline"
+            size="icon"
+            @click="toggleShuffle"
             :title="isShuffle ? 'Ordem: Aleatória (clique para ver mais recentes)' : 'Ordem: Mais Recentes (clique para modo aleatório)'"
             aria-label="Alternar ordem de exibição"
-            class="h-11 px-3.5 rounded-xl border flex items-center justify-center gap-1.5 shrink-0 transition-all duration-300 cursor-pointer shadow-xs text-xs uppercase tracking-wider font-semibold group"
+            class="cursor-pointer group"
             :class="isShuffle
-              ? 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300'
-              : 'bg-primary/10 text-primary border-primary/40 font-bold shadow-xs'">
-            <Shuffle v-if="isShuffle" class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
-            <Clock v-else class="w-3.5 h-3.5 text-primary" />
-            <span>{{ isShuffle ? 'Aleatório' : 'Recentes' }}</span>
-          </button>
+              ? 'hover:border-slate-300'
+              : 'bg-primary/10 text-primary border-primary/40 font-bold hover:bg-primary/15 hover:text-primary'"
+          >
+            <Shuffle v-if="isShuffle" class="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            <Clock v-else class="w-4 h-4 text-primary" />
+          </Button>
 
           <!-- Botão Único de Ordenação por Preço no Desktop -->
           <PriceSortButton v-model="priceSort" show-text-on-mobile />
+
+          <!-- Botão de Presentes Já Presenteados no Desktop -->
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            @click="toggleOnlyGifted"
+            :title="showOnlyGifted ? 'Mostrar todos os presentes' : 'Mostrar apenas presentes já presenteados'"
+            aria-label="Filtrar presentes já presenteados"
+            class="cursor-pointer group"
+            :class="showOnlyGifted
+              ? 'bg-primary/10 text-primary border-primary/40 font-bold hover:bg-primary/15 hover:text-primary'
+              : 'hover:border-slate-300'"
+          >
+            <Gift class="w-4 h-4 transition-colors" :class="showOnlyGifted ? 'text-primary' : 'text-slate-400 group-hover:text-slate-600'" />
+          </Button>
         </div>
       </template>
     </div>
@@ -461,10 +517,11 @@ const updateItemsPerPage = (event: Event) => {
       </div>
       <p class="text-sm font-medium text-slate-600">
         <span v-if="searchQuery">Nenhum presente encontrado para "{{ searchQuery }}".</span>
+        <span v-else-if="showOnlyGifted">Nenhum presente já presenteado encontrado.</span>
         <span v-else>Nenhum presente encontrado nesta categoria.</span>
       </p>
-      <button v-if="searchQuery || selectedCategory !== 'all'" type="button"
-        @click="searchQuery = ''; selectedCategory = 'all'"
+      <button v-if="searchQuery || selectedCategory !== 'all' || showOnlyGifted" type="button"
+        @click="searchQuery = ''; selectedCategory = 'all'; showOnlyGifted = false"
         class="mt-3 text-xs font-semibold text-primary hover:underline cursor-pointer">
         Limpar filtros
       </button>

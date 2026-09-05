@@ -62,7 +62,7 @@ const handleLogout = async () => {
           <template v-if="authStore.user">
             <GoogleAuthButton :user="authStore.user" @click="goDashboard" @logout="handleLogout" />
             <Button @click="goDashboard" size="wg"
-              class="rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-sm px-4 sm:px-6 text-xs sm:text-sm">
+              class="bg-slate-900 hover:bg-slate-800 text-white shadow-sm px-4 sm:px-6 text-xs sm:text-sm">
               <span class="hidden sm:inline">Meu Painel</span>
               <span class="sm:hidden">Painel</span>
               <ArrowRight class="w-4 h-4 ml-1.5" />
