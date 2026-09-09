@@ -8,6 +8,7 @@ import ProductGallery from "@/components/ui/ProductGallery.vue";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm/useConfirm";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useProductSearch } from "@/composables/useProductSearch";
 import { useTenant } from "@/composables/useTenant";
 import { formatMoney } from "@/lib/money";
@@ -20,7 +21,7 @@ import {
 } from "@/services/product.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import { ExternalLink, Loader2, Plus, Search, X } from "lucide-vue-next";
+import { ExternalLink, Loader2, Package, Plus, Search, X } from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -374,6 +375,7 @@ const physicalValidationSchema = toTypedSchema(
 			desiredQuantity: z.coerce
 				.number()
 				.min(1, "A quantidade deve ser maior que zero."),
+			is_delivery: z.boolean().optional(),
 		}),
 	),
 );
@@ -397,6 +399,7 @@ type ProductFormValues = {
 	desiredQuantity: number;
 	categorySelect?: string;
 	categoryCustom?: string;
+	is_delivery?: boolean;
 };
 
 // --- Physical Form ---
@@ -416,6 +419,7 @@ const {
 		desiredQuantity: 1,
 		categorySelect: "",
 		categoryCustom: "",
+		is_delivery: false,
 	},
 });
 
@@ -424,6 +428,7 @@ const [pPrice] = definePhysicalField("price");
 const [pDesiredQuantity] = definePhysicalField("desiredQuantity");
 const [pCategorySelect] = definePhysicalField("categorySelect");
 const [pCategoryCustom] = definePhysicalField("categoryCustom");
+const [pIsDelivery] = definePhysicalField("is_delivery");
 
 const pLinks = ref<IProductLink[]>([]);
 const pImageBase64 = ref("");
@@ -468,6 +473,7 @@ const editPhysical = (p: IProduct) => {
 		desiredQuantity: p.desired_quantity || 1,
 		categorySelect: isPredefined ? p.category || "" : p.category ? "Outro" : "",
 		categoryCustom: !isPredefined && p.category ? p.category : "",
+		is_delivery: Boolean(p.is_delivery),
 	});
 
 	pLinks.value = p.links || [];
@@ -553,6 +559,7 @@ const productSubmit = handlePhysicalSubmit(async (values) => {
 		claimed_quantity: 0,
 		links: pLinks.value,
 		category: finalCategory,
+		is_delivery: Boolean(values.is_delivery),
 	};
 
 	const newProduct = await ProductService.upsert(
@@ -751,6 +758,25 @@ const deleteProduct = async (product: IProduct) => {
 					<FileUpload v-model="pImageBase64" @file-selected="(file) => pImageFile = file" :maxSizeMb="1"
 						accept="image/*" />
 				</FormGroup>
+
+				<!-- Opção de Entrega no Endereço dos Noivos -->
+				<div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+					<div class="space-y-0.5 pr-4">
+						<label for="p-is-delivery" class="text-xs font-semibold text-slate-800 cursor-pointer flex items-center gap-1.5">
+							<Package class="w-4 h-4 text-primary shrink-0" />
+							<span>Exibir endereço para entrega deste presente</span>
+						</label>
+						<p class="text-[11px] text-slate-500 font-light">
+							Ative para itens de grande porte (ex: geladeira, fogão) que os convidados devem enviar diretamente para sua residência.
+						</p>
+					</div>
+					<div class="flex items-center gap-2 shrink-0">
+						<Switch id="p-is-delivery" v-model="pIsDelivery" />
+						<label for="p-is-delivery" class="text-xs font-medium text-slate-600 cursor-pointer select-none">
+							{{ pIsDelivery ? 'Sim' : 'Não' }}
+						</label>
+					</div>
+				</div>
 
 				<FormGroup label="Links Externos (Lojas)">
 					<!-- Campo para Inserção Manual de Link -->

@@ -31,6 +31,7 @@ export interface IProduct extends Models.Row {
 	collected_amount?: number;
 	is_goal?: boolean;
 	is_custom_amount?: boolean;
+	is_delivery?: boolean;
 	links?: IProductLink[];
 }
 

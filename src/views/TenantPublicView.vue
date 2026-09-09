@@ -963,7 +963,7 @@ onUnmounted(() => {
 				</p>
 
 				<!-- Endereço para envio do presente -->
-				<div v-if="tenant?.shipping_address"
+				<div v-if="tenant?.shipping_address && selectedProduct?.is_delivery"
 					class="flex flex-col gap-2 p-4 bg-slate-50/80 border border-slate-200/70 rounded-xl text-left mx-auto my-6">
 					<div class="flex items-center justify-between gap-2">
 						<div class="flex items-center gap-1.5 text-xs font-semibold text-primary uppercase">

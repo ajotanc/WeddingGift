@@ -758,14 +758,14 @@ const updateItemsPerPage = (event: Event) => {
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Itens por página</span>
           <div class="relative flex items-center">
             <select :value="itemsPerPage.toString()" @change="updateItemsPerPage"
-              class="w-[80px] h-9 pl-3 pr-8 rounded-xl border border-slate-200 bg-white shadow-sm text-xs font-medium text-slate-900 focus:outline-none appearance-none cursor-pointer">
+              class="w-[84px] h-11 min-h-[44px] pl-3.5 pr-8 rounded-xl border border-slate-200 bg-white shadow-xs text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer transition-all">
               <option value="6">6</option>
               <option value="12">12</option>
               <option value="24">24</option>
               <option value="48">48</option>
               <option value="100">100</option>
             </select>
-            <ChevronsUpDown class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+            <ChevronsUpDown class="w-4 h-4 text-slate-400 absolute right-2.5 pointer-events-none" />
           </div>
         </div>
 
@@ -773,31 +773,31 @@ const updateItemsPerPage = (event: Event) => {
           v-model:page="currentPage" :items-per-page="itemsPerPage" class="w-auto mx-0 flex-none">
           <PaginationContent v-slot="{ items }" class="gap-1.5 flex items-center justify-center">
             <PaginationFirst
-              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              class="w-11 h-11 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
               :disabled="currentPage === 1" @click="currentPage = 1" />
 
             <PaginationPrevious
-              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              class="w-11 h-11 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
               :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)" />
 
             <template v-for="(item, index) in items">
               <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value"
                 :is-active="item.value === page" @click="currentPage = item.value"
-                class="w-9 h-9 p-0 rounded-xl text-sm font-medium transition-all cursor-pointer flex items-center justify-center border shadow-2xs"
+                class="w-11 h-11 p-0 rounded-xl text-sm font-medium transition-all cursor-pointer flex items-center justify-center border shadow-2xs"
                 :class="item.value === page ? 'border-primary text-primary font-bold bg-primary/10 shadow-xs' : 'border-slate-200/90 text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900'">
                 {{ item.value }}
               </PaginationItem>
               <PaginationEllipsis v-else :key="item.type" :index="index"
-                class="w-8 h-9 p-0 flex items-center justify-center text-slate-400 select-none text-xs" />
+                class="w-8 h-11 p-0 flex items-center justify-center text-slate-400 select-none text-xs" />
             </template>
 
             <PaginationNext
-              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              class="w-11 h-11 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
               :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
               @click="currentPage = Math.min(Math.ceil(filteredProducts.length / itemsPerPage), currentPage + 1)" />
 
             <PaginationLast
-              class="w-9 h-9 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
+              class="w-11 h-11 p-0 rounded-xl border border-slate-200/90 bg-white text-slate-500 transition-all cursor-pointer hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white flex items-center justify-center shadow-2xs"
               :disabled="currentPage === Math.ceil(filteredProducts.length / itemsPerPage)"
               @click="currentPage = Math.ceil(filteredProducts.length / itemsPerPage)" />
           </PaginationContent>
