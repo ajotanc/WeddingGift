@@ -10,7 +10,7 @@ import {
 import { ConsentService } from "@/services/consent.service";
 import { GuestService, type IGuest } from "@/services/guest.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
-import { type Models, OAuthProvider } from "appwrite";
+import { AppwriteException, type Models, OAuthProvider } from "appwrite";
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
 
@@ -100,7 +100,7 @@ export const useAuthStore = defineStore("auth", {
 			}
 
 			try {
-				const sessionUser = await account.get<IUserPreferences>();
+				const sessionUser = await this.fetchSessionUser();
 				this.user = sessionUser;
 
 				if (sessionUser) {
@@ -161,11 +161,20 @@ export const useAuthStore = defineStore("auth", {
 					}
 
 					const pending = localStorage.getItem("pending_tenant");
+					let created: ITenant | null = null;
 					if (pending) {
-						const data = JSON.parse(pending) as ITenant;
-						const created = await TenantService.create(data, sessionUser.$id);
+						// Um pending_tenant antigo (cadastro abandonado ou casal já criado) não pode
+						// derrubar a sessão: se a criação falhar, descarta e segue o fluxo normal.
+						try {
+							const data = JSON.parse(pending) as ITenant;
+							created = await TenantService.create(data, sessionUser.$id);
+						} catch (e) {
+							console.error("Failed to create pending tenant:", e);
+							localStorage.removeItem("pending_consent");
+						}
 						localStorage.removeItem("pending_tenant");
-
+					}
+					if (created) {
 						// Save LGPD consent status and age confirmation in User Preferences
 						const pendingConsent = localStorage.getItem("pending_consent");
 						if (pendingConsent) {
@@ -270,6 +279,18 @@ export const useAuthStore = defineStore("auth", {
 				this.guest = null;
 			} finally {
 				this.loading = false;
+			}
+		},
+		// Erros transitórios (rede, 5xx, 429) não devem deslogar o usuário; só 401 indica sem sessão.
+		async fetchSessionUser(attempts = 3): Promise<IUser> {
+			for (let i = 1; ; i++) {
+				try {
+					return await account.get<IUserPreferences>();
+				} catch (err) {
+					if (err instanceof AppwriteException && err.code === 401) return null;
+					if (i >= attempts) throw err;
+					await new Promise((r) => setTimeout(r, 500 * i));
+				}
 			}
 		},
 		async loginWithGoogle(successUrl: string, failureUrl: string) {

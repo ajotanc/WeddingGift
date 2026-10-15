@@ -704,8 +704,7 @@ const updateItemsPerPage = (event: Event) => {
 
             <template v-if="mode === 'admin'">
               <div class="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-                <Button variant="outline" class="flex-1 rounded-xl" @click="emit('edit', product)"
-                  :disabled="product?.claimed_quantity > 0">
+                <Button variant="outline" class="flex-1 rounded-xl" @click="emit('edit', product)">
                   <Edit2 class="w-4 h-4 mr-2" /> Editar
                 </Button>
                 <Button variant="outline"

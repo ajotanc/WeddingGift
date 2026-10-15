@@ -21,7 +21,14 @@ import {
 } from "@/services/product.service";
 import { useAuthStore } from "@/stores/auth";
 import { toTypedSchema } from "@vee-validate/zod";
-import { ExternalLink, Loader2, Package, Plus, Search, X } from "lucide-vue-next";
+import {
+	ExternalLink,
+	Loader2,
+	Package,
+	Plus,
+	Search,
+	X,
+} from "lucide-vue-next";
 import { useForm } from "vee-validate";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -357,6 +364,15 @@ const PREDEFINED_EXPERIENCES = [
 
 const editProductId = ref<string | null>(null);
 
+// Itens já presenteados podem ser abertos (ex.: copiar links), mas não salvos.
+const isEditLocked = computed(() => {
+	if (!editProductId.value) return false;
+	const p = products.value.find((item) => item.$id === editProductId.value);
+	return (p?.claimed_quantity || 0) > 0;
+});
+const LOCKED_MESSAGE =
+	"Este item já foi presenteado e não pode ser alterado. Você ainda pode consultar e copiar os links.";
+
 const productSchema = z
 	.object({
 		name: z.string().min(1, "O nome é obrigatório."),
@@ -544,6 +560,10 @@ const removeLink = (index: number) => {
 
 const productSubmit = handlePhysicalSubmit(async (values) => {
 	if (!tenant.value || !authStore.user) return;
+	if (isEditLocked.value) {
+		toast.error(LOCKED_MESSAGE);
+		return;
+	}
 
 	const finalCategory =
 		values.categorySelect === "Outro"
@@ -663,6 +683,10 @@ const editQuota = (p: IProduct) => {
 
 const quotaSubmit = handleQuotaSubmit(async (values) => {
 	if (!tenant.value || !authStore.user) return;
+	if (isEditLocked.value) {
+		toast.error(LOCKED_MESSAGE);
+		return;
+	}
 
 	const finalCategory =
 		values.categorySelect === "Outro"
@@ -833,13 +857,16 @@ const deleteProduct = async (product: IProduct) => {
 					</div>
 				</FormGroup>
 			</div>
+			<p v-if="isEditLocked" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+				{{ LOCKED_MESSAGE }}
+			</p>
 			<div class="pt-4 border-t border-slate-100 flex gap-3">
 				<Button variant="outline" class="flex-1" @click="searchExternalLinks" :disabled="isSearchingLinks">
 					<Loader2 v-if="isSearchingLinks" class="w-4 h-4 mr-2 animate-spin" />
 					<Search v-else class="w-4 h-4 mr-2" />
 					{{ isSearchingLinks ? 'Buscando...' : 'Buscar Links (Google)' }}
 				</Button>
-				<Button class="flex-1" @click="productSubmit">Salvar</Button>
+				<Button class="flex-1" @click="productSubmit" :disabled="isEditLocked">Salvar</Button>
 			</div>
 		</Modal>
 
@@ -886,8 +913,11 @@ const deleteProduct = async (product: IProduct) => {
 						accept="image/*" />
 				</FormGroup>
 			</div>
+			<p v-if="isEditLocked" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+				{{ LOCKED_MESSAGE }}
+			</p>
 			<div class="pt-4 border-t border-slate-100 flex gap-3">
-				<Button class="flex-1" @click="quotaSubmit">Salvar</Button>
+				<Button class="flex-1" @click="quotaSubmit" :disabled="isEditLocked">Salvar</Button>
 			</div>
 		</Modal>
 	</div>
