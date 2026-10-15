@@ -31,3 +31,5 @@ appwrite
 scratch
 dev-dist
 vite.config.js
+# Added by code-review-graph
+.code-review-graph/
