@@ -22,10 +22,7 @@ export const ConsentService = {
 			const response = await fetch("https://api.ipify.org?format=json");
 			const { ip: ip_address } = await response.json();
 
-			const permissions = [
-				Permission.read(Role.user(data.user_id)),
-				Permission.write(Role.user(data.user_id)),
-			];
+			const permissions = [Permission.read(Role.user(data.user_id))];
 
 			await tables.createRow({
 				databaseId: DATABASE_ID,

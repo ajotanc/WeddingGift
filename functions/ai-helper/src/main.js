@@ -1,5 +1,4 @@
 import axios from "axios";
-import { Client, Databases } from "node-appwrite";
 
 const PII_FIELDS = new Set([
 	"password",
@@ -553,90 +552,6 @@ export default async ({ req, res, log, error }) => {
 				stack: err.stack,
 			});
 			return res.json({ message: "Erro interno ao gerar a mensagem" }, 500);
-		}
-	}
-
-	// --- Rota: claim-product (Proteção BOLA/IDOR para incrementação de presentes) ---
-	if (action === "claim-product") {
-		const productId = payload.productId;
-		const claimedQty = Number(payload.claimed_quantity);
-
-		if (!productId || Number.isNaN(claimedQty) || claimedQty < 0) {
-			sysLogger.warn("Tentativa de claim com parâmetros inválidos", {
-				productId,
-				claimedQty,
-			});
-			return res.json({ error: "Parâmetros de produto inválidos" }, 400);
-		}
-
-		const client = new Client()
-			.setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
-			.setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-			.setKey(
-				process.env.APPWRITE_API_KEY || req.headers["x-appwrite-key"] || "",
-			);
-		const databases = new Databases(client);
-
-		const DATABASE_ID = process.env.DATABASE_ID || "6a2cb37d0034ac2b40c6";
-		const TABLE_PRODUCTS = "products";
-
-		try {
-			// 1. Obter o produto atual de forma segura
-			const product = await databases.getDocument(
-				DATABASE_ID,
-				TABLE_PRODUCTS,
-				productId,
-			);
-
-			if (!product) {
-				sysLogger.warn("Produto não encontrado", { productId });
-				return res.json({ error: "Produto não encontrado" }, 404);
-			}
-
-			// 2. Validação BOLA/IDOR: Garantir que a quantidade reivindicada só cresça, e não ultrapasse o desejado
-			if (claimedQty < product.claimed_quantity) {
-				sysLogger.warn("Tentativa de redução de quantidade não autorizada", {
-					productId,
-					current: product.claimed_quantity,
-					attempted: claimedQty,
-				});
-				return res.json({ error: "Quantidade reservada inválida" }, 400);
-			}
-
-			if (claimedQty > product.desired_quantity) {
-				sysLogger.warn("Tentativa de reserva acima do limite desejado", {
-					productId,
-					desired: product.desired_quantity,
-					attempted: claimedQty,
-				});
-				return res.json({ error: "A quantidade desejada foi excedida" }, 400);
-			}
-
-			// 3. Executar o update pelo backend com permissões de administrador do Appwrite
-			const updatedProduct = await databases.updateDocument(
-				DATABASE_ID,
-				TABLE_PRODUCTS,
-				productId,
-				{
-					claimed_quantity: claimedQty,
-				},
-			);
-
-			sysLogger.info("Presente reservado com sucesso no servidor", {
-				productId,
-				quantity: claimedQty,
-			});
-			return res.json({ product: updatedProduct });
-		} catch (err) {
-			sysLogger.error("Erro ao registrar reserva de presente no servidor", {
-				productId,
-				error: err.message,
-				stack: err.stack,
-			});
-			return res.json(
-				{ error: "Erro interno do servidor ao registrar presente" },
-				500,
-			);
 		}
 	}
 

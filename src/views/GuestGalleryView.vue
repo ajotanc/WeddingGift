@@ -346,7 +346,7 @@ const toggleGalleryLike = async (img: IGalleryImage) => {
 	}
 
 	try {
-		await GalleryService.updateLikes(img.$id, img.likes || []);
+		img.likes = await GalleryService.toggleLike(img.$id);
 	} catch (err) {
 		img.likes = originalLikes;
 		toast.error("Erro", { description: "Falha ao curtir imagem." });

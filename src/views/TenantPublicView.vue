@@ -6,12 +6,13 @@ import { useTenant } from "@/composables/useTenant";
 import { EFFECT_CONFIGS, type Particle } from "@/lib/effect";
 import { formatMoney, getProductPrice } from "@/lib/money";
 import { generatePixPayload, isMobile } from "@/lib/utils";
+import { ActionsService } from "@/services/actions.service";
 import { EmailService } from "@/services/email.service";
 import { GalleryService } from "@/services/gallery.service";
 import type { IGalleryImage } from "@/services/gallery.service";
 import { PaymentService } from "@/services/payment.service";
-import { type IProduct, ProductService } from "@/services/product.service";
-import { type MethodType, PurchaseService } from "@/services/purchase.service";
+import type { IProduct } from "@/services/product.service";
+import type { MethodType } from "@/services/purchase.service";
 import { type IWeatherData, WeatherService } from "@/services/weather.service";
 import { useAuthStore } from "@/stores/auth";
 import { AppwriteException } from "appwrite";
@@ -132,7 +133,7 @@ const customPixAmount = ref<number>(10);
 const isCustomPix = computed(() =>
 	Boolean(
 		selectedProduct.value?.category === "pix" &&
-		selectedProduct.value?.is_custom_amount,
+			selectedProduct.value?.is_custom_amount,
 	),
 );
 
@@ -150,18 +151,14 @@ const updatePixPaymentData = async () => {
 	const price = activePixPrice.value;
 	mpPixData.value = null;
 
-	if (tenant.value?.mp_access_token && currentUser.value) {
+	if (tenant.value?.mp_user_id && currentUser.value) {
 		isGeneratingMpPix.value = true;
 		try {
 			const mpRes = await PaymentService.createGiftPixPayment({
 				tenantId: tenant.value.$id,
 				productId: selectedProduct.value.$id,
-				productName: selectedProduct.value.name,
-				quantity: 1,
-				price,
-				guestName: currentUser.value.name,
-				guestEmail: currentUser.value.email,
-				guestId: currentUser.value.$id,
+				quantity: isCustomPix.value ? 1 : currentQty.value,
+				amount: isCustomPix.value ? price : undefined,
 			});
 			mpPixData.value = {
 				qr_code: mpRes.qr_code,
@@ -267,45 +264,24 @@ const confirmPurchase = async (method: MethodType) => {
 		: getProductPrice(selectedProduct.value, qty);
 
 	try {
-		let updatedProduct = selectedProduct.value;
+		// O servidor valida a quantidade, calcula o valor e registra a compra.
+		const { purchase: newGift, product: updatedProduct } =
+			await ActionsService.confirmPurchase({
+				productId: selectedProduct.value.$id,
+				quantity: isCustomPix.value ? 1 : qty,
+				method,
+				amount: isCustomPix.value ? finalPrice : undefined,
+			});
 
-		if (!isCustomPix.value) {
-			try {
-				updatedProduct = await ProductService.updateQuantity(
-					selectedProduct.value.$id,
-					{
-						claimed_quantity:
-							(selectedProduct.value.claimed_quantity || 0) + qty,
-					},
-				);
-			} catch (updateErr) {
-				console.warn(
-					"Atualização direta da quantidade não permitida para convidados. Mantendo atualização de estado local:",
-					updateErr,
-				);
-				updatedProduct = {
-					...selectedProduct.value,
-					claimed_quantity: (selectedProduct.value.claimed_quantity || 0) + qty,
-				};
-			}
-
-			const productIndex = products.value.findIndex(
-				(p) => p.$id === updatedProduct.$id,
-			);
-
-			if (productIndex !== -1) {
-				products.value[productIndex] = updatedProduct;
-			}
+		const productIndex = products.value.findIndex(
+			(p) => p.$id === updatedProduct.$id,
+		);
+		if (productIndex !== -1) {
+			products.value[productIndex] = {
+				...products.value[productIndex],
+				claimed_quantity: updatedProduct.claimed_quantity,
+			};
 		}
-
-		const newGift = await PurchaseService.create({
-			tenant: tenant.value.$id,
-			guest: authStore.guest,
-			product: updatedProduct,
-			quantity: qty,
-			price_paid: String(finalPrice),
-			method,
-		});
 
 		purchases.value.push(newGift);
 
@@ -363,7 +339,7 @@ const toggleGalleryLike = async (img: IGalleryImage) => {
 	}
 
 	try {
-		await GalleryService.updateLikes(img.$id, img.likes || []);
+		img.likes = await GalleryService.toggleLike(img.$id);
 	} catch (err) {
 		img.likes = originalLikes;
 		toast.error("Erro", { description: "Falha ao atualizar curtida." });

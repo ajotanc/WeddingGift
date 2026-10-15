@@ -1,6 +1,13 @@
-import { DATABASE_ID, getMessagePermissions, tables } from "@/lib/appwrite";
+import {
+	DATABASE_ID,
+	getGuestContentPermissions,
+	getTenantPermissions,
+	guestIdOf,
+	tables,
+} from "@/lib/appwrite";
 import { TABLE_GALLERY } from "@/lib/collections";
 import { ID, type Models, Query } from "appwrite";
+import { ActionsService } from "./actions.service";
 import type { IGuest } from "./guest.service";
 import { StorageService } from "./storage.service";
 
@@ -33,9 +40,19 @@ export const GalleryService = {
 		file?: File | null,
 	): Promise<IGalleryImage> {
 		const id = ID.unique();
+		// Foto enviada por convidado é dele; sem convidado, é foto do casal.
+		const guestId = guestIdOf(data.guest);
+		const permissions = guestId
+			? getGuestContentPermissions(guestId)
+			: getTenantPermissions(data.tenant);
 
 		if (file instanceof File) {
-			data.image_url = await StorageService.uploadFile(id, file, "photo");
+			data.image_url = await StorageService.uploadFile(
+				id,
+				file,
+				"photo",
+				permissions,
+			);
 		}
 
 		return await tables.createRow({
@@ -46,26 +63,18 @@ export const GalleryService = {
 				...data,
 				is_public: data.is_public ?? false,
 			},
-			permissions: getMessagePermissions(),
+			permissions,
 		});
 	},
 
+	/** Autor ou casal; o arquivo é removido junto pela Function. */
 	async delete(id: string): Promise<void> {
-		await StorageService.deleteFile(id, "photo");
-		await tables.deleteRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_GALLERY,
-			rowId: id,
-		});
+		await ActionsService.deleteContent("gallery", id);
 	},
 
-	async updateLikes(rowId: string, likes: string[]): Promise<IGalleryImage> {
-		return await tables.updateRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_GALLERY,
-			rowId,
-			data: { likes },
-			permissions: getMessagePermissions(),
-		});
+	/** Alterna a curtida do usuário atual e devolve a lista atualizada. */
+	async toggleLike(rowId: string): Promise<string[]> {
+		const res = await ActionsService.toggleLike("gallery", rowId);
+		return res.likes;
 	},
 };

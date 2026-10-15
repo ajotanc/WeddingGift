@@ -1,6 +1,12 @@
-import { DATABASE_ID, getMessagePermissions, tables } from "@/lib/appwrite";
+import {
+	DATABASE_ID,
+	getGuestContentPermissions,
+	guestIdOf,
+	tables,
+} from "@/lib/appwrite";
 import { TABLE_MESSAGES } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
+import { ActionsService } from "./actions.service";
 import type { IGuest } from "./guest.service";
 import { StorageService } from "./storage.service";
 
@@ -41,23 +47,23 @@ export const MessageService = {
 		audioFile?: File | null,
 	): Promise<IMessage> {
 		const rowId = ID.unique();
+		const permissions = getGuestContentPermissions(guestIdOf(data.guest));
 
 		if (audioFile) {
 			data.audio_url = await StorageService.uploadFile(
 				rowId,
 				audioFile,
 				"audio",
+				permissions,
 			);
 		}
-
-		console.log(data.guest.$id);
 
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_MESSAGES,
 			rowId,
 			data,
-			permissions: getMessagePermissions(),
+			permissions,
 		});
 	},
 
@@ -67,7 +73,6 @@ export const MessageService = {
 			tableId: TABLE_MESSAGES,
 			rowId,
 			data,
-			permissions: getMessagePermissions(),
 		});
 	},
 
@@ -79,27 +84,18 @@ export const MessageService = {
 			tableId: TABLE_MESSAGES,
 			rowId: id,
 			data,
-			permissions: getMessagePermissions(),
+			permissions: getGuestContentPermissions(guestIdOf(data.guest)),
 		});
 	},
 
-	async delete(id: string, hasAudio?: boolean): Promise<void> {
-		hasAudio && (await StorageService.deleteFile(id, "audio"));
-
-		await tables.deleteRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_MESSAGES,
-			rowId: id,
-		});
+	/** Autor ou casal; o áudio é removido junto pela Function. */
+	async delete(id: string): Promise<void> {
+		await ActionsService.deleteContent("messages", id);
 	},
 
-	async likes(rowId: string, likes: string[]): Promise<IMessage> {
-		return await tables.updateRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_MESSAGES,
-			rowId,
-			data: { likes },
-			permissions: getMessagePermissions(),
-		});
+	/** Alterna a curtida do usuário atual e devolve a lista atualizada. */
+	async toggleLike(rowId: string): Promise<string[]> {
+		const res = await ActionsService.toggleLike("messages", rowId);
+		return res.likes;
 	},
 };

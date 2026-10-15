@@ -7,10 +7,11 @@ import {
 	FREE_BACKGROUND_COLORS,
 	FREE_PRIMARY_COLORS,
 } from "@/lib/defaults";
+import { ActionsService } from "@/services/actions.service";
 import { ConsentService } from "@/services/consent.service";
 import { GuestService, type IGuest } from "@/services/guest.service";
 import { type ITenant, TenantService } from "@/services/tenant.service";
-import { type Models, OAuthProvider } from "appwrite";
+import { AppwriteException, type Models, OAuthProvider } from "appwrite";
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
 
@@ -100,7 +101,7 @@ export const useAuthStore = defineStore("auth", {
 			}
 
 			try {
-				const sessionUser = await account.get<IUserPreferences>();
+				const sessionUser = await this.fetchSessionUser();
 				this.user = sessionUser;
 
 				if (sessionUser) {
@@ -161,11 +162,20 @@ export const useAuthStore = defineStore("auth", {
 					}
 
 					const pending = localStorage.getItem("pending_tenant");
+					let created: ITenant | null = null;
 					if (pending) {
-						const data = JSON.parse(pending) as ITenant;
-						const created = await TenantService.create(data, sessionUser.$id);
+						// Um pending_tenant antigo (cadastro abandonado ou casal já criado) não pode
+						// derrubar a sessão: se a criação falhar, descarta e segue o fluxo normal.
+						try {
+							const data = JSON.parse(pending) as ITenant;
+							created = await TenantService.create(data, sessionUser.$id);
+						} catch (e) {
+							console.error("Failed to create pending tenant:", e);
+							localStorage.removeItem("pending_consent");
+						}
 						localStorage.removeItem("pending_tenant");
-
+					}
+					if (created) {
 						// Save LGPD consent status and age confirmation in User Preferences
 						const pendingConsent = localStorage.getItem("pending_consent");
 						if (pendingConsent) {
@@ -205,6 +215,7 @@ export const useAuthStore = defineStore("auth", {
 						}
 
 						this.tenant = this.sanitizeTenant(created);
+						await this.ensureTenantAccess(created.$id, true);
 						try {
 							const g = await GuestService.upsert(sessionUser.$id, {
 								name: sessionUser.name || "Convidado",
@@ -229,6 +240,7 @@ export const useAuthStore = defineStore("auth", {
 							t = await TenantService.getByCoOwner(sessionUser.email);
 						}
 						this.tenant = this.sanitizeTenant(t);
+						if (this.tenant) await this.ensureTenantAccess(this.tenant.$id);
 					} catch (e) {
 						if (sessionUser.email) {
 							try {
@@ -236,6 +248,7 @@ export const useAuthStore = defineStore("auth", {
 									sessionUser.email,
 								);
 								this.tenant = this.sanitizeTenant(tCoOwner);
+								if (this.tenant) await this.ensureTenantAccess(this.tenant.$id);
 							} catch (err) {
 								this.tenant = null;
 							}
@@ -272,6 +285,30 @@ export const useAuthStore = defineStore("auth", {
 				this.loading = false;
 			}
 		},
+		// Erros transitórios (rede, 5xx, 429) não devem deslogar o usuário; só 401 indica sem sessão.
+		async fetchSessionUser(attempts = 3): Promise<IUser> {
+			for (let i = 1; ; i++) {
+				try {
+					return await account.get<IUserPreferences>();
+				} catch (err) {
+					if (err instanceof AppwriteException && err.code === 401) return null;
+					if (i >= attempts) throw err;
+					await new Promise((r) => setTimeout(r, 500 * i));
+				}
+			}
+		},
+		/**
+		 * Dono e co-administrador editam pelo time do casal, que só o servidor cria e
+		 * mantém. Falha aqui não desloga: o painel só fica sem permissão de edição.
+		 */
+		async ensureTenantAccess(tenantId: string, force = false) {
+			try {
+				if (!force && (await TenantService.isTeamMember(tenantId))) return;
+				await ActionsService.syncAccess(tenantId);
+			} catch (e) {
+				console.error("Falha ao sincronizar acesso ao casal:", e);
+			}
+		},
 		async loginWithGoogle(successUrl: string, failureUrl: string) {
 			account.createOAuth2Session({
 				provider: OAuthProvider.Google,
@@ -298,18 +335,6 @@ export const useAuthStore = defineStore("auth", {
 			if (!this.user) return;
 			const t = await TenantService.create(data, this.user.$id);
 			this.tenant = this.sanitizeTenant(t);
-		},
-		async upgradeTenant(planType: "quarterly" | "semestral") {
-			if (!this.tenant) return;
-			const months = planType === "quarterly" ? 3 : 6;
-			const expiresAt = dayjs().add(months, "month");
-
-			const updated = await TenantService.update(this.tenant.$id, {
-				plan: "premium",
-				premium_until: expiresAt.toISOString(),
-			});
-
-			this.tenant = this.sanitizeTenant(updated);
 		},
 		sanitizeTenant(t: ITenant | null): ITenant | null {
 			if (!t || !t.$id) return null;

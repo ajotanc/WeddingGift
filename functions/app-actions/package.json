@@ -1,0 +1,10 @@
+{
+  "name": "app-actions",
+  "version": "1.0.0",
+  "description": "Ações entre usuários (curtidas, moderação, presentes e acesso do casal) executadas com chave de servidor",
+  "main": "src/main.js",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^14.1.0"
+  }
+}

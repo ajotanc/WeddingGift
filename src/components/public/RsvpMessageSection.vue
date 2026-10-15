@@ -374,7 +374,7 @@ const deleteMessage = (message: IMessage) => {
 		cancelText: "Não",
 		confirm: async () => {
 			try {
-				await MessageService.delete(message.$id, !!message?.audio_url);
+				await MessageService.delete(message.$id);
 				const index = props.messages.findIndex((m) => m.$id === message.$id);
 				if (index !== -1) {
 					props.messages.splice(index, 1);
@@ -401,7 +401,7 @@ const toggleLike = async (msg: IMessage) => {
 	}
 
 	try {
-		msg.likes?.length && (await MessageService.likes(msg.$id, msg.likes));
+		msg.likes = await MessageService.toggleLike(msg.$id);
 	} catch (err) {
 		msg.likes = originalLikes;
 		toast.error("Falha ao curtir.");

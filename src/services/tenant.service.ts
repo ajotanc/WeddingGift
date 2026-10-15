@@ -1,6 +1,13 @@
-import { DATABASE_ID, getTenantPermissions, tables } from "@/lib/appwrite";
-import { TABLE_TENANTS } from "@/lib/collections";
-import { ID, type Models, Query } from "appwrite";
+import {
+	DATABASE_ID,
+	getOwnerBootstrapPermissions,
+	getTenantPermissions,
+	isOwnedByTenant,
+	tables,
+	teams,
+} from "@/lib/appwrite";
+import { TABLE_SUBSCRIPTIONS, TABLE_TENANTS } from "@/lib/collections";
+import { AppwriteException, ID, type Models, Query } from "appwrite";
 import type { IFaq } from "./faq.service";
 import type { IGalleryImage } from "./gallery.service";
 import type { IMessage } from "./message.service";
@@ -69,7 +76,58 @@ export interface ITenant extends Models.Row {
 	is_premium: boolean;
 }
 
+interface ISubscription extends Models.Row {
+	plan: string | null;
+	premium_until: string | null;
+}
+
+/**
+ * O plano vem da tabela `subscriptions`, que só o webhook de pagamento escreve.
+ * Os campos `plan`/`premium_until` do tenant podem ser editados pelo próprio casal,
+ * então não valem como prova de pagamento.
+ */
+async function withSubscription<T extends ITenant | null>(
+	tenant: T,
+): Promise<T> {
+	if (!tenant) return tenant;
+	let sub: ISubscription | null = null;
+	try {
+		sub = await tables.getRow<ISubscription>({
+			databaseId: DATABASE_ID,
+			tableId: TABLE_SUBSCRIPTIONS,
+			rowId: tenant.$id,
+		});
+	} catch (error) {
+		if (!(error instanceof AppwriteException && error.code === 404)) {
+			console.error("Falha ao carregar assinatura:", error);
+		}
+	}
+	return {
+		...tenant,
+		plan: sub?.plan === "premium" ? "premium" : "free",
+		premium_until: sub?.premium_until ?? null,
+	};
+}
+
+/** Remove itens que não foram criados pelo casal (ex.: produto injetado por terceiro). */
+function onlyTenantOwned<T extends { $permissions?: string[] }>(
+	rows: T[] | undefined,
+	tenantId: string,
+): T[] | undefined {
+	return rows?.filter((row) => isOwnedByTenant(row, tenantId));
+}
+
 export const TenantService = {
+	/** Se o usuário atual já pertence ao time do casal (time tem o id do tenant). */
+	async isTeamMember(tenantId: string): Promise<boolean> {
+		try {
+			const res = await teams.list({ queries: [Query.equal("$id", tenantId)] });
+			return res.teams.some((t) => t.$id === tenantId);
+		} catch {
+			return false;
+		}
+	},
+
 	async getBySlug(slug: string): Promise<ITenant | null> {
 		const res = await tables.listRows<ITenant>({
 			databaseId: DATABASE_ID,
@@ -94,7 +152,14 @@ export const TenantService = {
 		});
 
 		if (res.rows.length === 0) return null;
-		return res.rows[0];
+		const tenant = res.rows[0];
+		return await withSubscription({
+			...tenant,
+			products: onlyTenantOwned(tenant.products, tenant.$id),
+			faqs: onlyTenantOwned(tenant.faqs, tenant.$id) ?? [],
+			schedules: onlyTenantOwned(tenant.schedules, tenant.$id),
+			quizzes: onlyTenantOwned(tenant.quizzes, tenant.$id),
+		});
 	},
 
 	async getByCoOwner(email: string): Promise<ITenant | null> {
@@ -106,7 +171,7 @@ export const TenantService = {
 		});
 
 		if (res.rows.length === 0) return null;
-		return res.rows[0];
+		return await withSubscription(res.rows[0]);
 	},
 
 	async get(id: string): Promise<ITenant | null> {
@@ -117,7 +182,7 @@ export const TenantService = {
 		});
 
 		if (!res) return null;
-		return res;
+		return await withSubscription(res);
 	},
 
 	async create(
@@ -125,23 +190,26 @@ export const TenantService = {
 		customId?: string,
 	): Promise<ITenant> {
 		const ownerId = customId || ID.unique();
+		// O time do casal é criado pelo servidor (sync_access), que depois troca
+		// estas permissões iniciais pelas do time.
 		return await tables.createRow({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
 			rowId: ownerId,
 			data,
-			permissions: getTenantPermissions(ownerId),
+			permissions: getOwnerBootstrapPermissions(ownerId),
 		});
 	},
 
 	async update(rowId: string, data: Partial<ITenant>): Promise<ITenant> {
-		return await tables.updateRow({
+		const updated = await tables.updateRow<ITenant>({
 			databaseId: DATABASE_ID,
 			tableId: TABLE_TENANTS,
 			rowId,
 			data,
 			permissions: getTenantPermissions(rowId),
 		});
+		return await withSubscription(updated);
 	},
 
 	async upsert(

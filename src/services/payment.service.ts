@@ -1,18 +1,15 @@
 import { functions } from "@/lib/appwrite";
 import { ExecutionMethod } from "appwrite";
-import { TenantService } from "./tenant.service";
 
 const MP_CLIENT_ID = import.meta.env.VITE_MP_CLIENT_ID;
+const MP_OAUTH_STATE_KEY = "mp_oauth_state";
 
 export interface ICreateGiftPixParams {
 	tenantId: string;
-	productId?: string;
-	productName?: string;
-	quantity?: number;
-	price: number;
-	guestName?: string;
-	guestEmail?: string;
-	guestId?: string;
+	productId: string;
+	quantity: number;
+	/** Só é considerado em presentes de valor livre; nos demais o servidor calcula. */
+	amount?: number;
 }
 
 export interface ICreateSubscriptionParams {
@@ -21,9 +18,31 @@ export interface ICreateSubscriptionParams {
 }
 
 export const PaymentService = {
+	/**
+	 * O `state` é um valor aleatório guardado nesta aba. Assim um link com um
+	 * `code` de outra conta do Mercado Pago (CSRF) não é aceito no retorno.
+	 */
 	getAuthUrl: (tenantId: string) => {
-		const redirectUri = `${window.location.origin}/admin/config/mercadopago`;
-		return `https://auth.mercadopago.com/authorization?client_id=${MP_CLIENT_ID}&response_type=code&platform_id=mp&state=${tenantId}&redirect_uri=${redirectUri}`;
+		const nonce = crypto.randomUUID();
+		sessionStorage.setItem(MP_OAUTH_STATE_KEY, `${tenantId}:${nonce}`);
+
+		const url = new URL("https://auth.mercadopago.com/authorization");
+		url.searchParams.set("client_id", MP_CLIENT_ID);
+		url.searchParams.set("response_type", "code");
+		url.searchParams.set("platform_id", "mp");
+		url.searchParams.set("state", nonce);
+		url.searchParams.set(
+			"redirect_uri",
+			`${window.location.origin}/admin/config/mercadopago`,
+		);
+		return url.toString();
+	},
+
+	/** Confere e descarta o `state` salvo por getAuthUrl. */
+	consumeOAuthState: (state: string, tenantId: string): boolean => {
+		const saved = sessionStorage.getItem(MP_OAUTH_STATE_KEY);
+		sessionStorage.removeItem(MP_OAUTH_STATE_KEY);
+		return !!state && saved === `${tenantId}:${state}`;
 	},
 
 	exchangeCodeForToken: async (code: string, tenantId: string) => {
@@ -110,12 +129,19 @@ export const PaymentService = {
 		};
 	},
 
-	// Limpa as credenciais do banco
+	// Remove a conta do Mercado Pago do casal (tokens ficam só no servidor)
 	disconnect: async (tenantId: string) => {
-		return await TenantService.update(tenantId, {
-			mp_user_id: null,
-			mp_access_token: null,
-			mp_refresh_token: null,
+		const execution = await functions.createExecution({
+			functionId: "mp-oauth",
+			body: JSON.stringify({ action: "disconnect", tenantId }),
+			async: false,
+			xpath: "/",
+			method: ExecutionMethod.POST,
 		});
+
+		if (execution.responseStatusCode >= 400) {
+			const errorBody = JSON.parse(execution.responseBody || "{}");
+			throw new Error(errorBody.error || "Falha ao desconectar o Mercado Pago");
+		}
 	},
 };

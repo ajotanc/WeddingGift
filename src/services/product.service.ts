@@ -1,9 +1,4 @@
-import {
-	DATABASE_ID,
-	functions,
-	getProductPermissions,
-	tables,
-} from "@/lib/appwrite";
+import { DATABASE_ID, getProductPermissions, tables } from "@/lib/appwrite";
 import { TABLE_PRODUCTS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 import { StorageService } from "./storage.service";
@@ -70,7 +65,12 @@ export const ProductService = {
 		const rowId = ID.unique();
 
 		if (file instanceof File) {
-			data.image_url = await StorageService.uploadFile(rowId, file, "product");
+			data.image_url = await StorageService.uploadFile(
+				rowId,
+				file,
+				"product",
+				getProductPermissions(data.tenant),
+			);
 		}
 
 		return await tables.createRow({
@@ -87,15 +87,20 @@ export const ProductService = {
 		data: Partial<Omit<IProduct, keyof Models.Row>>,
 		file?: File | null,
 	): Promise<IProduct> {
-		if (file instanceof File) {
-			await StorageService.deleteFile(rowId, "product");
-			data.image_url = await StorageService.uploadFile(rowId, file, "product");
-		}
-
 		let ownerId = data.tenant || "";
 		if (!ownerId) {
 			const existing = await ProductService.get(rowId);
 			ownerId = existing?.tenant || "";
+		}
+
+		if (file instanceof File) {
+			await StorageService.deleteFile(rowId, "product");
+			data.image_url = await StorageService.uploadFile(
+				rowId,
+				file,
+				"product",
+				getProductPermissions(ownerId),
+			);
 		}
 
 		return await tables.updateRow({
@@ -133,44 +138,6 @@ export const ProductService = {
 			databaseId: DATABASE_ID,
 			tableId: TABLE_PRODUCTS,
 			rowId: id,
-		});
-	},
-
-	async updatePublic(
-		rowId: string,
-		data: Partial<IProduct>,
-	): Promise<IProduct> {
-		const res = await functions.createExecution({
-			functionId: "ai-helper",
-			body: JSON.stringify({
-				action: "claim-product",
-				payload: {
-					productId: rowId,
-					claimed_quantity: data.claimed_quantity,
-				},
-			}),
-		});
-
-		if (res.status === "failed") {
-			throw new Error("Erro ao atualizar o presente no servidor.");
-		}
-
-		const parsed = JSON.parse(res.responseBody || "{}");
-		if (parsed.error) {
-			throw new Error(parsed.error);
-		}
-
-		return parsed.product as IProduct;
-	},
-	async updateQuantity(
-		rowId: string,
-		data: Partial<IProduct>,
-	): Promise<IProduct> {
-		return await tables.updateRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PRODUCTS,
-			rowId,
-			data,
 		});
 	},
 };

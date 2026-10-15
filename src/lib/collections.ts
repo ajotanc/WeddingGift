@@ -12,3 +12,4 @@ export const TABLE_FAQS = "faqs";
 export const TABLE_SCHEDULE = "schedules";
 export const TABLE_QUIZZES = "quizzes";
 export const TABLE_CONSENT_LOGS = "consent_logs";
+export const TABLE_SUBSCRIPTIONS = "subscriptions";

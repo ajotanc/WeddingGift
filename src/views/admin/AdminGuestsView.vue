@@ -49,7 +49,7 @@ const deleteMsg = async (message: IMessage) => {
 		confirmText: "Sim, excluir",
 		cancelText: "Não",
 		confirm: async () => {
-			await MessageService.delete(message.$id, !!message?.audio_url);
+			await MessageService.delete(message.$id);
 			messages.value = messages.value.filter((m) => m.$id !== message.$id);
 			toast.success("Recado excluído com sucesso!");
 		},

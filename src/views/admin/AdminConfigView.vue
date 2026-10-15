@@ -33,6 +33,7 @@ import {
 	loadGoogleFont,
 	useTenant,
 } from "@/composables/useTenant";
+import { getTenantPermissions } from "@/lib/appwrite";
 import {
 	DEFAULT_BACKGROUND_COLOR,
 	DEFAULT_BODY_FONT,
@@ -44,6 +45,7 @@ import {
 	PROJECT_NAME,
 } from "@/lib/defaults";
 import { sortBy } from "@/lib/utils";
+import { ActionsService } from "@/services/actions.service";
 import { FaqService } from "@/services/faq.service";
 import { GalleryService, type IGalleryImage } from "@/services/gallery.service";
 import { QuizService } from "@/services/quiz.service";
@@ -103,15 +105,10 @@ watch(
 	{ immediate: true },
 );
 
-// --- Mercado Pago Subscription Simulation State ---
-const showCheckoutModal = ref(false);
-const selectedPlan = ref<"quarterly" | "semestral">("quarterly");
-const isSimulatingPayment = ref(false);
-
+// --- Assinatura (Checkout Pro do Mercado Pago) ---
 const isGeneratingCheckout = ref(false);
 
 const openCheckout = async (plan: "quarterly" | "semestral") => {
-	selectedPlan.value = plan;
 	if (!tenant.value) return;
 
 	isGeneratingCheckout.value = true;
@@ -121,40 +118,14 @@ const openCheckout = async (plan: "quarterly" | "semestral") => {
 			tenantId: tenant.value.$id,
 			plan,
 		});
-		if (res.init_point) {
-			window.location.href = res.init_point;
-		} else {
-			showCheckoutModal.value = true;
-		}
+		if (!res.init_point) throw new Error("Checkout sem link de pagamento.");
+		window.location.href = res.init_point;
 	} catch (e) {
 		console.error("Erro ao gerar checkout:", e);
-		showCheckoutModal.value = true;
+		// O plano só é liberado pelo webhook depois do pagamento aprovado.
+		toast.error("Não foi possível abrir o checkout. Tente novamente.");
 	} finally {
 		isGeneratingCheckout.value = false;
-	}
-};
-
-const handleConfirmSimulatedPayment = async () => {
-	isSimulatingPayment.value = true;
-	try {
-		await authStore.upgradeTenant(selectedPlan.value);
-		toast.success("Assinatura Ativada com sucesso!", {
-			description:
-				"Obrigado! Sua conta agora possui acesso Premium a todas as funcionalidades.",
-		});
-		showCheckoutModal.value = false;
-		if (tenant.value && authStore.tenant) {
-			tenant.value.plan = authStore.tenant.plan;
-			tenant.value.premium_until = authStore.tenant.premium_until;
-		}
-		setTimeout(() => {
-			window.location.reload();
-		}, 1500);
-	} catch (e) {
-		console.error(e);
-		toast.error("Erro ao processar ativação de assinatura.");
-	} finally {
-		isSimulatingPayment.value = false;
 	}
 };
 
@@ -358,10 +329,12 @@ const onBackgroundUpload = async (file: File) => {
 		isUploadingBackground.value = true;
 		try {
 			toast.info("Enviando imagem de fundo...");
+			const tenantId = authStore.tenant?.$id || authStore.user.$id;
 			const url = await StorageService.autoUpload(
-				authStore.user.$id,
+				tenantId,
 				file,
 				"background",
+				getTenantPermissions(tenantId),
 			);
 			background_image.value = url;
 			toast.success("Imagem de fundo enviada com sucesso!");
@@ -379,10 +352,12 @@ const onLogoUpload = async (file: File) => {
 		isUploadingLogo.value = true;
 		try {
 			toast.info("Enviando logomarca...");
+			const tenantId = authStore.tenant?.$id || authStore.user.$id;
 			const url = await StorageService.autoUpload(
-				authStore.user.$id,
+				tenantId,
 				file,
 				"logo",
+				getTenantPermissions(tenantId),
 			);
 			logo_url.value = url;
 			toast.success("Logomarca enviada com sucesso!");
@@ -1176,10 +1151,18 @@ const saveSettings = handleSubmit(async (values) => {
 			couple_name: coupleName,
 		};
 
-		const updatedTenant = await TenantService.update(
-			authStore.user.$id,
-			payload,
-		);
+		const previousCoOwner = tenant.value.co_owner_email || "";
+		const updatedTenant = await TenantService.update(tenant.value.$id, payload);
+
+		// Co-administrador mudou: o servidor atualiza quem faz parte do time do casal.
+		if ((updatedTenant.co_owner_email || "") !== previousCoOwner) {
+			try {
+				await ActionsService.syncAccess(updatedTenant.$id);
+			} catch (e) {
+				console.error("Falha ao atualizar acesso do co-administrador:", e);
+				toast.error("Não foi possível atualizar o acesso do co-administrador.");
+			}
+		}
 
 		const sanitized = authStore.sanitizeTenant(updatedTenant) || updatedTenant;
 		tenant.value = sanitized;
@@ -1205,7 +1188,12 @@ onMounted(async () => {
 	const code = route.query.code as string;
 	const state = route.query.state as string;
 
-	if (code && state && tenant.value?.$id === state) {
+	if (code && tenant.value?.$id) {
+		if (!PaymentService.consumeOAuthState(state, tenant.value.$id)) {
+			toast.error("Link de conexão do Mercado Pago inválido ou expirado.");
+			window.history.replaceState({}, document.title, window.location.pathname);
+			return;
+		}
 		toast.info("Processando conexão com o Mercado Pago...");
 		try {
 			await PaymentService.exchangeCodeForToken(code, tenant.value.$id);
@@ -1220,9 +1208,14 @@ onMounted(async () => {
 
 const handleDisconnect = async () => {
 	if (!tenant.value) return;
-	await PaymentService.disconnect(tenant.value.$id);
-	toast.success("Conta desconectada.");
-	window.location.reload();
+	try {
+		await PaymentService.disconnect(tenant.value.$id);
+		toast.success("Conta desconectada.");
+		window.location.reload();
+	} catch (e) {
+		console.error(e);
+		toast.error("Erro ao desconectar a conta do Mercado Pago.");
+	}
 };
 
 const connectToMarketPago = () => {
@@ -2292,58 +2285,6 @@ const connectToMarketPago = () => {
 		</Tabs>
 	</div>
 
-	<!-- MOCK MERCADO PAGO CHECKOUT PRO MODAL -->
-	<Modal v-model:open="showCheckoutModal" title="Checkout Mercado Pago"
-		description="Finalize seu pagamento de forma segura via Mercado Pago.">
-		<div class="space-y-6 pt-4">
-			<div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
-				<div class="flex justify-between items-center text-sm">
-					<span class="text-slate-500">Produto:</span>
-					<span class="font-bold text-slate-800">{{ PROJECT_NAME }} Premium ({{ selectedPlan === 'quarterly' ?
-						'Trimestral'
-						:
-						'Semestral' }})</span>
-				</div>
-				<div class="flex justify-between items-center text-sm">
-					<span class="text-slate-500">Valor:</span>
-					<span class="font-bold text-slate-800">R$ {{ selectedPlan === 'quarterly' ? '79,99' : '159,99' }}</span>
-				</div>
-			</div>
-
-			<div
-				class="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 rounded-2xl bg-white space-y-3">
-				<div
-					class="w-40 h-40 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 relative overflow-hidden">
-					<svg class="w-32 h-32 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-						stroke-width="1.5">
-						<rect x="2" y="2" width="6" height="6" rx="1" />
-						<rect x="16" y="2" width="6" height="6" rx="1" />
-						<rect x="2" y="16" width="6" height="6" rx="1" />
-						<path d="M6 9v2M9 6h2M18 9v2M15 6h1M9 18v2M6 15h2M18 18v4M15 15h3M21 15v1M15 21h3" />
-					</svg>
-					<div class="absolute inset-0 bg-slate-900/5 flex items-center justify-center">
-						<span
-							class="bg-white/95 px-3 py-1 rounded-full text-[10px] font-bold text-sky-600 shadow border border-sky-100">Mercado
-							Pago Pix</span>
-					</div>
-				</div>
-				<span class="text-xs text-slate-500 text-center max-w-xs leading-relaxed font-light">
-					Escaneie o QR Code acima com o app do seu banco para pagar com Pix. O acesso é liberado instantaneamente.
-				</span>
-			</div>
-
-			<div class="space-y-3">
-				<Button type="button" @click="handleConfirmSimulatedPayment" :disabled="isSimulatingPayment"
-					class="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md">
-					<Loader2 v-if="isSimulatingPayment" class="w-4 h-4 animate-spin mr-2" />
-					Simular Confirmação de Pagamento (Mercado Pago)
-				</Button>
-				<Button type="button" variant="ghost" @click="showCheckoutModal = false" class="w-full text-slate-500">
-					Cancelar
-				</Button>
-			</div>
-		</div>
-	</Modal>
 
 	<!-- Quiz Preview Modal -->
 	<Modal v-model:open="showQuizPreviewModal" title="Prévia do Quiz dos Noivos" class="sm:max-w-xl">

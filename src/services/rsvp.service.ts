@@ -1,7 +1,13 @@
-import { DATABASE_ID, getRsvpPermissions, tables } from "@/lib/appwrite";
+import {
+	DATABASE_ID,
+	getGuestContentPermissions,
+	guestIdOf,
+	tables,
+} from "@/lib/appwrite";
 import { TABLE_RSVPS } from "@/lib/collections";
 import { AppwriteException, ID, type Models, Query } from "appwrite";
 
+import { ActionsService } from "./actions.service";
 import type { IGuest } from "./guest.service";
 
 export type StatusType = "confirmed" | "declined";
@@ -50,7 +56,7 @@ export const RsvpService = {
 			tableId: TABLE_RSVPS,
 			rowId: customId || ID.unique(),
 			data,
-			permissions: getRsvpPermissions(),
+			permissions: getGuestContentPermissions(guestIdOf(data.guest)),
 		});
 	},
 
@@ -60,7 +66,6 @@ export const RsvpService = {
 			tableId: TABLE_RSVPS,
 			rowId,
 			data,
-			permissions: getRsvpPermissions(),
 		});
 	},
 
@@ -75,15 +80,11 @@ export const RsvpService = {
 			tableId: TABLE_RSVPS,
 			rowId: id,
 			data,
-			permissions: getRsvpPermissions(),
+			permissions: getGuestContentPermissions(guestIdOf(data.guest)),
 		});
 	},
 
 	async delete(id: string): Promise<void> {
-		await tables.deleteRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_RSVPS,
-			rowId: id,
-		});
+		await ActionsService.deleteContent("rsvps", id);
 	},
 };

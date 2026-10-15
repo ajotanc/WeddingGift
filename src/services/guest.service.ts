@@ -1,4 +1,8 @@
-import { DATABASE_ID, getGuestPermissions, tables } from "@/lib/appwrite";
+import {
+	DATABASE_ID,
+	getGuestContentPermissions,
+	tables,
+} from "@/lib/appwrite";
 import { TABLE_GUESTS } from "@/lib/collections";
 import { AppwriteException, ID, type Models } from "appwrite";
 
@@ -37,7 +41,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: guestId,
 			data,
-			permissions: getGuestPermissions(),
+			permissions: getGuestContentPermissions(guestId),
 		});
 	},
 
@@ -50,7 +54,6 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: id,
 			data,
-			permissions: getGuestPermissions(),
 		});
 	},
 
@@ -63,7 +66,7 @@ export const GuestService = {
 			tableId: TABLE_GUESTS,
 			rowId: id,
 			data,
-			permissions: getGuestPermissions(),
+			permissions: getGuestContentPermissions(id),
 		});
 	},
 

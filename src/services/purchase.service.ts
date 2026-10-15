@@ -1,6 +1,6 @@
-import { DATABASE_ID, getRsvpPermissions, tables } from "@/lib/appwrite";
+import { DATABASE_ID, tables } from "@/lib/appwrite";
 import { TABLE_PURCHASES } from "@/lib/collections";
-import { AppwriteException, ID, type Models, Query } from "appwrite";
+import { AppwriteException, type Models, Query } from "appwrite";
 import type { IGuest } from "./guest.service";
 import type { IProduct } from "./product.service";
 
@@ -28,52 +28,6 @@ export const PurchaseService = {
 			if (error instanceof AppwriteException && error.code === 404) return null;
 			throw error;
 		}
-	},
-
-	async create(
-		data: Omit<IPurchase, keyof Models.Row>,
-		customId?: string,
-	): Promise<IPurchase> {
-		return await tables.createRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PURCHASES,
-			rowId: customId || ID.unique(),
-			data,
-			permissions: getRsvpPermissions(),
-		});
-	},
-
-	async update(rowId: string, data: Partial<IPurchase>): Promise<IPurchase> {
-		return await tables.updateRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PURCHASES,
-			rowId,
-			data,
-			permissions: getRsvpPermissions(),
-		});
-	},
-
-	async upsert(
-		rowId: string | undefined,
-		data: Partial<IPurchase>,
-	): Promise<IPurchase> {
-		const id = rowId || ID.unique();
-
-		return await tables.upsertRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PURCHASES,
-			rowId: id,
-			data,
-			permissions: getRsvpPermissions(),
-		});
-	},
-
-	async delete(id: string): Promise<void> {
-		await tables.deleteRow({
-			databaseId: DATABASE_ID,
-			tableId: TABLE_PURCHASES,
-			rowId: id,
-		});
 	},
 
 	async listByTenant(tenantId: string): Promise<IPurchase[]> {
