@@ -15,11 +15,13 @@ export const BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 
 const client = new Client();
 
-const appwriteEndpoint = import.meta.env.VITE_APPWRITE_ENDPOINT?.startsWith(
-	"http",
-)
-	? import.meta.env.VITE_APPWRITE_ENDPOINT
-	: `${window.location.origin}/v1`;
+// Em produção a API precisa ficar na mesma origem (proxy /v1 do Netlify). Com o endpoint
+// absoluto o cookie de sessão vira de terceiros e Safari/iOS e Chrome o descartam: o
+// usuário volta do Google e aparece deslogado. O proxy só existe fora do dev server.
+const appwriteEndpoint =
+	import.meta.env.DEV && import.meta.env.VITE_APPWRITE_ENDPOINT?.startsWith("http")
+		? import.meta.env.VITE_APPWRITE_ENDPOINT
+		: `${window.location.origin}/v1`;
 
 client.setEndpoint(appwriteEndpoint).setProject(PROJECT_ID);
 
