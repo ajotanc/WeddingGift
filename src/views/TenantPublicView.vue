@@ -257,6 +257,9 @@ const confirmPurchase = async (method: MethodType) => {
 		return;
 	}
 
+	// Evita contar duas vezes: o webhook já registra o PIX do Mercado Pago.
+	if (method === "pix" && mpPixData.value?.qr_code) return;
+
 	confirmingPurchase.value = true;
 	const qty = quotaQuantities.value[selectedProduct.value.$id] || 1;
 	const finalPrice = isCustomPix.value
@@ -911,7 +914,8 @@ onUnmounted(() => {
 						variant="outline" @click="copyPix">
 						Copiar Código Pix
 					</Button>
-					<Button v-if="!tenant?.mp_user_id"
+					<!-- PIX do Mercado Pago é confirmado pelo webhook; o manual só existe no PIX estático. -->
+					<Button v-if="!mpPixData?.qr_code && !isGeneratingMpPix"
 						class="flex-1 rounded-xl text-white hover:brightness-105 active:scale-[0.98] transition-all font-semibold text-xs uppercase tracking-wider py-2.5 bg-primary border-primary h-11"
 						:disabled="confirmingPurchase" @click="confirmPurchase('pix')">
 						{{ confirmingPurchase ? 'Confirmando...' : 'Confirmar Envio' }}
