@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Migração de segurança dos dados existentes no Appwrite.
  *
