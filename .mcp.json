@@ -1,12 +1,17 @@
 {
   "mcpServers": {
+    "appwrite": {
+      "command": "node",
+      "args": [
+        "scripts/mcp-appwrite.mjs"
+      ]
+    },
     "code-review-graph": {
       "command": "uvx",
       "args": [
         "code-review-graph",
         "serve"
       ],
-      "cwd": "D:\\Apps\\WeddingGift",
       "type": "stdio"
     }
   }
