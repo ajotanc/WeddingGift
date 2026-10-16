@@ -100,7 +100,6 @@ export const useAuthStore = defineStore("auth", {
 			}
 
 			try {
-				await this.completeOAuthLogin();
 				const sessionUser = await this.fetchSessionUser();
 				this.user = sessionUser;
 
@@ -294,28 +293,8 @@ export const useAuthStore = defineStore("auth", {
 				}
 			}
 		},
-		/**
-		 * O login Google devolve userId/secret na URL (createOAuth2Token). A sessão é criada
-		 * aqui, pelo proxy /v1 da mesma origem, para o cookie não ser de terceiros: o callback
-		 * direto no domínio da API grava o cookie lá e Safari/Chrome o descartam.
-		 */
-		async completeOAuthLogin() {
-			if (typeof window === "undefined") return;
-			const url = new URL(window.location.href);
-			const userId = url.searchParams.get("userId");
-			const secret = url.searchParams.get("secret");
-			if (!userId || !secret) return;
-			url.searchParams.delete("userId");
-			url.searchParams.delete("secret");
-			window.history.replaceState(null, "", url.pathname + url.search + url.hash);
-			try {
-				await account.createSession({ userId, secret });
-			} catch (e) {
-				console.error("Falha ao criar a sessão após o login Google:", e);
-			}
-		},
 		async loginWithGoogle(successUrl: string, failureUrl: string) {
-			account.createOAuth2Token({
+			account.createOAuth2Session({
 				provider: OAuthProvider.Google,
 				success: successUrl,
 				failure: failureUrl,
